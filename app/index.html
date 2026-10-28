@@ -76,6 +76,7 @@
   --dock-pad: 0px;
   --dock-lift: -10px;
   --dock-fs: 1.05;
+  --dock-d: flex;
   --cols: 10;
   --tile-w: 151px;
   --tile-h: 151px;
@@ -86,11 +87,13 @@
   --grid-w: 1728px;
   --grid-t: 350px;
   --grid-fs: 1.12;
+  --grid-pre: "";
   --ov-dim: 0.95;
   --gloss: 0;
   --tile-border: 0;
   --ring-w: 4px;
   --ring-off: 4px;
+  --tile-pre: "";
 }
 * {
   box-sizing: border-box;
@@ -195,6 +198,22 @@ body {
   display: var(--clock-d);
   align-items: center;
   height: 76px;
+}
+/* a line above the time (clock.prefix), like the command that printed it; the clock box grows to hold it */
+#cpre {
+  display: none;
+  flex: 0 0 100%;
+  font-size: calc(26px * var(--fs) * var(--date-s));
+  color: var(--ink2);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+body.cpre #clock {
+  flex-wrap: wrap;
+  height: auto;
+}
+body.cpre #cpre {
+  display: block;
 }
 #greet {
   display: none;
@@ -382,7 +401,7 @@ body {
   top: var(--dock-t);
   bottom: var(--dock-b);
   transform: var(--dock-tx);
-  display: flex;
+  display: var(--dock-d);
   z-index: 4;
   padding: var(--dock-pad);
   border-radius: calc(var(--dock-rad) + var(--dock-pad));
@@ -400,6 +419,87 @@ body {
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: var(--gap-y) var(--gap-x);
+}
+/* a line just above the grid (grid.prefix), like the command that listed the apps; it takes no room in the grid */
+#grid::before {
+  content: var(--grid-pre);
+  position: absolute;
+  left: 12px;
+  bottom: 100%;
+  margin-bottom: 10px;
+  font-size: calc(26px * var(--fs));
+  color: var(--ink2);
+  white-space: nowrap;
+}
+/* text tiles (tile.style text): the name in a line with no background; the focused line in the accent, like inverse video */
+.tile .nm {
+  display: none;
+}
+[data-tiles="text"] .tile {
+  background: none !important;
+  box-shadow: none !important;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border-radius: 0;
+  overflow: hidden;
+}
+[data-tiles="text"] .tile img,
+[data-tiles="text"] .tile > svg,
+[data-tiles="text"] .tile .t,
+[data-tiles="text"] .tile::after,
+[data-tiles="text"] .tile::before {
+  display: none;
+}
+[data-tiles="text"] .tile .nm,
+[data-tiles="text"] .tile .slab {
+  display: block;
+  font-size: calc(30px * var(--fs));
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-tiles="text"] .tile .nm::before,
+[data-tiles="text"] .tile.inp .slab:first-of-type::before,
+[data-tiles="text"] .tile.sys .slab::before {
+  content: var(--tile-pre);
+  white-space: pre;
+  opacity: 0;
+}
+[data-tiles="text"] .tile.inp,
+[data-tiles="text"] .tile.sys {
+  flex-direction: row;
+}
+[data-tiles="text"] .tile.inp > * + *,
+[data-tiles="text"] .tile.sys > * + * {
+  margin: 0 0 0 0.6em;
+}
+[data-tiles="text"] .tile.inp .slab.sub {
+  color: var(--ink2);
+}
+[data-tiles="text"] .tile.f {
+  transform: none !important;
+  background: var(--acc) !important;
+}
+[data-tiles="text"] .tile.f .nm,
+[data-tiles="text"] .tile.f .slab {
+  color: var(--acc-ink);
+}
+[data-tiles="text"] .tile.f .nm::before,
+[data-tiles="text"] .tile.f .slab::before {
+  opacity: 0.8;
+}
+[data-tiles="text"] .tile .rd {
+  right: auto;
+  left: 2px;
+  top: 50%;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  box-shadow: none;
 }
 /* an overlay grid: hidden until the focus moves down into it, then dark layer + grid over the screen above the dock */
 [data-grid="overlay"] #grid {
@@ -1804,7 +1904,7 @@ svg.st {
 </style></head><body>
 <div id="wall"></div>
 <div class="glow" id="gA"></div><div class="glow" id="gB"></div>
-<div id="top"><div id="clock"><div id="greet"></div><div id="time"></div><div id="date"></div></div><div id="bar"></div></div>
+<div id="top"><div id="clock"><div id="cpre"></div><div id="greet"></div><div id="time"></div><div id="date"></div></div><div id="bar"></div></div>
 <div id="shelf"><div id="name"></div></div>
 <div id="cards"></div>
 <div id="view"><div id="scroll"><div id="dock"></div><div id="grid"></div></div></div>
@@ -2430,6 +2530,11 @@ function tile(a) {
   }; /* not remembered: a failed load must not pin a made-up colour */
   i.src = a.id === '__live' ? LIVE_ICON : API + '/icon/' + encodeURIComponent(a.id);
   d.appendChild(i);
+  /* the name, for a theme that shows tiles as lines of text (tile.style text); hidden otherwise */
+  var nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = a.title;
+  d.appendChild(nm);
   if (i.decode) i.decode().catch(function () {});
   return d;
 }
@@ -2481,7 +2586,8 @@ var TH0 = {
   },
   TH = TH0,
   themeKeys = [],
-  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign', 'data-cursor'];
+  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign', 'data-cursor', 'data-tiles'],
+  GR = 2; /* the first row of the grid in `rows`: after the top row and the dock, or right after the top row without a dock */
 function applyTheme(t) {
   var st = document.documentElement.style,
     b = document.body,
@@ -2534,13 +2640,16 @@ function applyTheme(t) {
   MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
   SCENE.apply(t.cycles || null, +t.vars['--spd'] || 0);
   $('wall').classList.toggle('drift', +t.vars['--drift'] > 0);
+  /* a line above the clock (clock.prefix), like the command that printed the time */
+  $('cpre').textContent = t.clockPrefix || '';
+  b.classList.toggle('cpre', !!t.clockPrefix);
   TH = {
     cols: t.cols || 10,
     tileH: t.tileH || 151,
     gapY: t.gapY || 26,
     gt: t.gt || 350,
     viewH: t.viewH || 780,
-    dockN: t.dockN || 4,
+    dockN: typeof t.dockN === 'number' ? t.dockN : 4,
     overlay: !!t.overlay,
     push: t.push || null,
     overlayH: t.overlayH || 510,
@@ -2571,10 +2680,10 @@ function setFocus(nr, nc, first) {
   var sh = 0;
   if (TH.push) {
     /* the grid sits under the dock: focusing it scrolls everything up (the dock stops at its 'up' position) and the grid fades in */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', r >= GR);
     var ps = 0;
-    if (r >= 2) {
-      var bot = TH.push.gridTop - TH.push.up + (r - 2) * (TH.tileH + TH.gapY) + TH.tileH,
+    if (r >= GR) {
+      var bot = TH.push.gridTop - TH.push.up + (r - GR) * (TH.tileH + TH.gapY) + TH.tileH,
         ex = Math.max(0, bot - (1080 - 60));
       ps = -(TH.push.up + ex);
     }
@@ -2584,18 +2693,18 @@ function setFocus(nr, nc, first) {
   }
   if (TH.overlay) {
     /* the grid is an overlay above the dock: it opens when the focus goes down into it and scrolls on its own */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', r >= GR);
     var gs = 0;
-    if (r >= 2) gs = Math.min(0, TH.overlayH - ((r - 2) * (TH.tileH + TH.gapY) + TH.tileH + 24));
+    if (r >= GR) gs = Math.min(0, TH.overlayH - ((r - GR) * (TH.tileH + TH.gapY) + TH.tileH + 24));
     $('grid').style.transform = gs ? 'translateY(' + gs + 'px)' : '';
     $('scroll').style.transform = '';
     return;
   }
   $('grid').style.transform = '';
-  if (r >= 2) {
-    var gr = rows.length - 2,
+  if (r >= GR) {
+    var gr = rows.length - GR,
       gt = TH.gt;
-    sh = Math.min(0, Math.max(50 - (gt + (r - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - (gt + gr * TH.tileH + (gr - 1) * TH.gapY)));
+    sh = Math.min(0, Math.max(50 - (gt + (r - GR) * (TH.tileH + TH.gapY)), TH.viewH - 54 - (gt + gr * TH.tileH + (gr - 1) * TH.gapY)));
   } /* row height + gap from the theme: no layout reads */
   $('scroll').style.transform = sh ? 'translateY(' + sh + 'px)' : '';
 }
@@ -4655,7 +4764,9 @@ function rebuild() {
   /* cards come first, so the ones OK can switch (a Home Assistant light) join the top row */
   drawCards();
   var top = tb.concat(cardTargets());
-  rows = [top, d.length ? d : top];
+  /* without a dock (dock.show off, or every dock app hidden) the grid starts right under the top row */
+  rows = TH.dockN > 0 ? [top, d.length ? d : top] : [top];
+  GR = rows.length;
   for (var i = 0; i < g.length; i += TH.cols) rows.push(g.slice(i, i + TH.cols));
   var nr = Math.min(r, rows.length - 1),
     nc = c;
@@ -4829,8 +4940,8 @@ document.addEventListener('keydown', function (e) {
     if (menuKey(k)) e.preventDefault();
     return;
   }
-  if ((TH.overlay || TH.push) && r >= 2 && (k === 461 || k === 27 || k === 8)) {
-    setFocus(1, Math.min(c, rows[1].length - 1));
+  if ((TH.overlay || TH.push) && r >= GR && (k === 461 || k === 27 || k === 8)) {
+    setFocus(GR - 1, Math.min(c, rows[GR - 1].length - 1));
     e.preventDefault();
     return;
   } /* Back closes the grid overlay */

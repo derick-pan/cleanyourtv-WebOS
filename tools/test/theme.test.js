@@ -75,7 +75,7 @@ run(async () => {
   );
   ok(
     bad.v['grid.cols'] === 14 &&
-      bad.v['grid.tileH'] === 80 &&
+      bad.v['grid.tileH'] === 32 &&
       bad.v['grid.radius'] === 100 &&
       bad.v['grid.mode'] === 'below' &&
       bad.v['grid.align'] === 'left' &&
@@ -384,6 +384,38 @@ run(async () => {
       plain.vars['--drift-dur'] === '70s' &&
       plain.vars['--name-pre'] === '""',
     'a prefix with other characters is refused, the cursor needs true, animations off stop the drift, and the defaults have none'
+  );
+  // a terminal: text tiles with a marker, no dock, one column, a line above the clock and the grid
+  const term = themeMod.resolve(
+    themeMod.normalize(
+      {
+        tile: { style: 'text', marker: '> ' },
+        dock: { show: false },
+        grid: { cols: 1, tileH: 44, prefix: '$ ls apps/' },
+        clock: { prefix: '$ date' },
+      },
+      'term'
+    )
+  );
+  ok(
+    term.attrs.tiles === 'text' &&
+      term.vars['--tile-pre'] === '"> "' &&
+      term.dockN === 0 &&
+      term.vars['--dock-d'] === 'none' &&
+      term.cols === 1 &&
+      term.tileH === 44 &&
+      term.vars['--grid-pre'] === '"$ ls apps/"' &&
+      term.clockPrefix === '$ date',
+    'text tiles, a hidden dock, one column of lines and the prompt lines above the clock and the grid resolve'
+  );
+  ok(
+    !('tiles' in plain.attrs) &&
+      !('clockPrefix' in plain) &&
+      plain.dockN === 4 &&
+      plain.vars['--dock-d'] === 'flex' &&
+      plain.vars['--tile-pre'] === '""' &&
+      plain.vars['--grid-pre'] === '""',
+    'by default the tiles are icons on a dock and a grid without prompt lines'
   );
   r = await tcall('set', { id: 'pixkid' });
   ok(

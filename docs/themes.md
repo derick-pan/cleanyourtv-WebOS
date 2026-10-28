@@ -41,7 +41,7 @@ folder of the GitHub repository (the `main` branch):
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
 | The Grid | Inside the Grid after dark: a deep black world lit only by thin lines, with light cycles racing the floor and drawing lines of light behind them, Recognizers drifting in the haze, a city of lit towers and the portal beam. Glass tiles edged in light stand on the floor. Down opens the apps. |
 | Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little pixel Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
-| Terminal | A terminal: green phosphor text on black in a monospace typeface, a prompt before the app's name with a blinking cursor, square tiles and boxed buttons, scanlines and a soft tube glow. |
+| Terminal | Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of `date`, the apps listed one per line under `ls`, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
 
@@ -174,6 +174,7 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `clock.scale` | 0.6 to 8 | `1` | Scale of the time (1 is 56 px; 7 fills a third of the screen). |
 | `clock.ampm` | `true` or `false` | `true` | Show AM/PM (or the language's equivalent) after a 12-hour time; off, a lock-screen clock shows the digits only. |
 | `clock.grid` | `keep`, `hide` | `keep` | `hide`: the clock fades out while the app grid is open (for a big clock the tiles would cover). |
+| `clock.prefix` | text, up to 8 characters | none | Up to sixteen plain characters on a line above the time, a little dimmer, like the command that printed it: `$ date`. |
 | `clock.weight` | 100 to 900 | `600` | Weight of the time: 200 thin, 400 regular, 600 semi-bold, 800 heavy (what the typeface has). |
 | `clock.alpha` | 0.1 to 1 | `1` | Opacity of the time; below 1 the picture shows through the digits, like glass. |
 | `clock.outline` | 0 to 1 | `0` | Opacity of a thin outline around the digits (a rim on a glass clock); 0 for none. |
@@ -203,6 +204,7 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `dock.align` | `left`, `center`, `right` | `left` | Which side `dock.x` counts from; `center` centres the dock. |
 | `dock.x` | 0 to 900 | `96` | Distance from that side, in px. Not used when centred. |
 | `dock.y` | px, 0 to 1000 | empty | Distance from the top or bottom edge, in px. Empty: 360 from the top, 68 from the bottom. |
+| `dock.show` | `true` or `false` | `true` | Show the dock; off, every app is in the grid (a list of all apps, as in a terminal). |
 | `dock.count` | 3 to 8 | `4` | Apps in the dock. |
 | `dock.w` | 120 to 500 | `408` | Width of a dock tile, in px. |
 | `dock.h` | 100 to 300 | `230` | Height of a dock tile, in px. |
@@ -220,8 +222,9 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `grid.mode` | `below`, `push`, `overlay` | `below` | `below`: the grid sits under the dock and scrolls (a dock at the bottom behaves as `push`); `push`: the grid sits under the dock out of sight, and when the focus moves down into it the dock moves up to `grid.dockUp` and the grid appears below it; `overlay`: the grid opens over the screen above the dock. |
 | `grid.dockUp` | 0 to 700 | `220` | `push` mode: where the dock stops, counted from the top of the screen, while the grid has the focus, in px. |
 | `grid.align` | `left`, `center` | `left` | `center` centres every row of tiles, also a last row that is not full. |
-| `grid.cols` | 4 to 14 | `10` | Columns. |
-| `grid.tileH` | 80 to 240 | `151` | Height of a tile, in px; the width follows from the columns. |
+| `grid.cols` | 1 to 14 | `10` | Columns; 1 lists the apps one under the other. |
+| `grid.tileH` | 32 to 240 | `151` | Height of a tile, in px; the width follows from the columns. A line of text needs about 44. |
+| `grid.prefix` | text, up to 8 characters | none | Up to sixteen plain characters on a line just above the grid, a little dimmer, like the command that listed the apps: `$ ls apps/`. |
 | `grid.gapX` | 6 to 60 | `24` | Horizontal space between tiles, in px. |
 | `grid.gapY` | 6 to 60 | `26` | Vertical space between tiles, in px. |
 | `grid.radius` | 0 to 100 | `34` | Corner radius of tiles. |
@@ -233,6 +236,8 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `grid.overlayDim` | 0 to 1 | `0.95` | Opacity of the layer behind the overlay grid. |
 | `grid.overlayH` | 200 to 900 | `510` | Visible height of the overlay grid before it scrolls, in px. |
 | **tile** | | | |
+| `tile.style` | `icon`, `text` | `icon` | `icon`: the app's icon on a coloured tile; `text`: only its name, in a line of text with no background, the focused one in the accent colour (inverse video), as in a terminal. |
+| `tile.marker` | text, up to 8 characters | none | Text tiles: up to eight characters before the focused name, for example `> `; the other names keep the space, so they line up. |
 | `tile.gloss` | 0 to 1 | `0` | A light highlight on every tile. |
 | `tile.border` | 0 to 0.6 | `0` | Opacity of a thin outline on every tile. |
 | `tile.ringWidth` | 0 to 10 | `4` | Width of the focus ring, in px; 0 for none. |
@@ -306,6 +311,15 @@ while Home is not on screen.
   of pixel art crisp (no smoothing when the picture is scaled).
 - `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast they
   walk and how often they do something; 0 keeps them standing, and so does `effects.speed` 0.
+
+### A terminal, or any screen of text
+
+Tiles can be lines of text instead of icons: `tile.style` `text` shows only each app's name, with no background, the focused line in
+the accent colour like inverse video, and `tile.marker` a few characters before the focused name (`> `). With `dock.show` off every
+app is in the grid, and `grid.cols` 1 with a `grid.tileH` of about 44 lists them one under the other; the grid scrolls as usual.
+`grid.prefix` puts a dim line just above the list (`$ ls apps/`), `clock.prefix` one above the time (`$ date`), `shelf.prefix` one
+before the focused app's name (`$ open `) and `shelf.cursor` a blinking block after it. The Terminal theme is all of this with a
+monospace typeface (`type.font` `mono`) and flat buttons.
 
 ### Motion
 

@@ -52,6 +52,11 @@ function tile(a) {
   }; /* not remembered: a failed load must not pin a made-up colour */
   i.src = a.id === '__live' ? LIVE_ICON : API + '/icon/' + encodeURIComponent(a.id);
   d.appendChild(i);
+  /* the name, for a theme that shows tiles as lines of text (tile.style text); hidden otherwise */
+  var nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = a.title;
+  d.appendChild(nm);
   if (i.decode) i.decode().catch(function () {});
   return d;
 }

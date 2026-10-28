@@ -15,7 +15,8 @@ var TH0 = {
   },
   TH = TH0,
   themeKeys = [],
-  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign', 'data-cursor'];
+  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign', 'data-cursor', 'data-tiles'],
+  GR = 2; /* the first row of the grid in `rows`: after the top row and the dock, or right after the top row without a dock */
 function applyTheme(t) {
   var st = document.documentElement.style,
     b = document.body,
@@ -68,13 +69,16 @@ function applyTheme(t) {
   MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
   SCENE.apply(t.cycles || null, +t.vars['--spd'] || 0);
   $('wall').classList.toggle('drift', +t.vars['--drift'] > 0);
+  /* a line above the clock (clock.prefix), like the command that printed the time */
+  $('cpre').textContent = t.clockPrefix || '';
+  b.classList.toggle('cpre', !!t.clockPrefix);
   TH = {
     cols: t.cols || 10,
     tileH: t.tileH || 151,
     gapY: t.gapY || 26,
     gt: t.gt || 350,
     viewH: t.viewH || 780,
-    dockN: t.dockN || 4,
+    dockN: typeof t.dockN === 'number' ? t.dockN : 4,
     overlay: !!t.overlay,
     push: t.push || null,
     overlayH: t.overlayH || 510,
@@ -105,10 +109,10 @@ function setFocus(nr, nc, first) {
   var sh = 0;
   if (TH.push) {
     /* the grid sits under the dock: focusing it scrolls everything up (the dock stops at its 'up' position) and the grid fades in */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', r >= GR);
     var ps = 0;
-    if (r >= 2) {
-      var bot = TH.push.gridTop - TH.push.up + (r - 2) * (TH.tileH + TH.gapY) + TH.tileH,
+    if (r >= GR) {
+      var bot = TH.push.gridTop - TH.push.up + (r - GR) * (TH.tileH + TH.gapY) + TH.tileH,
         ex = Math.max(0, bot - (1080 - 60));
       ps = -(TH.push.up + ex);
     }
@@ -118,18 +122,18 @@ function setFocus(nr, nc, first) {
   }
   if (TH.overlay) {
     /* the grid is an overlay above the dock: it opens when the focus goes down into it and scrolls on its own */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', r >= GR);
     var gs = 0;
-    if (r >= 2) gs = Math.min(0, TH.overlayH - ((r - 2) * (TH.tileH + TH.gapY) + TH.tileH + 24));
+    if (r >= GR) gs = Math.min(0, TH.overlayH - ((r - GR) * (TH.tileH + TH.gapY) + TH.tileH + 24));
     $('grid').style.transform = gs ? 'translateY(' + gs + 'px)' : '';
     $('scroll').style.transform = '';
     return;
   }
   $('grid').style.transform = '';
-  if (r >= 2) {
-    var gr = rows.length - 2,
+  if (r >= GR) {
+    var gr = rows.length - GR,
       gt = TH.gt;
-    sh = Math.min(0, Math.max(50 - (gt + (r - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - (gt + gr * TH.tileH + (gr - 1) * TH.gapY)));
+    sh = Math.min(0, Math.max(50 - (gt + (r - GR) * (TH.tileH + TH.gapY)), TH.viewH - 54 - (gt + gr * TH.tileH + (gr - 1) * TH.gapY)));
   } /* row height + gap from the theme: no layout reads */
   $('scroll').style.transform = sh ? 'translateY(' + sh + 'px)' : '';
 }

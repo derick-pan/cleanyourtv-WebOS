@@ -90,8 +90,8 @@ document.addEventListener('keydown', function (e) {
     if (menuKey(k)) e.preventDefault();
     return;
   }
-  if ((TH.overlay || TH.push) && r >= 2 && (k === 461 || k === 27 || k === 8)) {
-    setFocus(1, Math.min(c, rows[1].length - 1));
+  if ((TH.overlay || TH.push) && r >= GR && (k === 461 || k === 27 || k === 8)) {
+    setFocus(GR - 1, Math.min(c, rows[GR - 1].length - 1));
     e.preventDefault();
     return;
   } /* Back closes the grid overlay */

@@ -98,6 +98,13 @@ const SCHEMA = [
     'keep',
     '`hide`: the clock fades out while the app grid is open (for a big clock the tiles would cover).',
   ],
+  [
+    'clock.prefix',
+    'text',
+    /^[\w $>#:~%./-]{0,16}$/,
+    '',
+    'Up to sixteen plain characters on a line above the time, a little dimmer, like the command that printed it: `$ date`.',
+  ],
   ['clock.weight', 'int', [100, 900], 600, 'Weight of the time: 200 thin, 400 regular, 600 semi-bold, 800 heavy (what the typeface has).'],
   ['clock.alpha', 'num', [0.1, 1], 1, 'Opacity of the time; below 1 the picture shows through the digits, like glass.'],
   ['clock.outline', 'num', [0, 1], 0, 'Opacity of a thin outline around the digits (a rim on a glass clock); 0 for none.'],
@@ -142,6 +149,7 @@ const SCHEMA = [
   ['dock.align', 'enum', POS, 'left', 'Which side `dock.x` counts from; `center` centres the dock.'],
   ['dock.x', 'int', [0, 900], 96, 'Distance from that side, in px. Not used when centred.'],
   ['dock.y', 'auto', [0, 1000], null, 'Distance from the top or bottom edge, in px. Empty: 360 from the top, 68 from the bottom.'],
+  ['dock.show', 'bool', null, true, 'Show the dock; off, every app is in the grid (a list of all apps, as in a terminal).'],
   ['dock.count', 'int', [3, 8], 4, 'Apps in the dock.'],
   ['dock.w', 'int', [120, 500], 408, 'Width of a dock tile, in px.'],
   ['dock.h', 'int', [100, 300], 230, 'Height of a dock tile, in px.'],
@@ -188,8 +196,15 @@ const SCHEMA = [
     '`push` mode: where the dock stops, counted from the top of the screen, while the grid has the focus, in px.',
   ],
   ['grid.align', 'enum', ['left', 'center'], 'left', '`center` centres every row of tiles, also a last row that is not full.'],
-  ['grid.cols', 'int', [4, 14], 10, 'Columns.'],
-  ['grid.tileH', 'int', [80, 240], 151, 'Height of a tile, in px; the width follows from the columns.'],
+  ['grid.cols', 'int', [1, 14], 10, 'Columns; 1 lists the apps one under the other.'],
+  ['grid.tileH', 'int', [32, 240], 151, 'Height of a tile, in px; the width follows from the columns. A line of text needs about 44.'],
+  [
+    'grid.prefix',
+    'text',
+    /^[\w $>#:~%./-]{0,16}$/,
+    '',
+    'Up to sixteen plain characters on a line just above the grid, a little dimmer, like the command that listed the apps: `$ ls apps/`.',
+  ],
   ['grid.gapX', 'int', [6, 60], 24, 'Horizontal space between tiles, in px.'],
   ['grid.gapY', 'int', [6, 60], 26, 'Vertical space between tiles, in px.'],
   ['grid.radius', 'int', [0, 100], 34, 'Corner radius of tiles.'],
@@ -200,6 +215,20 @@ const SCHEMA = [
   ['grid.focusScale', 'num', [1, 1.4], 1.12, 'Scale of the focused tile.'],
   ['grid.overlayDim', 'num', [0, 1], 0.95, 'Opacity of the layer behind the overlay grid.'],
   ['grid.overlayH', 'int', [200, 900], 510, 'Visible height of the overlay grid before it scrolls, in px.'],
+  [
+    'tile.style',
+    'enum',
+    ['icon', 'text'],
+    'icon',
+    "`icon`: the app's icon on a coloured tile; `text`: only its name, in a line of text with no background, the focused one in the accent colour (inverse video), as in a terminal.",
+  ],
+  [
+    'tile.marker',
+    'text',
+    /^[\w $>#:~%./-]{0,8}$/,
+    '',
+    'Text tiles: up to eight characters before the focused name, for example `> `; the other names keep the space, so they line up.',
+  ],
   ['tile.gloss', 'num', [0, 1], 0, 'A light highlight on every tile.'],
   ['tile.border', 'num', [0, 0.6], 0, 'Opacity of a thin outline on every tile.'],
   ['tile.ringWidth', 'int', [0, 10], 4, 'Width of the focus ring, in px; 0 for none.'],
@@ -531,6 +560,7 @@ function resolve(t, accent) {
     '--dock-pad': px(pad),
     '--dock-lift': px(-v['dock.lift']),
     '--dock-fs': String(v['dock.focusScale']),
+    '--dock-d': v['dock.show'] ? 'flex' : 'none',
     '--cols': String(v['grid.cols']),
     '--tile-h': px(v['grid.tileH']),
     '--gap-x': px(v['grid.gapX']),
@@ -541,11 +571,13 @@ function resolve(t, accent) {
     '--grid-t': px(gridY - viewTop),
     '--tile-w': px(Math.floor((v['grid.width'] - (v['grid.cols'] - 1) * v['grid.gapX']) / v['grid.cols'])),
     '--grid-fs': String(v['grid.focusScale']),
+    '--grid-pre': '"' + v['grid.prefix'] + '"',
     '--ov-dim': String(v['grid.overlayDim']),
     '--gloss': String(v['tile.gloss']),
     '--tile-border': String(v['tile.border']),
     '--ring-w': px(v['tile.ringWidth']),
     '--ring-off': px(v['tile.ringOffset']),
+    '--tile-pre': '"' + v['tile.marker'] + '"',
     '--glow-op': String(v['effects.glow']),
     '--spd': String(v['effects.speed']),
     '--drift': String(v['effects.speed'] > 0 ? v['effects.drift'] : 0),
@@ -562,7 +594,7 @@ function resolve(t, accent) {
     gapY: v['grid.gapY'],
     gt: gridY - viewTop,
     viewH: 1080 - viewTop,
-    dockN: v['dock.count'],
+    dockN: v['dock.show'] ? v['dock.count'] : 0,
     overlay,
     push: push ? { up: Math.max(0, dockTop - v['grid.dockUp']), gridTop: gridY } : null,
     overlayH: v['grid.overlayH'],
@@ -573,6 +605,9 @@ function resolve(t, accent) {
   // only a theme that hides its clock behind the grid has this attribute, or drops the AM/PM (the same reason)
   if (v['clock.grid'] === 'hide') out.attrs.clockgrid = 'hide';
   if (v['shelf.cursor']) out.attrs.cursor = 'on';
+  if (v['tile.style'] === 'text') out.attrs.tiles = 'text';
+  // only a theme with a line above the clock has this key (the same reason); the launcher writes it into the clock
+  if (v['clock.prefix']) out.clockPrefix = v['clock.prefix'];
   // only a theme with light cycles has this key (the same reason); the launcher runs them (app/src/js/scene.js)
   if (v['effects.cycles'] > 0)
     out.cycles = { rate: v['effects.cycles'], horizon: v['effects.cyclesHorizon'], colors: [A, v['effects.cyclesColor']] };

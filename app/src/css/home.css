@@ -71,6 +71,7 @@
   --dock-pad: 0px;
   --dock-lift: -10px;
   --dock-fs: 1.05;
+  --dock-d: flex;
   --cols: 10;
   --tile-w: 151px;
   --tile-h: 151px;
@@ -81,11 +82,13 @@
   --grid-w: 1728px;
   --grid-t: 350px;
   --grid-fs: 1.12;
+  --grid-pre: "";
   --ov-dim: 0.95;
   --gloss: 0;
   --tile-border: 0;
   --ring-w: 4px;
   --ring-off: 4px;
+  --tile-pre: "";
 }
 * {
   box-sizing: border-box;
@@ -190,6 +193,22 @@ body {
   display: var(--clock-d);
   align-items: center;
   height: 76px;
+}
+/* a line above the time (clock.prefix), like the command that printed it; the clock box grows to hold it */
+#cpre {
+  display: none;
+  flex: 0 0 100%;
+  font-size: calc(26px * var(--fs) * var(--date-s));
+  color: var(--ink2);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+body.cpre #clock {
+  flex-wrap: wrap;
+  height: auto;
+}
+body.cpre #cpre {
+  display: block;
 }
 #greet {
   display: none;
@@ -377,7 +396,7 @@ body {
   top: var(--dock-t);
   bottom: var(--dock-b);
   transform: var(--dock-tx);
-  display: flex;
+  display: var(--dock-d);
   z-index: 4;
   padding: var(--dock-pad);
   border-radius: calc(var(--dock-rad) + var(--dock-pad));
@@ -395,6 +414,87 @@ body {
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: var(--gap-y) var(--gap-x);
+}
+/* a line just above the grid (grid.prefix), like the command that listed the apps; it takes no room in the grid */
+#grid::before {
+  content: var(--grid-pre);
+  position: absolute;
+  left: 12px;
+  bottom: 100%;
+  margin-bottom: 10px;
+  font-size: calc(26px * var(--fs));
+  color: var(--ink2);
+  white-space: nowrap;
+}
+/* text tiles (tile.style text): the name in a line with no background; the focused line in the accent, like inverse video */
+.tile .nm {
+  display: none;
+}
+[data-tiles="text"] .tile {
+  background: none !important;
+  box-shadow: none !important;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border-radius: 0;
+  overflow: hidden;
+}
+[data-tiles="text"] .tile img,
+[data-tiles="text"] .tile > svg,
+[data-tiles="text"] .tile .t,
+[data-tiles="text"] .tile::after,
+[data-tiles="text"] .tile::before {
+  display: none;
+}
+[data-tiles="text"] .tile .nm,
+[data-tiles="text"] .tile .slab {
+  display: block;
+  font-size: calc(30px * var(--fs));
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-tiles="text"] .tile .nm::before,
+[data-tiles="text"] .tile.inp .slab:first-of-type::before,
+[data-tiles="text"] .tile.sys .slab::before {
+  content: var(--tile-pre);
+  white-space: pre;
+  opacity: 0;
+}
+[data-tiles="text"] .tile.inp,
+[data-tiles="text"] .tile.sys {
+  flex-direction: row;
+}
+[data-tiles="text"] .tile.inp > * + *,
+[data-tiles="text"] .tile.sys > * + * {
+  margin: 0 0 0 0.6em;
+}
+[data-tiles="text"] .tile.inp .slab.sub {
+  color: var(--ink2);
+}
+[data-tiles="text"] .tile.f {
+  transform: none !important;
+  background: var(--acc) !important;
+}
+[data-tiles="text"] .tile.f .nm,
+[data-tiles="text"] .tile.f .slab {
+  color: var(--acc-ink);
+}
+[data-tiles="text"] .tile.f .nm::before,
+[data-tiles="text"] .tile.f .slab::before {
+  opacity: 0.8;
+}
+[data-tiles="text"] .tile .rd {
+  right: auto;
+  left: 2px;
+  top: 50%;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  box-shadow: none;
 }
 /* an overlay grid: hidden until the focus moves down into it, then dark layer + grid over the screen above the dock */
 [data-grid="overlay"] #grid {
