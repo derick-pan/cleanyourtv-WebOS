@@ -1,21 +1,21 @@
 {
  "name": "The Grid",
  "author": "derick-pan",
- "description": "A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps.",
+ "description": "Inside the Grid after dark: a deep black world lit only by thin lines, light-cycle trails in cyan and orange, Recognizers hanging in the haze, a city of lit towers and the portal beam far away. Glass tiles edged in light stand on the floor. Down opens the apps.",
  "colors": {
-  "night": "#020509",
-  "panel": "#06131c",
+  "night": "#02060b",
+  "panel": "#061320",
   "ink": "#dff7ff",
   "accent": "#5de1ff",
-  "focus": "#7df9ff",
-  "pill": "#7df9ff"
+  "focus": "#9cf3ff",
+  "pill": "#9cf3ff"
  },
  "surface": {
-  "pillAlpha": 0.06,
-  "pillRing": 0.55,
-  "pillRadius": 4,
+  "pillAlpha": 0.05,
+  "pillRing": 0.6,
+  "pillRadius": 3,
   "menuAlpha": 0.94,
-  "rowRadius": 4
+  "rowRadius": 3
  },
  "clock": {
   "layout": "inline",
@@ -23,7 +23,9 @@
   "x": 96,
   "y": 54,
   "scale": 1,
-  "dateScale": 0.9
+  "dateScale": 0.9,
+  "weight": 300,
+  "outline": 0
  },
  "bar": {
   "style": "pill",
@@ -48,8 +50,10 @@
   "w": 250,
   "h": 150,
   "gap": 26,
-  "radius": 4,
-  "tileAlpha": 0.85,
+  "radius": 3,
+  "tileAlpha": 0.55,
+  "tileFrost": 0.55,
+  "tileFrostColor": "#02101a",
   "lift": 8,
   "focusScale": 1.06
  },
@@ -62,20 +66,20 @@
   "tileH": 130,
   "gapX": 24,
   "gapY": 24,
-  "radius": 4,
-  "overlayDim": 0.7
+  "radius": 3,
+  "overlayDim": 0.75
  },
  "tile": {
   "gloss": 0,
-  "border": 0.28,
-  "ringWidth": 3,
-  "ringOffset": 6
+  "border": 0.35,
+  "ringWidth": 2,
+  "ringOffset": 8
  },
  "effects": {
-  "glow": 0.5,
+  "glow": 0.45,
   "glowColor": "accent",
   "speed": 1,
   "wallpaper": "grid.jpg",
-  "wallpaperDim": 0.3
+  "wallpaperDim": 0.08
  }
 }

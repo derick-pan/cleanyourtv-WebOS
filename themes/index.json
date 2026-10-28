@@ -19,7 +19,7 @@
    "id": "claude",
    "name": "Claude",
    "author": "derick-pan",
-   "description": "A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and a little Claude who walks along the floor, hops when you move and gets up to tricks.",
+   "description": "A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little Claudes who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks.",
    "preview": "claude/preview.jpg"
   },
   {
@@ -33,7 +33,7 @@
    "id": "cupertino",
    "name": "Cupertino",
    "author": "derick-pan",
-   "description": "In the manner of Apple's TV home screen: a centred row of wide rounded tiles that lift and grow in focus instead of a ring, frosted round buttons and a thin clock over a soft flowing gradient.",
+   "description": "A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps.",
    "preview": "cupertino/preview.jpg"
   },
   {
@@ -89,7 +89,7 @@
    "id": "the-grid",
    "name": "The Grid",
    "author": "derick-pan",
-   "description": "A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps.",
+   "description": "Inside the Grid after dark: a deep black world lit only by thin lines, light-cycle trails in cyan and orange, Recognizers hanging in the haze, a city of lit towers and the portal beam far away. Glass tiles edged in light stand on the floor. Down opens the apps.",
    "preview": "the-grid/preview.jpg"
   },
   {

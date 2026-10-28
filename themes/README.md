@@ -125,10 +125,12 @@ Folder: [`warm/`](warm/)
 
 ### Cupertino
 
-In the manner of Apple's TV home screen, following its Human Interface Guidelines on focus (a focused item lifts and grows, with a shadow,
-instead of a ring), materials (frosted, translucent round buttons) and typography (a thin, large clock): a centred row of five wide
-rounded tiles, the app's name centred above them, and eight columns of smaller tiles below, over a soft flowing gradient. The wallpaper
-was generated for this theme.
+A living-room lock screen in the manner of Apple's TV, after the Night look of [couch-tv](https://github.com/seagey/couch-tv): a huge,
+thin, translucent clock with a light rim in the sky over a night lake, the date above it, one round button top right, and a smoked-glass
+dock of square icons along the bottom with a white ring on the focused one. Down moves the dock up and shows all apps below it; the
+clock fades out meanwhile. The scene, `night.jpg`, is couch-tv's `scene-night.jpg`, made for couch-tv with an image model from text only
+(not a real place) and released for any use (its `backgrounds/CREDITS.md`). The clock's typeface is Antonio (weight 300, Latin,
+unmodified), `antonio.woff2`, under the SIL Open Font License 1.1 (`OFL.txt`); the rest of the text keeps the TV's font.
 
 [![Cupertino](cupertino/preview.jpg)](cupertino/preview.jpg)
 
@@ -136,9 +138,11 @@ Folder: [`cupertino/`](cupertino/)
 
 ### The Grid
 
-A neon world after dark, in the spirit of the 2010 light-cycle film: a black floor of glowing cyan lines running to a horizon with a
-far city of dark blocks, an orange light trail, six square-cornered tiles standing on the floor with a light-blue ring, outlined flat
-buttons and a cyan glow. Down moves the row up and shows all apps below it. The wallpaper was drawn for this theme.
+Inside the Grid after dark, in the spirit of the 2010 light-cycle film: a deep black world lit only by thin lines, two light-cycle
+trails (cyan and orange) cutting right angles across the floor, Recognizers hanging in the haze, a city of tall towers with lit edges
+and the portal beam far away, with light raining in the sky. Six smoked-glass tiles edged in light stand on the floor, the focused one
+with a thin light-blue ring; the buttons are outlined boxes and the glow is cyan. Down moves the row up and shows all apps below it.
+The scene was drawn for this theme.
 
 [![The Grid](the-grid/preview.jpg)](the-grid/preview.jpg)
 
@@ -147,9 +151,11 @@ Folder: [`the-grid/`](the-grid/)
 ### Claude
 
 A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting over the clock, the focused app's name big in the
-middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. A little Claude, the theme's mascot
-(`mascot.*` in `theme.json`), walks along the floor at the bottom: it rests, hops, spins, dashes, wiggles, peeks in from the edges and
-hops once whenever the focus moves. The wallpaper and the walk-cycle strip (`claude-walk.png`, six frames) were drawn for this theme.
+middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. Three little Claudes, the theme's mascots
+(`mascot.*` in `theme.json`), walk the floor at the bottom, each a little smaller than the last: they rest, nap (with z's), wave, think
+(a slow sway and a breath, like the thinking spinner), hop, spin until dizzy, dash, dance, wiggle, peek in from the edges and hop
+whenever the focus moves. The wallpaper and the strip (`claude-walk.png`: standing, a five-frame walk, then waving, happy, sleepy,
+surprised, dizzy and thinking) were drawn for this theme.
 
 [![Claude](claude/preview.jpg)](claude/preview.jpg)
 
