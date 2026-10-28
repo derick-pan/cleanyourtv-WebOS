@@ -1,0 +1,81 @@
+{
+ "name": "The Grid",
+ "author": "derick-pan",
+ "description": "A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps.",
+ "colors": {
+  "night": "#020509",
+  "panel": "#06131c",
+  "ink": "#dff7ff",
+  "accent": "#5de1ff",
+  "focus": "#7df9ff",
+  "pill": "#7df9ff"
+ },
+ "surface": {
+  "pillAlpha": 0.06,
+  "pillRing": 0.55,
+  "pillRadius": 4,
+  "menuAlpha": 0.94,
+  "rowRadius": 4
+ },
+ "clock": {
+  "layout": "inline",
+  "align": "left",
+  "x": 96,
+  "y": 54,
+  "scale": 1,
+  "dateScale": 0.9
+ },
+ "bar": {
+  "style": "pill",
+  "size": 58,
+  "gap": 14,
+  "align": "right",
+  "x": 96,
+  "y": 54
+ },
+ "shelf": {
+  "show": true,
+  "align": "left",
+  "x": 96,
+  "y": 150,
+  "scale": 0.8
+ },
+ "dock": {
+  "anchor": "bottom",
+  "align": "center",
+  "y": 90,
+  "count": 6,
+  "w": 250,
+  "h": 150,
+  "gap": 26,
+  "radius": 4,
+  "tileAlpha": 0.85,
+  "lift": 8,
+  "focusScale": 1.06
+ },
+ "grid": {
+  "mode": "push",
+  "dockUp": 240,
+  "clipTop": 220,
+  "align": "center",
+  "cols": 9,
+  "tileH": 130,
+  "gapX": 24,
+  "gapY": 24,
+  "radius": 4,
+  "overlayDim": 0.7
+ },
+ "tile": {
+  "gloss": 0,
+  "border": 0.28,
+  "ringWidth": 3,
+  "ringOffset": 6
+ },
+ "effects": {
+  "glow": 0.5,
+  "glowColor": "accent",
+  "speed": 1,
+  "wallpaper": "grid.jpg",
+  "wallpaperDim": 0.3
+ }
+}

@@ -16,11 +16,25 @@
    "preview": "bloom/preview.jpg"
   },
   {
+   "id": "claude",
+   "name": "Claude",
+   "author": "derick-pan",
+   "description": "A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and a little Claude who walks along the floor, hops when you move and gets up to tricks.",
+   "preview": "claude/preview.jpg"
+  },
+  {
    "id": "compact",
    "name": "Compact",
    "author": "CleanYourTV",
    "description": "Twelve columns of smaller tiles: more apps on screen.",
    "preview": "compact/preview.jpg"
+  },
+  {
+   "id": "cupertino",
+   "name": "Cupertino",
+   "author": "derick-pan",
+   "description": "In the manner of Apple's TV home screen: a centred row of wide rounded tiles that lift and grow in focus instead of a ring, frosted round buttons and a thin clock over a soft flowing gradient.",
+   "preview": "cupertino/preview.jpg"
   },
   {
    "id": "horizon",
@@ -70,6 +84,13 @@
    "author": "CleanYourTV",
    "description": "No animation and a quiet glow, for anyone who prefers a calm screen.",
    "preview": "still/preview.jpg"
+  },
+  {
+   "id": "the-grid",
+   "name": "The Grid",
+   "author": "derick-pan",
+   "description": "A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps.",
+   "preview": "the-grid/preview.jpg"
   },
   {
    "id": "warm",

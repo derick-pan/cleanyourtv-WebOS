@@ -1,0 +1,80 @@
+{
+ "name": "Cupertino",
+ "author": "derick-pan",
+ "description": "In the manner of Apple's TV home screen: a centred row of wide rounded tiles that lift and grow in focus instead of a ring, frosted round buttons and a thin clock over a soft flowing gradient.",
+ "colors": {
+  "night": "#0f1116",
+  "panel": "#1c1c22",
+  "ink": "#f5f5f7",
+  "accent": "#ffffff",
+  "pill": "#ffffff"
+ },
+ "surface": {
+  "pillAlpha": 0.16,
+  "pillRing": 0.22,
+  "pillRadius": 30,
+  "menuAlpha": 0.9,
+  "rowRadius": 18
+ },
+ "clock": {
+  "layout": "stack",
+  "align": "left",
+  "x": 96,
+  "y": 60,
+  "scale": 1.15,
+  "dateScale": 0.9
+ },
+ "bar": {
+  "style": "round",
+  "size": 60,
+  "gap": 14,
+  "align": "right",
+  "x": 96,
+  "y": 60
+ },
+ "shelf": {
+  "show": true,
+  "align": "center",
+  "x": 96,
+  "y": 196,
+  "scale": 0.62
+ },
+ "dock": {
+  "anchor": "top",
+  "align": "center",
+  "y": 320,
+  "count": 5,
+  "w": 320,
+  "h": 192,
+  "gap": 36,
+  "radius": 28,
+  "lift": 14,
+  "focusScale": 1.12
+ },
+ "grid": {
+  "mode": "below",
+  "align": "center",
+  "cols": 8,
+  "tileH": 112,
+  "gapX": 36,
+  "gapY": 30,
+  "radius": 22,
+  "x": 96,
+  "width": 1728,
+  "clipTop": 280,
+  "focusScale": 1.14
+ },
+ "tile": {
+  "gloss": 0.35,
+  "border": 0.08,
+  "ringWidth": 0,
+  "ringOffset": 0
+ },
+ "effects": {
+  "glow": 0.35,
+  "glowColor": "app",
+  "speed": 1.1,
+  "wallpaper": "cupertino.jpg",
+  "wallpaperDim": 0.25
+ }
+}

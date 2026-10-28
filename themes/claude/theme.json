@@ -1,0 +1,89 @@
+{
+ "name": "Claude",
+ "author": "derick-pan",
+ "description": "A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and a little Claude who walks along the floor, hops when you move and gets up to tricks.",
+ "colors": {
+  "night": "#1f1815",
+  "panel": "#2f2522",
+  "ink": "#f4ede3",
+  "accent": "#d97757",
+  "pill": "#f4ede3"
+ },
+ "surface": {
+  "pillAlpha": 0.1,
+  "pillRing": 0.18,
+  "pillRadius": 32,
+  "menuAlpha": 0.96,
+  "rowRadius": 26
+ },
+ "clock": {
+  "layout": "stack",
+  "greeting": true,
+  "align": "left",
+  "x": 96,
+  "y": 54,
+  "scale": 1.1,
+  "dateScale": 0.9
+ },
+ "bar": {
+  "style": "pill",
+  "size": 62,
+  "gap": 14,
+  "align": "right",
+  "x": 96,
+  "y": 54
+ },
+ "shelf": {
+  "show": true,
+  "align": "center",
+  "x": 96,
+  "y": 560,
+  "scale": 1
+ },
+ "dock": {
+  "anchor": "bottom",
+  "align": "center",
+  "y": 150,
+  "count": 5,
+  "w": 300,
+  "h": 180,
+  "gap": 24,
+  "radius": 40,
+  "lift": 12,
+  "focusScale": 1.06
+ },
+ "grid": {
+  "mode": "overlay",
+  "y": 240,
+  "overlayH": 500,
+  "align": "center",
+  "cols": 9,
+  "tileH": 140,
+  "gapX": 24,
+  "gapY": 24,
+  "radius": 36,
+  "focusScale": 1.12,
+  "overlayDim": 0.9
+ },
+ "tile": {
+  "gloss": 0.25,
+  "border": 0.1,
+  "ringWidth": 4,
+  "ringOffset": 5
+ },
+ "effects": {
+  "glow": 0.7,
+  "glowColor": "accent",
+  "speed": 1,
+  "wallpaper": "claude.jpg",
+  "wallpaperDim": 0.2
+ },
+ "mascot": {
+  "file": "claude-walk.png",
+  "frames": 6,
+  "size": 104,
+  "y": 28,
+  "speed": 1,
+  "flip": true
+ }
+}

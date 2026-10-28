@@ -14,6 +14,7 @@ without a release.
 | `<id>/preview.jpg` | The screenshot shown in the manager. |
 | `<id>/<wallpaper>` | The wallpaper, if the theme uses one. |
 | `<id>/<typeface>` | A typeface (`type.fontFile`), if the theme uses one, with its licence file. |
+| `<id>/<mascot>` | The mascot's picture (`mascot.file`), if the theme has one: a strip of frames that the launcher walks along the bottom. |
 
 Every setting, with its range and default, is in the [Themes page of the documentation](https://lasharor.github.io/cleanyourtv-WebOS/themes/).
 
@@ -121,3 +122,35 @@ Brown and amber with the glow in the accent colour.
 [![Warm](warm/preview.jpg)](warm/preview.jpg)
 
 Folder: [`warm/`](warm/)
+
+### Cupertino
+
+In the manner of Apple's TV home screen, following its Human Interface Guidelines on focus (a focused item lifts and grows, with a shadow,
+instead of a ring), materials (frosted, translucent round buttons) and typography (a thin, large clock): a centred row of five wide
+rounded tiles, the app's name centred above them, and eight columns of smaller tiles below, over a soft flowing gradient. The wallpaper
+was generated for this theme.
+
+[![Cupertino](cupertino/preview.jpg)](cupertino/preview.jpg)
+
+Folder: [`cupertino/`](cupertino/)
+
+### The Grid
+
+A neon world after dark, in the spirit of the 2010 light-cycle film: a black floor of glowing cyan lines running to a horizon with a
+far city of dark blocks, an orange light trail, six square-cornered tiles standing on the floor with a light-blue ring, outlined flat
+buttons and a cyan glow. Down moves the row up and shows all apps below it. The wallpaper was drawn for this theme.
+
+[![The Grid](the-grid/preview.jpg)](the-grid/preview.jpg)
+
+Folder: [`the-grid/`](the-grid/)
+
+### Claude
+
+A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting over the clock, the focused app's name big in the
+middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. A little Claude, the theme's mascot
+(`mascot.*` in `theme.json`), walks along the floor at the bottom: it rests, hops, spins, dashes, wiggles, peeks in from the edges and
+hops once whenever the focus moves. The wallpaper and the walk-cycle strip (`claude-walk.png`, six frames) were drawn for this theme.
+
+[![Claude](claude/preview.jpg)](claude/preview.jpg)
+
+Folder: [`claude/`](claude/)
