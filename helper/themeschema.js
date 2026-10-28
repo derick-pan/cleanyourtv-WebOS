@@ -72,12 +72,43 @@ const SCHEMA = [
     false,
     'Show a greeting (Good morning / afternoon / evening, in the language) in capitals above the time. Needs the stacked layout.',
   ],
-  ['clock.layout', 'enum', ['inline', 'stack'], 'inline', '`inline`: the date beside the time; `stack`: under it.'],
+  [
+    'clock.layout',
+    'enum',
+    ['inline', 'stack', 'above'],
+    'inline',
+    '`inline`: the date beside the time; `stack`: under it; `above`: over it (a big centred clock with the date on top).',
+  ],
   ['clock.anchor', 'enum', TOPBOT, 'top', 'Which screen edge `clock.y` counts from.'],
   ['clock.align', 'enum', POS, 'left', 'Which side `clock.x` counts from; `center` centres it.'],
   ['clock.x', 'int', [0, 900], 96, 'Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred.'],
   ['clock.y', 'int', [0, 900], 54, 'Distance from the top or bottom edge, in px.'],
-  ['clock.scale', 'num', [0.6, 2.5], 1, 'Scale of the time.'],
+  ['clock.scale', 'num', [0.6, 8], 1, 'Scale of the time (1 is 56 px; 7 fills a third of the screen).'],
+  [
+    'clock.ampm',
+    'bool',
+    null,
+    true,
+    "Show AM/PM (or the language's equivalent) after a 12-hour time; off, a lock-screen clock shows the digits only.",
+  ],
+  [
+    'clock.grid',
+    'enum',
+    ['keep', 'hide'],
+    'keep',
+    '`hide`: the clock fades out while the app grid is open (for a big clock the tiles would cover).',
+  ],
+  ['clock.weight', 'int', [100, 900], 600, 'Weight of the time: 200 thin, 400 regular, 600 semi-bold, 800 heavy (what the typeface has).'],
+  ['clock.alpha', 'num', [0.1, 1], 1, 'Opacity of the time; below 1 the picture shows through the digits, like glass.'],
+  ['clock.outline', 'num', [0, 1], 0, 'Opacity of a thin outline around the digits (a rim on a glass clock); 0 for none.'],
+  ['clock.color', 'color?', null, null, 'Colour of the time; empty uses the text colour.'],
+  [
+    'clock.fontFile',
+    'file',
+    null,
+    '',
+    "A typeface for the time only: a font file in the theme's folder, like `type.fontFile` (same limits and licence rule); the rest of the text keeps the theme's font.",
+  ],
   ['clock.dateScale', 'num', [0.6, 2], 1, 'Scale of the date.'],
   ['bar.show', 'bool', null, true, 'Show the top buttons (Inputs, Settings, Customise, ...).'],
   [
@@ -110,6 +141,13 @@ const SCHEMA = [
   ['dock.radius', 'int', [0, 80], 36, 'Corner radius of dock tiles.'],
   ['dock.panel', 'num', [0, 0.6], 0, 'Opacity of a translucent panel behind the dock tiles; 0 for none.'],
   ['dock.panelPad', 'int', [0, 60], 24, 'Space between the panel and the tiles, in px.'],
+  [
+    'dock.panelColor',
+    'color',
+    null,
+    '#ffffff',
+    'Colour of the panel behind the dock (`dock.panel`): white for frosted glass, a dark colour for smoked glass.',
+  ],
   ['dock.tileAlpha', 'num', [0, 1], 1, 'Opacity of the dock tile background; below 1 lets the wallpaper show through the tiles.'],
   [
     'dock.tileFrost',
@@ -177,6 +215,14 @@ const SCHEMA = [
     "A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only.",
   ],
   ['mascot.frames', 'int', [1, 16], 1, 'Pictures in the strip, left to right.'],
+  [
+    'mascot.walk',
+    'int',
+    [0, 16],
+    0,
+    'How many of them, from the left, are the walk cycle (the first standing); the rest are poses in this order: wave, happy, sleepy, surprised, dizzy, thinking. 0: all of them walk.',
+  ],
+  ['mascot.count', 'int', [1, 4], 1, 'How many of the character walk about, each a little smaller than the one before.'],
   ['mascot.size', 'int', [32, 240], 96, 'Height of the mascot on screen, in px.'],
   ['mascot.y', 'int', [0, 900], 36, 'Distance of its feet from the bottom edge, in px.'],
   [
@@ -281,6 +327,16 @@ function normalize(raw, id, base, wallDir) {
       }
     } catch (_) {}
   } else if (f === '') v['type.fontFile'] = '';
+  // the clock's own typeface, kept the same way
+  const cf = getPath(raw, 'clock.fontFile');
+  if (typeof cf === 'string' && FONT_FILE.test(cf)) {
+    try {
+      if (fontOk(fs.readFileSync(path.join(wallDir || path.join(dir(), id), cf)), cf)) {
+        v['clock.fontFile'] = cf;
+        v.clockFontTheme = id;
+      }
+    } catch (_) {}
+  } else if (cf === '') v['clock.fontFile'] = '';
   // a mascot: a small image, kept with the id of the theme whose folder holds it, like a typeface
   const m = getPath(raw, 'mascot.file');
   if (typeof m === 'string' && FILE.test(m)) {
@@ -403,6 +459,12 @@ function resolve(t, accent) {
     '--clock-tx': clock.tx,
     '--clock-ai': { left: 'flex-start', center: 'center', right: 'flex-end' }[v['clock.align']],
     '--clock-s': String(v['clock.scale']),
+    '--clock-fw': String(v['clock.weight']),
+    '--clock-op': String(v['clock.alpha']),
+    '--clock-stroke':
+      v['clock.outline'] > 0 ? '1.5px rgba(' + rgb(v['clock.color'] || v['colors.ink']).join(',') + ',' + v['clock.outline'] + ')' : '0',
+    '--clock-c': v['clock.color'] || v['colors.ink'],
+    '--clock-font': (v['clock.fontFile'] ? '"CYTV Clock Font",' : v['type.fontFile'] ? '"CYTV Theme Font",' : '') + FONT[v['type.font']],
     '--date-s': String(v['clock.dateScale']),
     '--clock-d': v['clock.show'] ? 'flex' : 'none',
     '--date-d': v['clock.date'] ? 'block' : 'none',
@@ -429,6 +491,7 @@ function resolve(t, accent) {
     '--dock-gap': px(v['dock.gap']),
     '--dock-rad': px(v['dock.radius']),
     '--dock-panel': String(v['dock.panel']),
+    '--dock-panel-rgb': rgb(v['dock.panelColor']).join(','),
     '--dock-tile-alpha': String(v['dock.tileAlpha']),
     '--dock-tile-frost': String(v['dock.tileFrost']),
     '--dock-frost-rgb': rgb(v['dock.tileFrostColor']).join(','),
@@ -472,6 +535,9 @@ function resolve(t, accent) {
     nightRgb: night.join(','),
     wallpaper: w ? { id: t.id, file: w, dim: v['effects.wallpaperDim'] } : null,
   };
+  // only a theme that hides its clock behind the grid has this attribute, or drops the AM/PM (the same reason)
+  if (v['clock.grid'] === 'hide') out.attrs.clockgrid = 'hide';
+  if (!v['clock.ampm']) out.ampm = false;
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
     out.slots = v.slots.map(sl => {
@@ -492,12 +558,15 @@ function resolve(t, accent) {
     });
   // only a theme with a typeface has this key, so the replies for the other themes stay as they were
   if (v['type.fontFile']) out.font = { id: v.fontTheme || t.id, file: v['type.fontFile'] };
+  if (v['clock.fontFile']) out.clockFont = { id: v.clockFontTheme || t.id, file: v['clock.fontFile'] };
   // only a theme with a mascot has this key (the same reason); the launcher animates it (app/src/js/mascot.js)
   if (v['mascot.file'])
     out.mascot = {
       id: v.mascotTheme || t.id,
       file: v['mascot.file'],
       frames: v['mascot.frames'],
+      walk: v['mascot.walk'],
+      count: v['mascot.count'],
       size: v['mascot.size'],
       y: v['mascot.y'],
       speed: v['mascot.speed'],

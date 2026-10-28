@@ -223,10 +223,24 @@ document.addEventListener('visibilitychange', function () {
   }
 });
 
+/* the time; a theme can leave out the AM/PM of a 12-hour clock (clock.ampm): the day period part and the space before it are dropped */
+function clockText(d) {
+  var o = clockOpts();
+  if (TH.ampm !== false || !window.Intl || !Intl.DateTimeFormat.prototype.formatToParts) return d.toLocaleTimeString(LOC, o);
+  var parts = new Intl.DateTimeFormat(LOC, o).formatToParts(d),
+    s = '';
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].type === 'dayPeriod') continue;
+    if (parts[i].type === 'literal' && i + 1 < parts.length && parts[i + 1].type === 'dayPeriod') continue;
+    if (parts[i].type === 'literal' && i > 0 && parts[i - 1].type === 'dayPeriod') continue;
+    s += parts[i].value;
+  }
+  return s;
+}
 function tick() {
   var d = new Date();
   try {
-    $('time').textContent = d.toLocaleTimeString(LOC, clockOpts());
+    $('time').textContent = clockText(d);
     $('date').textContent = d.toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
   } catch (e) {
     $('time').textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);

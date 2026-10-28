@@ -82,7 +82,7 @@ run(async () => {
       bad.v['type.scale'] === 1 &&
       bad.v['type.font'] === 'default' &&
       bad.v['clock.layout'] === 'inline' &&
-      bad.v['clock.scale'] === 2.5,
+      bad.v['clock.scale'] === 8,
     'numbers are clamped, enums and types are checked'
   );
   ok(
@@ -293,6 +293,61 @@ run(async () => {
   ok(r.code === 200, 'the typeface is served');
   r = await tcall('font/pixel/other.woff2', null, 'GET');
   ok(r.code === 404, 'a typeface the theme does not name is not served');
+  // the clock's own settings: a typeface for the time only, the date above it, a translucent outlined clock, a dark dock panel
+  const big = themeMod.normalize(
+    {
+      clock: {
+        layout: 'above',
+        grid: 'hide',
+        ampm: false,
+        scale: 7,
+        weight: 300,
+        alpha: 0.4,
+        outline: 0.5,
+        color: '#ffe8ee',
+        fontFile: 'antonio.woff2',
+      },
+      dock: { panel: 0.4, panelColor: '#1e141c' },
+    },
+    'cupertino',
+    null,
+    path.join(tdir, 'cupertino')
+  );
+  const bg = themeMod.resolve(big);
+  ok(
+    bg.attrs.clock === 'above' &&
+      bg.attrs.clockgrid === 'hide' &&
+      bg.ampm === false &&
+      bg.vars['--clock-s'] === '7' &&
+      bg.vars['--clock-fw'] === '300' &&
+      bg.vars['--clock-op'] === '0.4' &&
+      bg.vars['--clock-stroke'] === '1.5px rgba(255,232,238,0.5)' &&
+      bg.vars['--clock-c'] === '#ffe8ee' &&
+      /^"CYTV Clock Font",/.test(bg.vars['--clock-font']) &&
+      bg.clockFont &&
+      bg.clockFont.file === 'antonio.woff2' &&
+      bg.vars['--dock-panel-rgb'] === '30,20,28',
+    'a big glass clock with its own typeface, the date above it and a dark dock panel resolve'
+  );
+  ok(
+    !('clockgrid' in plain.attrs) &&
+      !('ampm' in plain) &&
+      plain.vars['--clock-stroke'] === '0' &&
+      plain.vars['--clock-c'] === '#f5f6f8' &&
+      !('clockFont' in plain) &&
+      plain.vars['--dock-panel-rgb'] === '255,255,255',
+    'by default the clock is plain, stays with the grid, uses the text colour and the panel is white'
+  );
+  r = await tcall('set', { id: 'cupertino' });
+  ok(
+    r.code === 200 &&
+      fs.existsSync(path.join(tlocal, 'cupertino', 'antonio.woff2')) &&
+      th.resolved().clockFont &&
+      th.resolved().clockFont.id === 'cupertino',
+    'a clock typeface is downloaded with the theme'
+  );
+  r = await tcall('font/cupertino/antonio.woff2', null, 'GET');
+  ok(r.code === 200, 'the clock typeface is served');
   r = await tcall('set', { id: 'pixkid' });
   ok(
     r.code === 200 && th.resolved().font && th.resolved().font.id === 'pixel' && th.resolved().dockN === 4,
@@ -303,7 +358,7 @@ run(async () => {
   // a mascot (mascot.*): an image in the theme's folder, checked like a wallpaper, downloaded with the theme and served from its folder;
   // only a theme with one has the key in its reply, so the other themes' replies stay as they were
   const mt = themeMod.normalize(
-    { mascot: { file: 'claude-walk.png', frames: 6, size: 999, y: 28, speed: 1, flip: false } },
+    { mascot: { file: 'claude-walk.png', frames: 6, walk: 0, count: 9, size: 999, y: 28, speed: 1, flip: false } },
     'claude',
     null,
     path.join(tdir, 'claude')
@@ -314,6 +369,8 @@ run(async () => {
       mr.mascot.id === 'claude' &&
       mr.mascot.file === 'claude-walk.png' &&
       mr.mascot.frames === 6 &&
+      mr.mascot.walk === 0 &&
+      mr.mascot.count === 4 &&
       mr.mascot.size === 240 &&
       mr.mascot.y === 28 &&
       mr.mascot.flip === false,

@@ -30,6 +30,11 @@
   --clock-tx: none;
   --clock-ai: flex-start;
   --clock-s: 1;
+  --clock-fw: 600;
+  --clock-op: 1;
+  --clock-stroke: 0;
+  --clock-c: #f5f6f8;
+  --clock-font: "LG Smart UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --date-s: 1;
   --clock-d: flex;
   --date-d: block;
@@ -56,6 +61,7 @@
   --dock-gap: 32px;
   --dock-rad: 36px;
   --dock-panel: 0;
+  --dock-panel-rgb: 255, 255, 255;
   --dock-tile-alpha: 1;
   --dock-tile-frost: 0;
   --dock-frost-rgb: 255, 255, 255;
@@ -145,10 +151,22 @@ body {
 }
 #time {
   font-size: calc(56px * var(--fs) * var(--clock-s));
-  font-weight: 600;
+  font-family: var(--clock-font);
+  font-weight: var(--clock-fw);
+  color: var(--clock-c);
+  opacity: var(--clock-op);
+  -webkit-text-stroke: var(--clock-stroke);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  white-space: nowrap;
+}
+/* clock.grid hide: the clock fades out while the app grid is open */
+[data-clockgrid="hide"] #clock {
+  transition: opacity calc(0.25s * var(--spd)) linear;
+}
+[data-clockgrid="hide"].grid-open #clock {
+  opacity: 0;
 }
 #date {
   display: var(--date-d);
@@ -169,6 +187,22 @@ body {
 [data-clock="stack"] #date {
   margin: 8px 0 0 6px;
   padding: 0;
+}
+/* above: the date over the time, for a big centred clock */
+[data-clock="above"] #clock {
+  flex-direction: column;
+  align-items: var(--clock-ai);
+  height: auto;
+}
+[data-clock="above"] #date {
+  order: -1;
+  margin: 0 0 14px;
+  padding: 0;
+}
+[data-clock="above"] #greet {
+  display: var(--greet-d);
+  order: -2;
+  margin: 0 0 10px;
 }
 #bar {
   pointer-events: auto;
@@ -281,8 +315,8 @@ body {
   z-index: 4;
   padding: var(--dock-pad);
   border-radius: calc(var(--dock-rad) + var(--dock-pad));
-  background: rgba(255, 255, 255, var(--dock-panel));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, calc(var(--dock-panel) * 1.4));
+  background: rgba(var(--dock-panel-rgb), var(--dock-panel));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, calc(var(--dock-panel) * 0.5));
 }
 #dock > * + * {
   margin-left: var(--dock-gap);
@@ -602,9 +636,9 @@ body {
 body.wpon {
   background-image: none;
 }
-/* the mascot (mascot.* in a theme, app/src/js/mascot.js): a strip of frames in a clipping box; the box is moved and the strip is
-   stepped with transforms only. Above the grid and the top row, below the menus, toasts and Live TV. */
-#mascot {
+/* the mascots (mascot.* in a theme, app/src/js/mascot.js): each a strip of frames in a clipping box; the box is moved and the strip
+   is stepped with transforms only. Above the grid and the top row, below the menus, toasts and Live TV. */
+.mascot {
   position: absolute;
   left: 0;
   top: 0;
@@ -614,10 +648,10 @@ body.wpon {
   display: none;
   will-change: transform;
 }
-#mascot.on {
+.mascot.on {
   display: block;
 }
-#mascot-strip {
+.mascot-strip {
   position: absolute;
   left: 0;
   top: 0;

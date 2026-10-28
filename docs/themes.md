@@ -38,9 +38,9 @@ folder of the GitHub repository (the `main` branch):
 | Horizon | A row of seven square apps along the bottom of a dusk landscape, the clock on the left and the buttons on the right at the top. Down moves the row up and shows all apps below it. It has slots for cards. |
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
-| Cupertino | In the manner of Apple's TV home screen: a centred row of wide rounded tiles that lift and grow in focus instead of a ring, frosted round buttons and a thin clock over a soft flowing gradient. |
-| The Grid | A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps. |
-| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and a little Claude (a mascot, see below) who walks along the floor, hops when you move and gets up to tricks. |
+| Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
+| The Grid | Inside the Grid after dark: a deep black world lit only by thin lines, light-cycle trails in cyan and orange, Recognizers hanging in the haze, a city of lit towers and the portal beam far away. Glass tiles edged in light stand on the floor. Down opens the apps. |
+| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
 
@@ -135,7 +135,8 @@ theme lists only what it changes. Positions and sizes are in pixels on a 1920 x 
 ### What a theme can set
 
 Every part of the home screen has its own position and size, so themes can arrange the screen differently, not only recolour it:
-the **clock**, the top **buttons** (`bar`), the large app **name**, the **dock** and the **grid**. Each can be anchored to the top
+the **clock** (which can also be huge, thin, translucent and outlined like glass, with its own typeface, the date above it and no AM/PM),
+the top **buttons** (`bar`), the large app **name**, the **dock** (on a white or a dark glass panel) and the **grid**. Each can be anchored to the top
 or bottom edge and aligned left, centre or right, with an offset. A dock at the bottom turns the grid into an overlay that opens
 when the focus moves down into it (Back or Up closes it); a dock at the top leaves the grid below it, scrolling. A theme can also
 bring a **mascot**: a small picture that walks along the bottom of the screen (see [A mascot](#a-mascot) below).
@@ -164,12 +165,19 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `clock.show` | `true` or `false` | `true` | Show the clock. |
 | `clock.date` | `true` or `false` | `true` | Show the date beside or under the time. |
 | `clock.greeting` | `true` or `false` | `false` | Show a greeting (Good morning / afternoon / evening, in the language) in capitals above the time. Needs the stacked layout. |
-| `clock.layout` | `inline`, `stack` | `inline` | `inline`: the date beside the time; `stack`: under it. |
+| `clock.layout` | `inline`, `stack`, `above` | `inline` | `inline`: the date beside the time; `stack`: under it; `above`: over it (a big centred clock with the date on top). |
 | `clock.anchor` | `top`, `bottom` | `top` | Which screen edge `clock.y` counts from. |
 | `clock.align` | `left`, `center`, `right` | `left` | Which side `clock.x` counts from; `center` centres it. |
 | `clock.x` | 0 to 900 | `96` | Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred. |
 | `clock.y` | 0 to 900 | `54` | Distance from the top or bottom edge, in px. |
-| `clock.scale` | 0.6 to 2.5 | `1` | Scale of the time. |
+| `clock.scale` | 0.6 to 8 | `1` | Scale of the time (1 is 56 px; 7 fills a third of the screen). |
+| `clock.ampm` | `true` or `false` | `true` | Show AM/PM (or the language's equivalent) after a 12-hour time; off, a lock-screen clock shows the digits only. |
+| `clock.grid` | `keep`, `hide` | `keep` | `hide`: the clock fades out while the app grid is open (for a big clock the tiles would cover). |
+| `clock.weight` | 100 to 900 | `600` | Weight of the time: 200 thin, 400 regular, 600 semi-bold, 800 heavy (what the typeface has). |
+| `clock.alpha` | 0.1 to 1 | `1` | Opacity of the time; below 1 the picture shows through the digits, like glass. |
+| `clock.outline` | 0 to 1 | `0` | Opacity of a thin outline around the digits (a rim on a glass clock); 0 for none. |
+| `clock.color` | `#rrggbb` or empty | empty | Colour of the time; empty uses the text colour. |
+| `clock.fontFile` | a file name | none | A typeface for the time only: a font file in the theme's folder, like `type.fontFile` (same limits and licence rule); the rest of the text keeps the theme's font. |
 | `clock.dateScale` | 0.6 to 2 | `1` | Scale of the date. |
 | **bar** | | | |
 | `bar.show` | `true` or `false` | `true` | Show the top buttons (Inputs, Settings, Customise, ...). |
@@ -199,6 +207,7 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `dock.radius` | 0 to 80 | `36` | Corner radius of dock tiles. |
 | `dock.panel` | 0 to 0.6 | `0` | Opacity of a translucent panel behind the dock tiles; 0 for none. |
 | `dock.panelPad` | 0 to 60 | `24` | Space between the panel and the tiles, in px. |
+| `dock.panelColor` | `#rrggbb` | `#ffffff` | Colour of the panel behind the dock (`dock.panel`): white for frosted glass, a dark colour for smoked glass. |
 | `dock.tileAlpha` | 0 to 1 | `1` | Opacity of the dock tile background; below 1 lets the wallpaper show through the tiles. |
 | `dock.tileFrost` | 0 to 1 | `0` | Frost over the resting (unfocused) dock tiles and their icons; 0 for none. Calms loud tile colours without leaving a floating icon square, because the tile and its icon dim together. The focused tile keeps its full colour. |
 | `dock.tileFrostColor` | `#rrggbb` | `#ffffff` | Tint of the dock-tile frost (`dock.tileFrost`): a light colour for a glassy frost, a dark one to deepen the tiles. |
@@ -234,6 +243,8 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | **mascot** | | | |
 | `mascot.file` | a file name | none | A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only. |
 | `mascot.frames` | 1 to 16 | `1` | Pictures in the strip, left to right. |
+| `mascot.walk` | 0 to 16 | `0` | How many of them, from the left, are the walk cycle (the first standing); the rest are poses in this order: wave, happy, sleepy, surprised, dizzy, thinking. 0: all of them walk. |
+| `mascot.count` | 1 to 4 | `1` | How many of the character walk about, each a little smaller than the one before. |
 | `mascot.size` | 32 to 240 | `96` | Height of the mascot on screen, in px. |
 | `mascot.y` | 0 to 900 | `36` | Distance of its feet from the bottom edge, in px. |
 | `mascot.speed` | 0 to 2 | `1` | How fast it walks and how often it plays; 0 keeps it standing still. `effects.speed` 0 stops it too. |
@@ -267,21 +278,25 @@ like the rest of the screen.
 
 ### A mascot
 
-A theme can have a mascot: a small character that walks along the bottom of Home, like the little Claude of the Claude theme. The
-theme only gives a picture; the launcher does the walking (`app/src/js/mascot.js`), with transforms only, so the TV draws it as one
-small layer. It walks left and right, rests, hops, spins, dashes, wiggles and peeks from an edge, and hops once when the focus moves.
-It stays under the menus, the toasts and Live TV, and stops while Home is not on screen.
+A theme can have a mascot: a small character that walks along the bottom of Home, like the little Claudes of the Claude theme. The
+theme only gives a picture; the launcher does the walking (`app/src/js/mascot.js`), with transforms only, so the TV draws each one as a
+small layer. They walk left and right, rest, nap, wave, think (a slow sway and a breath, like the thinking spinner), hop, spin, dash,
+dance, wiggle and peek from an edge, and hop once when the focus moves. They stay under the menus, the toasts and Live TV, and stop
+while Home is not on screen.
 
 ```json
-"mascot": { "file": "claude-walk.png", "frames": 6, "size": 104, "y": 28, "speed": 1, "flip": true }
+"mascot": { "file": "claude-walk.png", "frames": 12, "walk": 6, "count": 3, "size": 104, "y": 28, "speed": 1, "flip": true }
 ```
 
 - `mascot.file` is a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB, downloaded with the theme like a wallpaper. A PNG
   with transparency looks best.
-- The picture is one frame, or a strip of `mascot.frames` frames of the same size side by side: the first one standing, the others a walk
-  cycle, played at eight frames a second while it walks. Draw the character facing right; with `mascot.flip` it is mirrored when it walks left.
-- `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast it
-  walks and how often it does something; 0 keeps it standing, and so does `effects.speed` 0.
+- The picture is a strip of `mascot.frames` frames of the same size side by side. The first `mascot.walk` of them are the walk cycle
+  (the first one standing, played at eight frames a second while it walks); the frames after those are poses, in this order: waving,
+  happy, sleepy, surprised, dizzy, thinking. A theme may give fewer poses, or none: the standing frame stands in. Draw the character
+  facing right; with `mascot.flip` it is mirrored when it walks left.
+- `mascot.count` puts up to four of the character on screen, each a little smaller than the one before.
+- `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast they
+  walk and how often they do something; 0 keeps them standing, and so does `effects.speed` 0.
 
 A theme file holds values only. The service checks every value against the table and clamps numbers to their range; there is no CSS
 and no script, and a wallpaper or a mascot is accepted only as a plain file name from the theme's folder that is also a real image of the

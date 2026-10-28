@@ -1,12 +1,26 @@
 /* ---------- theme: the service resolves the chosen theme (manager > Theme) into CSS variables and a few numbers ---------- */
-var TH0 = { cols: 10, tileH: 151, gapY: 26, gt: 350, viewH: 780, dockN: 4, overlay: false, push: null, overlayH: 510, glow: '', slots: [] },
+var TH0 = {
+    cols: 10,
+    tileH: 151,
+    gapY: 26,
+    gt: 350,
+    viewH: 780,
+    dockN: 4,
+    overlay: false,
+    push: null,
+    overlayH: 510,
+    glow: '',
+    slots: [],
+    ampm: true,
+  },
   TH = TH0,
   themeKeys = [],
-  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-grid', 'data-galign'];
+  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign'];
 function applyTheme(t) {
   var st = document.documentElement.style,
     b = document.body,
-    k;
+    k,
+    ampm = TH.ampm;
   for (k = 0; k < themeKeys.length; k++) st.removeProperty(themeKeys[k]);
   themeKeys = [];
   for (k = 0; k < themeAttrs.length; k++) b.removeAttribute(themeAttrs[k]);
@@ -27,10 +41,13 @@ function applyTheme(t) {
       themeKeys.push('--' + n + '-txr');
     }
   });
-  /* a theme's own typeface, served from its folder; the family name is in --font */
+  /* a theme's own typefaces (all text, and the clock's), served from its folder; the family names are in --font and --clock-font */
   var fs = $('tfont'),
     f = t.font,
-    css = f ? '@font-face{font-family:"CYTV Theme Font";src:url("' + API + '/api/theme/font/' + f.id + '/' + f.file + '")}' : '';
+    cf = t.clockFont,
+    css =
+      (f ? '@font-face{font-family:"CYTV Theme Font";src:url("' + API + '/api/theme/font/' + f.id + '/' + f.file + '")}' : '') +
+      (cf ? '@font-face{font-family:"CYTV Clock Font";src:url("' + API + '/api/theme/font/' + cf.id + '/' + cf.file + '")}' : '');
   if (!fs) {
     fs = document.createElement('style');
     fs.id = 'tfont';
@@ -58,7 +75,10 @@ function applyTheme(t) {
     overlayH: t.overlayH || 510,
     glow: t.glowRgb || '',
     slots: t.slots || [],
+    ampm: t.ampm !== false,
   };
+  /* the clock is redrawn at once when the theme drops or shows the AM/PM (input.js), not at its next minute */
+  if (TH.ampm !== ampm) tick();
 }
 
 function setFocus(nr, nc, first) {

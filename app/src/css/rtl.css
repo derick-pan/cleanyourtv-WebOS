@@ -13,6 +13,9 @@
 [dir="rtl"] [data-clock="stack"] #date {
   margin-right: 0;
 }
+[dir="rtl"] [data-clock="above"] #date {
+  margin-right: 0;
+}
 [dir="rtl"] #bar {
   left: var(--bar-r);
   right: var(--bar-l);
@@ -74,6 +77,9 @@
 [dir="rtl"] [data-clock="stack"] #greet {
   letter-spacing: 0;
   margin: 0 6px 12px 0;
+}
+[dir="rtl"] [data-clock="above"] #greet {
+  letter-spacing: 0;
 }
 [dir="rtl"] .card {
   left: var(--cr);

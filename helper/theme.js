@@ -206,6 +206,13 @@ function create(ctx) {
       font = await fetchBuf(base() + '/' + id + '/' + f, MAX_FONT, 25000);
       if (!fontOk(font, f)) throw new Error('the typeface is not a font of that type');
     }
+    const cf = getPath(raw, 'clock.fontFile');
+    let clockFont = null;
+    if (typeof cf === 'string' && cf !== '') {
+      if (!FONT_FILE.test(cf)) throw new Error("the clock's typeface name is not valid");
+      clockFont = await fetchBuf(base() + '/' + id + '/' + cf, MAX_FONT, 25000);
+      if (!fontOk(clockFont, cf)) throw new Error("the clock's typeface is not a font of that type");
+    }
     const mf = getPath(raw, 'mascot.file');
     let mascot = null;
     if (typeof mf === 'string' && mf !== '') {
@@ -218,6 +225,7 @@ function create(ctx) {
     mkdirs(d);
     if (wall) writeAtomic(path.join(d, w), wall);
     if (font) writeAtomic(path.join(d, f), font);
+    if (clockFont) writeAtomic(path.join(d, cf), clockFont);
     if (mascot) writeAtomic(path.join(d, mf), mascot);
     writeAtomic(path.join(d, 'theme.json'), JSON.stringify(raw));
     cache = null;
@@ -319,10 +327,12 @@ function create(ctx) {
     }
     m = /^font\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(?:woff2|woff|ttf|otf))$/.exec(act);
     if (m) {
-      // only the typeface a theme names, from that theme's folder (also when a theme that extends it is chosen)
+      // only a typeface a theme names (for all text, or for the clock), from that theme's folder (also when a theme that extends it is chosen)
       const ok = Object.keys(load()).some(k => {
         const v = load()[k].v;
-        return v['type.fontFile'] === m[2] && (v.fontTheme || k) === m[1];
+        return (
+          (v['type.fontFile'] === m[2] && (v.fontTheme || k) === m[1]) || (v['clock.fontFile'] === m[2] && (v.clockFontTheme || k) === m[1])
+        );
       });
       try {
         if (!ok) throw new Error('not a theme typeface');
