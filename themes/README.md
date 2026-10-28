@@ -148,10 +148,11 @@ cyan. Down moves the row up and shows all apps below it. The scene was drawn for
 
 ### Terminal
 
-A terminal: green phosphor text on black in a monospace typeface, a greeting in capitals over the clock like a login message, a `$`
-prompt before the focused app's name with a blinking block cursor after it (`shelf.prefix`, `shelf.cursor`), square tiles with a thin
-outline and a green selection box, buttons drawn as boxes, menus with square rows, a green glow and, behind it all, scanlines, faint
-character columns and the soft curve of a tube, drawn for this theme (`terminal.png`).
+Just a terminal, no launcher to see: green phosphor text on black in a monospace typeface. `$ date` prints the time and the date,
+`$ open ` is followed by the focused app's name and a blinking block cursor, and under `$ ls apps/` every app is a line of its own,
+the focused one in inverse video with a `> ` marker (`tile.style` text, `dock.show` off, one column). The top buttons are plain words,
+the menus have square rows, and behind it all are scanlines, faint character columns and the soft curve of a tube, drawn for this
+theme (`terminal.png`).
 
 [![The Grid](the-grid/preview.jpg)](the-grid/preview.jpg)
 

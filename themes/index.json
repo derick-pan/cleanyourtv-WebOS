@@ -89,7 +89,7 @@
    "id": "terminal",
    "name": "Terminal",
    "author": "derick-pan",
-   "description": "A terminal: green phosphor text on black, in a monospace typeface, a prompt before the app's name with a blinking cursor, square tiles and buttons drawn as boxes, scanlines and a soft tube glow.",
+   "description": "Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of date, the apps listed one per line under ls, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all.",
    "preview": "terminal/preview.jpg"
   },
   {
