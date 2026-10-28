@@ -82,6 +82,7 @@
   "glow": 0,
   "speed": 1,
   "wallpaper": "night.jpg",
-  "wallpaperDim": 0.12
+  "wallpaperDim": 0.12,
+  "drift": 0.6
  }
 }

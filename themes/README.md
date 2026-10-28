@@ -129,8 +129,9 @@ A living-room lock screen in the manner of Apple's TV, after the Night look of [
 thin, translucent clock with a light rim in the sky over a night lake, the date above it, one round button top right, and a smoked-glass
 dock of square icons along the bottom with a white ring on the focused one. Down moves the dock up and shows all apps below it; the
 clock fades out meanwhile. The scene, `night.jpg`, is couch-tv's `scene-night.jpg`, made for couch-tv with an image model from text only
-(not a real place) and released for any use (its `backgrounds/CREDITS.md`). The clock's typeface is Antonio (weight 300, Latin,
-unmodified), `antonio.woff2`, under the SIL Open Font License 1.1 (`OFL.txt`); the rest of the text keeps the TV's font.
+(not a real place) and released for any use (its `backgrounds/CREDITS.md`); it drifts slowly, as theirs does (`effects.drift`). The
+clock's typeface is Antonio (weight 300, Latin, unmodified), `antonio.woff2`, under the SIL Open Font License 1.1 (`OFL.txt`); the rest
+of the text keeps the TV's font.
 
 [![Cupertino](cupertino/preview.jpg)](cupertino/preview.jpg)
 
@@ -138,11 +139,19 @@ Folder: [`cupertino/`](cupertino/)
 
 ### The Grid
 
-Inside the Grid after dark, in the spirit of the 2010 light-cycle film: a deep black world lit only by thin lines, two light-cycle
-trails (cyan and orange) cutting right angles across the floor, Recognizers hanging in the haze, a city of tall towers with lit edges
-and the portal beam far away, with light raining in the sky. Six smoked-glass tiles edged in light stand on the floor, the focused one
-with a thin light-blue ring; the buttons are outlined boxes and the glow is cyan. Down moves the row up and shows all apps below it.
-The scene was drawn for this theme.
+Inside the Grid after dark, in the spirit of the 2010 light-cycle film, and it moves: light cycles race across the floor in cyan and
+orange, near and far, each drawing a line of light behind it that fades once the rider is gone (`effects.cycles`), while the whole
+world slowly drifts (`effects.drift`): a deep black place lit only by thin lines, with trails cutting right angles across the floor,
+Recognizers in the haze, a city of tall towers with lit edges, the portal beam far away and light raining in the sky. Six smoked-glass
+tiles edged in light stand on the floor, the focused one with a thin light-blue ring; the buttons are outlined boxes and the glow is
+cyan. Down moves the row up and shows all apps below it. The scene was drawn for this theme.
+
+### Terminal
+
+A terminal: green phosphor text on black in a monospace typeface, a greeting in capitals over the clock like a login message, a `$`
+prompt before the focused app's name with a blinking block cursor after it (`shelf.prefix`, `shelf.cursor`), square tiles with a thin
+outline and a green selection box, buttons drawn as boxes, menus with square rows, a green glow and, behind it all, scanlines, faint
+character columns and the soft curve of a tube, drawn for this theme (`terminal.png`).
 
 [![The Grid](the-grid/preview.jpg)](the-grid/preview.jpg)
 
@@ -151,11 +160,12 @@ Folder: [`the-grid/`](the-grid/)
 ### Claude
 
 A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting over the clock, the focused app's name big in the
-middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. Three little Claudes, the theme's mascots
-(`mascot.*` in `theme.json`), walk the floor at the bottom, each a little smaller than the last: they rest, nap (with z's), wave, think
-(a slow sway and a breath, like the thinking spinner), hop, spin until dizzy, dash, dance, wiggle, peek in from the edges and hop
-whenever the focus moves. The wallpaper and the strip (`claude-walk.png`: standing, a five-frame walk, then waving, happy, sleepy,
-surprised, dizzy and thinking) were drawn for this theme.
+middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. Three little pixel Claudes, the theme's
+mascots (`mascot.*` in `theme.json`), walk the floor at the bottom, each a little smaller than the last: they rest, nap (with z's),
+wave, think (a slow sway and a breath, like the thinking spinner), hop, spin until dizzy, dash, dance, wiggle, peek in from the edges
+and hop whenever the focus moves. The character is an original pixel figure in the manner of the little crab in Claude Code's terminal,
+drawn pixel by pixel for this theme (`claude-pixel.png`, 24 x 24 pixels a frame, scaled without smoothing: standing, a four-step walk,
+then waving, happy, sleepy, surprised, dizzy and thinking); the wallpaper was drawn for it too.
 
 [![Claude](claude/preview.jpg)](claude/preview.jpg)
 

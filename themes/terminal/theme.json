@@ -1,0 +1,89 @@
+{
+ "name": "Terminal",
+ "author": "derick-pan",
+ "description": "A terminal: green phosphor text on black, in a monospace typeface, a prompt before the app's name with a blinking cursor, square tiles and buttons drawn as boxes, scanlines and a soft tube glow.",
+ "colors": {
+  "night": "#040705",
+  "panel": "#0b1a0f",
+  "ink": "#4dff88",
+  "accent": "#4dff88",
+  "focus": "#4dff88",
+  "pill": "#4dff88"
+ },
+ "surface": {
+  "pillAlpha": 0.04,
+  "pillRing": 0.55,
+  "pillRadius": 0,
+  "menuAlpha": 0.96,
+  "rowRadius": 0
+ },
+ "type": {
+  "font": "mono",
+  "scale": 0.95
+ },
+ "clock": {
+  "layout": "stack",
+  "greeting": true,
+  "align": "left",
+  "x": 96,
+  "y": 54,
+  "scale": 1,
+  "dateScale": 0.85,
+  "weight": 400
+ },
+ "bar": {
+  "style": "pill",
+  "size": 56,
+  "gap": 12,
+  "align": "right",
+  "x": 96,
+  "y": 54
+ },
+ "shelf": {
+  "show": true,
+  "align": "left",
+  "x": 96,
+  "y": 190,
+  "scale": 0.72,
+  "prefix": "$ ",
+  "cursor": true
+ },
+ "dock": {
+  "anchor": "top",
+  "align": "left",
+  "x": 96,
+  "y": 330,
+  "count": 5,
+  "w": 326,
+  "h": 184,
+  "gap": 24,
+  "radius": 0,
+  "tileFrost": 0.35,
+  "tileFrostColor": "#020803",
+  "lift": 0,
+  "focusScale": 1.02
+ },
+ "grid": {
+  "mode": "below",
+  "cols": 10,
+  "tileH": 120,
+  "gapX": 24,
+  "gapY": 24,
+  "radius": 0,
+  "clipTop": 300,
+  "focusScale": 1.04
+ },
+ "tile": {
+  "gloss": 0,
+  "border": 0.22,
+  "ringWidth": 2,
+  "ringOffset": 4
+ },
+ "effects": {
+  "glow": 0.35,
+  "glowColor": "accent",
+  "speed": 0.8,
+  "wallpaper": "terminal.png",
+  "wallpaperDim": 0
+ }
+}
