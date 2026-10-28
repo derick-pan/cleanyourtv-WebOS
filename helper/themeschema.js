@@ -35,7 +35,7 @@ const POS = ['left', 'center', 'right'],
 
 // [key, type, range or choices, default, what it does]. Types: color (#rrggbb), color? (a colour, or null for "the accent"), num, int
 // (range [lo, hi]), enum (choices), bool, auto (an int range, or null for "worked out from the other values"), file (a wallpaper or font
-// file name, checked apart from the rest).
+// file name, checked apart from the rest), text (a short string of plain characters, the spec is the pattern it must match).
 const SCHEMA = [
   ['colors.night', 'color', null, '#07080b', 'Page background.'],
   ['colors.panel', 'color', null, '#14161b', 'Toast background; menu rows are a lighter mix of it.'],
@@ -130,6 +130,14 @@ const SCHEMA = [
   ['shelf.x', 'int', [0, 900], 96, 'Margin on both sides, in px.'],
   ['shelf.y', 'int', [0, 900], 150, 'Distance from the top edge, in px.'],
   ['shelf.scale', 'num', [0.4, 1.6], 1, 'Scale of the name.'],
+  [
+    'shelf.prefix',
+    'text',
+    /^[\w $>#:~%./-]{0,8}$/,
+    '',
+    'Up to eight plain characters before the name, a little dimmer, like a prompt: `$ `, `> `, `~ `.',
+  ],
+  ['shelf.cursor', 'bool', null, false, 'A blinking block after the name, like a terminal cursor.'],
   ['dock.anchor', 'enum', TOPBOT, 'top', 'Which screen edge `dock.y` counts from.'],
   ['dock.align', 'enum', POS, 'left', 'Which side `dock.x` counts from; `center` centres the dock.'],
   ['dock.x', 'int', [0, 900], 96, 'Distance from that side, in px. Not used when centred.'],
@@ -208,6 +216,28 @@ const SCHEMA = [
   ],
   ['effects.wallpaperDim', 'num', [0, 0.9], 0.4, 'How far the wallpaper is darkened with the background colour.'],
   [
+    'effects.drift',
+    'num',
+    [0, 1],
+    0,
+    'A slow drift of the wallpaper: over about a minute it zooms in a little and glides, then back, like a lock screen; 1 is a tenth of the picture. Transform only. `effects.speed` sets the pace.',
+  ],
+  [
+    'effects.cycles',
+    'num',
+    [0, 1],
+    0,
+    'Light cycles: riders that race across the floor of the picture between `effects.cyclesHorizon` and the bottom, each leaving a line of light that fades behind it; 1 is often, 0.3 now and then. Transform only.',
+  ],
+  [
+    'effects.cyclesHorizon',
+    'int',
+    [0, 1000],
+    640,
+    'Where the floor starts, from the top edge, in px: a rider far away passes just below it, small and slow.',
+  ],
+  ['effects.cyclesColor', 'color', null, '#ff8a3d', 'The second colour of the riders; the first is the accent.'],
+  [
     'mascot.file',
     'file',
     null,
@@ -233,6 +263,7 @@ const SCHEMA = [
     'How fast it walks and how often it plays; 0 keeps it standing still. `effects.speed` 0 stops it too.',
   ],
   ['mascot.flip', 'bool', null, true, 'Mirror the picture when it walks to the left (draw it facing right).'],
+  ['mascot.pixel', 'bool', null, false, 'Pixel art: the picture is scaled without smoothing, so its pixels stay crisp.'],
 ];
 const DEFAULTS = {};
 for (const r of SCHEMA) DEFAULTS[r[0]] = r[3];
@@ -262,6 +293,7 @@ function check(row, v) {
   if (type === 'color?') return v === '' || v === null ? null : hex(v);
   if (type === 'bool') return typeof v === 'boolean' ? v : undefined;
   if (type === 'enum') return spec.indexOf(v) >= 0 ? v : undefined;
+  if (type === 'text') return typeof v === 'string' && spec.test(v) ? v : undefined;
   if (type === 'num' || type === 'int' || type === 'auto') {
     if (type === 'auto' && (v === null || v === '')) return null;
     if (typeof v !== 'number' || !isFinite(v)) return undefined;
@@ -480,6 +512,7 @@ function resolve(t, accent) {
     '--name-y': px(v['shelf.y']),
     '--name-a': v['shelf.align'],
     '--name-s': String(v['shelf.scale']),
+    '--name-pre': '"' + v['shelf.prefix'] + '"',
     '--view-top': px(viewTop),
     '--dock-l': dock.l,
     '--dock-r': dock.r,
@@ -515,6 +548,8 @@ function resolve(t, accent) {
     '--ring-off': px(v['tile.ringOffset']),
     '--glow-op': String(v['effects.glow']),
     '--spd': String(v['effects.speed']),
+    '--drift': String(v['effects.speed'] > 0 ? v['effects.drift'] : 0),
+    '--drift-dur': Math.round(70 / (v['effects.speed'] || 1)) + 's',
   };
   const w = v['effects.wallpaper'];
   const out = {
@@ -537,6 +572,10 @@ function resolve(t, accent) {
   };
   // only a theme that hides its clock behind the grid has this attribute, or drops the AM/PM (the same reason)
   if (v['clock.grid'] === 'hide') out.attrs.clockgrid = 'hide';
+  if (v['shelf.cursor']) out.attrs.cursor = 'on';
+  // only a theme with light cycles has this key (the same reason); the launcher runs them (app/src/js/scene.js)
+  if (v['effects.cycles'] > 0)
+    out.cycles = { rate: v['effects.cycles'], horizon: v['effects.cyclesHorizon'], colors: [A, v['effects.cyclesColor']] };
   if (!v['clock.ampm']) out.ampm = false;
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
@@ -571,6 +610,7 @@ function resolve(t, accent) {
       y: v['mascot.y'],
       speed: v['mascot.speed'],
       flip: v['mascot.flip'],
+      pixel: v['mascot.pixel'],
     };
   return out;
 }

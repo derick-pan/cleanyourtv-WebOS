@@ -33,7 +33,7 @@ var MASCOT = (function () {
     this.el = document.createElement('div');
     this.el.className = 'mascot';
     this.strip = document.createElement('div');
-    this.strip.className = 'mascot-strip';
+    this.strip.className = 'mascot-strip' + (m.pixel ? ' px' : '');
     this.el.appendChild(this.strip);
     document.body.appendChild(this.el);
     this.x = 96;
@@ -238,7 +238,7 @@ var MASCOT = (function () {
           walk = Math.min(frames, Math.max(1, mm.walk || frames)),
           fh = mm.size || 96,
           fw = Math.max(8, Math.round((fh * (im.naturalWidth / frames)) / im.naturalHeight));
-        m = { id: mm.id, file: mm.file, frames: frames, walk: walk, y: mm.y || 0, flip: mm.flip !== false };
+        m = { id: mm.id, file: mm.file, frames: frames, walk: walk, y: mm.y || 0, flip: mm.flip !== false, pixel: !!mm.pixel };
         var n = Math.min(4, Math.max(1, mm.count || 1));
         for (var i = 0; i < n; i++) {
           var kid = new Kid(i);

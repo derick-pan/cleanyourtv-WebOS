@@ -39,8 +39,9 @@ folder of the GitHub repository (the `main` branch):
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
-| The Grid | Inside the Grid after dark: a deep black world lit only by thin lines, light-cycle trails in cyan and orange, Recognizers hanging in the haze, a city of lit towers and the portal beam far away. Glass tiles edged in light stand on the floor. Down opens the apps. |
-| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
+| The Grid | Inside the Grid after dark: a deep black world lit only by thin lines, with light cycles racing the floor and drawing lines of light behind them, Recognizers drifting in the haze, a city of lit towers and the portal beam. Glass tiles edged in light stand on the floor. Down opens the apps. |
+| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little pixel Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
+| Terminal | A terminal: green phosphor text on black in a monospace typeface, a prompt before the app's name with a blinking cursor, square tiles and boxed buttons, scanlines and a soft tube glow. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
 
@@ -195,6 +196,8 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `shelf.x` | 0 to 900 | `96` | Margin on both sides, in px. |
 | `shelf.y` | 0 to 900 | `150` | Distance from the top edge, in px. |
 | `shelf.scale` | 0.4 to 1.6 | `1` | Scale of the name. |
+| `shelf.prefix` | text, up to 8 characters | none | Up to eight plain characters before the name, a little dimmer, like a prompt: `$ `, `> `, `~ `. |
+| `shelf.cursor` | `true` or `false` | `false` | A blinking block after the name, like a terminal cursor. |
 | **dock** | | | |
 | `dock.anchor` | `top`, `bottom` | `top` | Which screen edge `dock.y` counts from. |
 | `dock.align` | `left`, `center`, `right` | `left` | Which side `dock.x` counts from; `center` centres the dock. |
@@ -240,6 +243,10 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `effects.speed` | 0 to 2 | `1` | Animation speed multiplier; 0 switches the animations off. |
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
+| `effects.drift` | 0 to 1 | `0` | A slow drift of the wallpaper: over about a minute it zooms in a little and glides, then back, like a lock screen; 1 is a tenth of the picture. Transform only. `effects.speed` sets the pace. |
+| `effects.cycles` | 0 to 1 | `0` | Light cycles: riders that race across the floor of the picture between `effects.cyclesHorizon` and the bottom, each leaving a line of light that fades behind it; 1 is often, 0.3 now and then. Transform only. |
+| `effects.cyclesHorizon` | 0 to 1000 | `640` | Where the floor starts, from the top edge, in px: a rider far away passes just below it, small and slow. |
+| `effects.cyclesColor` | `#rrggbb` | `#ff8a3d` | The second colour of the riders; the first is the accent. |
 | **mascot** | | | |
 | `mascot.file` | a file name | none | A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only. |
 | `mascot.frames` | 1 to 16 | `1` | Pictures in the strip, left to right. |
@@ -249,6 +256,7 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `mascot.y` | 0 to 900 | `36` | Distance of its feet from the bottom edge, in px. |
 | `mascot.speed` | 0 to 2 | `1` | How fast it walks and how often it plays; 0 keeps it standing still. `effects.speed` 0 stops it too. |
 | `mascot.flip` | `true` or `false` | `true` | Mirror the picture when it walks to the left (draw it facing right). |
+| `mascot.pixel` | `true` or `false` | `false` | Pixel art: the picture is scaled without smoothing, so its pixels stay crisp. |
 <!-- schema:end -->
 
 ### Slots for cards
@@ -294,9 +302,23 @@ while Home is not on screen.
   (the first one standing, played at eight frames a second while it walks); the frames after those are poses, in this order: waving,
   happy, sleepy, surprised, dizzy, thinking. A theme may give fewer poses, or none: the standing frame stands in. Draw the character
   facing right; with `mascot.flip` it is mirrored when it walks left.
-- `mascot.count` puts up to four of the character on screen, each a little smaller than the one before.
+- `mascot.count` puts up to four of the character on screen, each a little smaller than the one before. `mascot.pixel` keeps the pixels
+  of pixel art crisp (no smoothing when the picture is scaled).
 - `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast they
   walk and how often they do something; 0 keeps them standing, and so does `effects.speed` 0.
+
+### Motion
+
+Beyond the focus animations, a theme can set the screen in motion, always with transforms only so that the TV's GPU keeps up:
+
+- `effects.drift` lets the wallpaper drift: over about a minute (`effects.speed` sets the pace) it zooms in a little and glides, then
+  back, as a phone's lock screen does.
+- `effects.cycles` sends light cycles across the floor of the picture (`app/src/js/scene.js`): riders that race from one edge to the
+  other between `effects.cyclesHorizon` and the bottom, smaller and slower the further away, in the accent colour or
+  `effects.cyclesColor`, each drawing a line of light behind it that fades once the rider is gone.
+- A mascot (above) walks about; `shelf.cursor` blinks after the app's name.
+
+`effects.speed` 0 stops all of it.
 
 A theme file holds values only. The service checks every value against the table and clamps numbers to their range; there is no CSS
 and no script, and a wallpaper or a mascot is accepted only as a plain file name from the theme's folder that is also a real image of the

@@ -348,6 +348,43 @@ run(async () => {
   );
   r = await tcall('font/cupertino/antonio.woff2', null, 'GET');
   ok(r.code === 200, 'the clock typeface is served');
+  // motion and a prompt: a drifting wallpaper, light cycles, a prefix and a cursor on the app name, a pixel-art mascot
+  const mv = themeMod.resolve(
+    themeMod.normalize(
+      {
+        shelf: { prefix: '$ ', cursor: true },
+        effects: { drift: 0.5, cycles: 1, cyclesHorizon: 660, cyclesColor: '#ff8a3d', speed: 0.5 },
+        mascot: { file: 'claude-pixel.png', pixel: true, frames: 11, walk: 5 },
+      },
+      'claude',
+      null,
+      path.join(tdir, 'claude')
+    )
+  );
+  ok(
+    mv.vars['--name-pre'] === '"$ "' &&
+      mv.attrs.cursor === 'on' &&
+      mv.vars['--drift'] === '0.5' &&
+      mv.vars['--drift-dur'] === '140s' &&
+      mv.cycles &&
+      mv.cycles.rate === 1 &&
+      mv.cycles.horizon === 660 &&
+      mv.cycles.colors[1] === '#ff8a3d' &&
+      mv.mascot.pixel === true &&
+      mv.mascot.walk === 5,
+    'a prompt prefix, a cursor, a drifting wallpaper, light cycles and a pixel mascot resolve'
+  );
+  const nomv = themeMod.resolve(themeMod.normalize({ shelf: { prefix: 'a"b', cursor: 'yes' }, effects: { drift: 1, speed: 0 } }, 'nomv'));
+  ok(
+    nomv.vars['--name-pre'] === '""' &&
+      !('cursor' in nomv.attrs) &&
+      nomv.vars['--drift'] === '0' &&
+      !('cycles' in plain) &&
+      plain.vars['--drift'] === '0' &&
+      plain.vars['--drift-dur'] === '70s' &&
+      plain.vars['--name-pre'] === '""',
+    'a prefix with other characters is refused, the cursor needs true, animations off stop the drift, and the defaults have none'
+  );
   r = await tcall('set', { id: 'pixkid' });
   ok(
     r.code === 200 && th.resolved().font && th.resolved().font.id === 'pixel' && th.resolved().dockN === 4,
@@ -358,7 +395,7 @@ run(async () => {
   // a mascot (mascot.*): an image in the theme's folder, checked like a wallpaper, downloaded with the theme and served from its folder;
   // only a theme with one has the key in its reply, so the other themes' replies stay as they were
   const mt = themeMod.normalize(
-    { mascot: { file: 'claude-walk.png', frames: 6, walk: 0, count: 9, size: 999, y: 28, speed: 1, flip: false } },
+    { mascot: { file: 'claude-pixel.png', frames: 6, walk: 0, count: 9, size: 999, y: 28, speed: 1, flip: false } },
     'claude',
     null,
     path.join(tdir, 'claude')
@@ -367,7 +404,7 @@ run(async () => {
   ok(
     mr.mascot &&
       mr.mascot.id === 'claude' &&
-      mr.mascot.file === 'claude-walk.png' &&
+      mr.mascot.file === 'claude-pixel.png' &&
       mr.mascot.frames === 6 &&
       mr.mascot.walk === 0 &&
       mr.mascot.count === 4 &&
@@ -387,12 +424,12 @@ run(async () => {
   r = await tcall('set', { id: 'claude' });
   ok(
     r.code === 200 &&
-      fs.existsSync(path.join(tlocal, 'claude', 'claude-walk.png')) &&
+      fs.existsSync(path.join(tlocal, 'claude', 'claude-pixel.png')) &&
       th.resolved().mascot &&
       th.resolved().mascot.id === 'claude',
     "a theme's mascot is downloaded with it"
   );
-  r = await tcall('mascot/claude/claude-walk.png', null, 'GET');
+  r = await tcall('mascot/claude/claude-pixel.png', null, 'GET');
   ok(r.code === 200, 'the mascot is served');
   r = await tcall('mascot/claude/other.png', null, 'GET');
   ok(r.code === 404, 'a file the theme does not name is not served as a mascot');

@@ -15,7 +15,7 @@ var TH0 = {
   },
   TH = TH0,
   themeKeys = [],
-  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign'];
+  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-clockgrid', 'data-grid', 'data-galign', 'data-cursor'];
 function applyTheme(t) {
   var st = document.documentElement.style,
     b = document.body,
@@ -28,6 +28,8 @@ function applyTheme(t) {
   if (!t || !t.vars) {
     TH = TH0;
     MASCOT.apply(null, 1);
+    SCENE.apply(null, 1);
+    $('wall').classList.remove('drift');
     return;
   }
   for (k in t.vars) {
@@ -61,8 +63,11 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
-  /* a theme's mascot (mascot.js): the picture is served from its folder; it stands still when the theme's animations are off */
+  /* a theme's mascot (mascot.js) and light cycles (scene.js): still when the theme's animations are off; the wallpaper drifts
+     (effects.drift) on its own layer */
   MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
+  SCENE.apply(t.cycles || null, +t.vars['--spd'] || 0);
+  $('wall').classList.toggle('drift', +t.vars['--drift'] > 0);
   TH = {
     cols: t.cols || 10,
     tileH: t.tileH || 151,
