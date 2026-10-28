@@ -256,7 +256,7 @@ const SCHEMA = [
     'num',
     [0, 1],
     0,
-    'Light cycles: riders that race across the floor of the picture between `effects.cyclesHorizon` and the bottom, each leaving a line of light that fades behind it; 1 is often, 0.3 now and then. Transform only.',
+    'Light cycles: riders on the floor of the picture, between `effects.cyclesHorizon` and the bottom, that turn at right angles and leave a wall of light along every stretch they rode, until they derezz and the walls fade; 1 is fast and many, 0.3 slow and few. Transform only.',
   ],
   [
     'effects.cyclesHorizon',
@@ -266,6 +266,14 @@ const SCHEMA = [
     'Where the floor starts, from the top edge, in px: a rider far away passes just below it, small and slow.',
   ],
   ['effects.cyclesColor', 'color', null, '#ff8a3d', 'The second colour of the riders; the first is the accent.'],
+  [
+    'effects.scene',
+    'enum',
+    ['none', 'lightcity'],
+    'none',
+    '`lightcity`: a world of light going on behind Home: Recognizers (big ships) drift across the sky, the portal beam at `effects.beamX` pulses up from the horizon, light rains down and pulses of light sweep the floor to the horizon. Transform and opacity only.',
+  ],
+  ['effects.beamX', 'int', [0, 1920], 960, 'Where the portal beam of `effects.scene` stands, from the left edge, in px.'],
   [
     'mascot.file',
     'file',
@@ -608,9 +616,16 @@ function resolve(t, accent) {
   if (v['tile.style'] === 'text') out.attrs.tiles = 'text';
   // only a theme with a line above the clock has this key (the same reason); the launcher writes it into the clock
   if (v['clock.prefix']) out.clockPrefix = v['clock.prefix'];
-  // only a theme with light cycles has this key (the same reason); the launcher runs them (app/src/js/scene.js)
-  if (v['effects.cycles'] > 0)
-    out.cycles = { rate: v['effects.cycles'], horizon: v['effects.cyclesHorizon'], colors: [A, v['effects.cyclesColor']] };
+  // only a theme with light cycles or a scene has this key (the same reason); the launcher runs them (app/src/js/scene.js)
+  if (v['effects.cycles'] > 0 || v['effects.scene'] !== 'none')
+    out.cycles = {
+      rate: v['effects.cycles'],
+      cycles: v['effects.cycles'],
+      horizon: v['effects.cyclesHorizon'],
+      colors: [A, v['effects.cyclesColor']],
+      scene: v['effects.scene'] === 'none' ? '' : v['effects.scene'],
+      beamX: v['effects.beamX'],
+    };
   if (!v['clock.ampm']) out.ampm = false;
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)

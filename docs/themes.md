@@ -39,7 +39,7 @@ folder of the GitHub repository (the `main` branch):
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
-| The Grid | Inside the Grid after dark: a deep black world lit only by thin lines, with light cycles racing the floor and drawing lines of light behind them, Recognizers drifting in the haze, a city of lit towers and the portal beam. Glass tiles edged in light stand on the floor. Down opens the apps. |
+| The Grid | The world of the Grid, going on behind Home: light cycles racing the floor and turning, their walls of light fading when they derezz, Recognizers drifting across the sky, the portal beam pulsing up from the city and light raining down. Glass tiles edged in light stand on the floor. Down opens the apps. |
 | Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little pixel Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
 | Terminal | Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of `date`, the apps listed one per line under `ls`, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all. |
 
@@ -249,9 +249,11 @@ bring a **mascot**: a small picture that walks along the bottom of the screen (s
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
 | `effects.drift` | 0 to 1 | `0` | A slow drift of the wallpaper: over about a minute it zooms in a little and glides, then back, like a lock screen; 1 is a tenth of the picture. Transform only. `effects.speed` sets the pace. |
-| `effects.cycles` | 0 to 1 | `0` | Light cycles: riders that race across the floor of the picture between `effects.cyclesHorizon` and the bottom, each leaving a line of light that fades behind it; 1 is often, 0.3 now and then. Transform only. |
+| `effects.cycles` | 0 to 1 | `0` | Light cycles: riders on the floor of the picture, between `effects.cyclesHorizon` and the bottom, that turn at right angles and leave a wall of light along every stretch they rode, until they derezz and the walls fade; 1 is fast and many, 0.3 slow and few. Transform only. |
 | `effects.cyclesHorizon` | 0 to 1000 | `640` | Where the floor starts, from the top edge, in px: a rider far away passes just below it, small and slow. |
 | `effects.cyclesColor` | `#rrggbb` | `#ff8a3d` | The second colour of the riders; the first is the accent. |
+| `effects.scene` | `none`, `lightcity` | `none` | `lightcity`: a world of light going on behind Home: Recognizers (big ships) drift across the sky, the portal beam at `effects.beamX` pulses up from the horizon, light rains down and pulses of light sweep the floor to the horizon. Transform and opacity only. |
+| `effects.beamX` | 0 to 1920 | `960` | Where the portal beam of `effects.scene` stands, from the left edge, in px. |
 | **mascot** | | | |
 | `mascot.file` | a file name | none | A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only. |
 | `mascot.frames` | 1 to 16 | `1` | Pictures in the strip, left to right. |
@@ -327,9 +329,12 @@ Beyond the focus animations, a theme can set the screen in motion, always with t
 
 - `effects.drift` lets the wallpaper drift: over about a minute (`effects.speed` sets the pace) it zooms in a little and glides, then
   back, as a phone's lock screen does.
-- `effects.cycles` sends light cycles across the floor of the picture (`app/src/js/scene.js`): riders that race from one edge to the
-  other between `effects.cyclesHorizon` and the bottom, smaller and slower the further away, in the accent colour or
-  `effects.cyclesColor`, each drawing a line of light behind it that fades once the rider is gone.
+- `effects.cycles` puts light cycles on the floor of the picture (`app/src/js/scene.js`): the floor is a perspective plane from
+  `effects.cyclesHorizon` down to the bottom edge, and the riders race across it in the accent colour or `effects.cyclesColor`,
+  turning at right angles and leaving a wall of light along every stretch they rode, smaller and slower the further away, until they
+  derezz and their walls fade.
+- `effects.scene` `lightcity` adds the rest of a world of light: Recognizers (the big ships) drifting across the sky, the portal beam
+  at `effects.beamX` pulsing up from the horizon, light raining down and pulses of light sweeping the floor to the horizon.
 - A mascot (above) walks about; `shelf.cursor` blinks after the app's name.
 
 `effects.speed` 0 stops all of it.

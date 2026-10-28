@@ -126,7 +126,9 @@ body {
     transform: scale(calc(1.02 + 0.1 * var(--drift))) translate(calc(-1.5% * var(--drift)), calc(-1% * var(--drift)));
   }
 }
-/* light cycles (effects.cycles, app/src/js/scene.js): a head that slides and a 1 px trail scaled in X, under the dock and the grid */
+/* the scene (effects.cycles, effects.scene; app/src/js/scene.js): light cycles and their walls of light, pulses on the floor,
+   Recognizers in the sky, the portal beam and the rain of light, every piece moved with transforms and opacity only; under the
+   dock and the grid */
 #scene {
   position: absolute;
   left: 0;
@@ -138,7 +140,9 @@ body {
   pointer-events: none;
 }
 .cyc,
-.cyct {
+.seg,
+.pulse,
+.rec {
   position: absolute;
   left: 0;
   top: 0;
@@ -147,13 +151,99 @@ body {
 .cyc {
   border-radius: 6px;
 }
-.cyct {
+/* a wall of light: a 1 x 1 px box turned and scaled to the stretch (lay() in scene.js); the halo is a wider, fainter copy */
+.seg {
   width: 1px;
-  transform-origin: 0 50%;
-  transition: opacity 2s linear;
+  height: 1px;
+  transform-origin: 0 0;
+  transition: opacity 2.2s linear;
 }
-.cyct.fade {
+.seg.halo {
+  opacity: 0.28;
+}
+.seg.fade {
   opacity: 0;
+}
+.pulse {
+  width: 1920px;
+  height: 1px;
+  transform-origin: 0 0;
+}
+.rec {
+  width: 240px;
+  height: 300px;
+  transform-origin: 50% 50%;
+}
+.rec svg {
+  display: block;
+}
+/* the portal beam: a bright core and a wide halo up from the horizon, breathing; the flare where it meets the ground */
+.beam,
+.flare,
+.rain {
+  position: absolute;
+  top: 0;
+  will-change: transform, opacity;
+}
+.beam {
+  width: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(230, 250, 255, 0.9) 35%, #ffffff 100%);
+  transform-origin: 50% 100%;
+  animation: beam-breathe 3.2s ease-in-out infinite alternate;
+}
+.beam.halo {
+  width: 60px;
+  background: linear-gradient(180deg, rgba(120, 220, 255, 0) 0%, rgba(120, 220, 255, 0.35) 50%, rgba(160, 235, 255, 0.6) 100%);
+  animation-duration: 4.1s;
+}
+@keyframes beam-breathe {
+  from {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1.5);
+  }
+}
+.flare {
+  width: 180px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9), rgba(140, 225, 255, 0.5) 40%, rgba(140, 225, 255, 0) 70%);
+  animation: flare-breathe 3.2s ease-in-out infinite alternate;
+}
+@keyframes flare-breathe {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+/* light raining in the sky: thin streaks falling from above the top edge to the horizon, each on its own timing */
+.rain {
+  width: 2px;
+  opacity: 0;
+  animation: rain-fall 5s linear infinite;
+}
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(640px);
+    opacity: 0;
+  }
 }
 ::selection {
   background: rgba(255, 255, 255, 0.25);

@@ -139,12 +139,13 @@ Folder: [`cupertino/`](cupertino/)
 
 ### The Grid
 
-Inside the Grid after dark, in the spirit of the 2010 light-cycle film, and it moves: light cycles race across the floor in cyan and
-orange, near and far, each drawing a line of light behind it that fades once the rider is gone (`effects.cycles`), while the whole
-world slowly drifts (`effects.drift`): a deep black place lit only by thin lines, with trails cutting right angles across the floor,
-Recognizers in the haze, a city of tall towers with lit edges, the portal beam far away and light raining in the sky. Six smoked-glass
-tiles edged in light stand on the floor, the focused one with a thin light-blue ring; the buttons are outlined boxes and the glow is
-cyan. Down moves the row up and shows all apps below it. The scene was drawn for this theme.
+The world of the Grid, in the spirit of the 2010 light-cycle film, going on behind Home: light cycles race the floor in cyan and
+orange, near and far, turning at right angles and leaving walls of light along every stretch until they derezz and the walls fade
+(`effects.cycles`); Recognizers, the big ships, drift across the sky; the portal beam pulses up from the city into the clouds; light
+rains down and pulses of light sweep the floor (`effects.scene` `lightcity`). The backdrop, drawn for this theme, is the city: a
+monumental dark structure edged in orange with a bright gate at its foot, towers with light strips tapering into the haze, clouds lit
+from below and a wet floor that mirrors it all. Six smoked-glass tiles edged in light stand on the floor, the focused one with a thin
+light-blue ring; the buttons are outlined boxes and the glow is cyan. Down moves the row up and shows all apps below it.
 
 ### Terminal
 

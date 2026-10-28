@@ -131,7 +131,9 @@ body {
     transform: scale(calc(1.02 + 0.1 * var(--drift))) translate(calc(-1.5% * var(--drift)), calc(-1% * var(--drift)));
   }
 }
-/* light cycles (effects.cycles, app/src/js/scene.js): a head that slides and a 1 px trail scaled in X, under the dock and the grid */
+/* the scene (effects.cycles, effects.scene; app/src/js/scene.js): light cycles and their walls of light, pulses on the floor,
+   Recognizers in the sky, the portal beam and the rain of light, every piece moved with transforms and opacity only; under the
+   dock and the grid */
 #scene {
   position: absolute;
   left: 0;
@@ -143,7 +145,9 @@ body {
   pointer-events: none;
 }
 .cyc,
-.cyct {
+.seg,
+.pulse,
+.rec {
   position: absolute;
   left: 0;
   top: 0;
@@ -152,13 +156,99 @@ body {
 .cyc {
   border-radius: 6px;
 }
-.cyct {
+/* a wall of light: a 1 x 1 px box turned and scaled to the stretch (lay() in scene.js); the halo is a wider, fainter copy */
+.seg {
   width: 1px;
-  transform-origin: 0 50%;
-  transition: opacity 2s linear;
+  height: 1px;
+  transform-origin: 0 0;
+  transition: opacity 2.2s linear;
 }
-.cyct.fade {
+.seg.halo {
+  opacity: 0.28;
+}
+.seg.fade {
   opacity: 0;
+}
+.pulse {
+  width: 1920px;
+  height: 1px;
+  transform-origin: 0 0;
+}
+.rec {
+  width: 240px;
+  height: 300px;
+  transform-origin: 50% 50%;
+}
+.rec svg {
+  display: block;
+}
+/* the portal beam: a bright core and a wide halo up from the horizon, breathing; the flare where it meets the ground */
+.beam,
+.flare,
+.rain {
+  position: absolute;
+  top: 0;
+  will-change: transform, opacity;
+}
+.beam {
+  width: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(230, 250, 255, 0.9) 35%, #ffffff 100%);
+  transform-origin: 50% 100%;
+  animation: beam-breathe 3.2s ease-in-out infinite alternate;
+}
+.beam.halo {
+  width: 60px;
+  background: linear-gradient(180deg, rgba(120, 220, 255, 0) 0%, rgba(120, 220, 255, 0.35) 50%, rgba(160, 235, 255, 0.6) 100%);
+  animation-duration: 4.1s;
+}
+@keyframes beam-breathe {
+  from {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1.5);
+  }
+}
+.flare {
+  width: 180px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9), rgba(140, 225, 255, 0.5) 40%, rgba(140, 225, 255, 0) 70%);
+  animation: flare-breathe 3.2s ease-in-out infinite alternate;
+}
+@keyframes flare-breathe {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+/* light raining in the sky: thin streaks falling from above the top edge to the horizon, each on its own timing */
+.rain {
+  width: 2px;
+  opacity: 0;
+  animation: rain-fall 5s linear infinite;
+}
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(640px);
+    opacity: 0;
+  }
 }
 ::selection {
   background: rgba(255, 255, 255, 0.25);
@@ -3633,20 +3723,36 @@ var MASCOT = (function () {
     hidden: stop,
   };
 })();
-/* ---------- scene effects (effects.cycles in a theme): light cycles that race across the floor of the wallpaper, each drawing a
-   line of light behind it that fades once the rider is gone. A cycle is two elements moved with transforms only (the head slides,
-   the trail is a 1 px line scaled in X), so the weak GPU draws each as a small layer. They pass between effects.cyclesHorizon and
-   the bottom edge, smaller and slower the further away, in the accent colour or effects.cyclesColor. The pace follows effects.cycles
-   and effects.speed; either at 0 stops them. They stop while Home is hidden and sit under the dock and the grid. ---------- */
+/* ---------- the scene (effects.cycles and effects.scene in a theme): a world of light going on behind Home, drawn over the wallpaper
+   with transforms and opacity only, so the weak GPU draws each piece as a small layer. The floor is a perspective plane from
+   effects.cyclesHorizon (the horizon) to the bottom edge: a point (X, Z) on it, Z the distance, lands at x = 960 + X f / Z,
+   y = horizon + f / Z, so a straight line on the floor is a straight line on screen.
+   - Light cycles (effects.cycles): riders on the floor that turn at right angles and leave a wall of light behind them along every
+     stretch they rode; after a while a rider derezzes and its walls fade. The colours are the accent and effects.cyclesColor.
+   - The light city (effects.scene lightcity): Recognizers, the big ships of the Grid, drift across the sky; the portal beam at
+     effects.beamX pulses up into the sky; light rains down; and pulses of light sweep the floor towards the horizon.
+   The pace follows effects.cycles and effects.speed; speed 0 stops all of it. It stops while Home is hidden and sits under the dock
+   and the grid. ---------- */
 var SCENE = (function () {
   var box = null,
-    c = null /* {rate, horizon, colors} */,
-    live = [] /* the cycles on screen */,
+    c = null /* {rate, horizon, colors, scene, beamX} */,
+    f = 440 /* the focal length: the floor at Z = 1 is at the bottom edge */,
+    riders = [],
+    pulses = [],
+    recs = [],
+    segs = 0 /* walls of light on screen, all riders together */,
     timer = 0,
     raf = 0,
     last = 0;
+  var MAX_SEGS = 44,
+    XMAX = 3.6,
+    ZMIN = 1.25,
+    ZMAX = 9;
   function rnd(a, b) {
     return a + Math.random() * (b - a);
+  }
+  function pick(list) {
+    return list[Math.floor(Math.random() * list.length)];
   }
   function el() {
     if (box) return box;
@@ -3657,92 +3763,313 @@ var SCENE = (function () {
     else document.body.insertBefore(box, document.body.firstChild);
     return box;
   }
-  /* a new rider at a random depth, from one side to the other */
+  function div(cls, parent) {
+    var d = document.createElement('div');
+    d.className = cls;
+    (parent || el()).appendChild(d);
+    return d;
+  }
+  /* a point on the floor to the screen */
+  function sx(X, Z) {
+    return 960 + (X * f) / Z;
+  }
+  function sy(Z) {
+    return c.horizon + f / Z;
+  }
+  /* a line of light from one screen point to another: a 1 x 1 px box, moved to the start, turned and scaled to the length and
+     the thickness; a second, wider and fainter one underneath is its glow */
+  function lay(d, x1, y1, x2, y2, th) {
+    var dx = x2 - x1,
+      dy = y2 - y1,
+      len = Math.max(0.5, Math.sqrt(dx * dx + dy * dy)),
+      ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+    d.style.transform =
+      'translate(' +
+      x1.toFixed(1) +
+      'px,' +
+      y1.toFixed(1) +
+      'px) rotate(' +
+      ang.toFixed(2) +
+      'deg) scale(' +
+      len.toFixed(1) +
+      ',' +
+      th.toFixed(2) +
+      ')';
+  }
+
+  /* ---- light cycles ---- */
+  var DIRS = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+  function Rider() {
+    this.col = pick(c.colors);
+    this.X = rnd(-XMAX * 0.8, XMAX * 0.8);
+    this.Z = rnd(ZMIN + 0.3, ZMAX * 0.8);
+    this.d = pick(DIRS);
+    this.born = performance.now();
+    this.life = rnd(9000, 20000) / Math.max(0.4, c.rate);
+    this.turnAt = performance.now() + rnd(700, 3200) / c.rate;
+    this.walls = [];
+    this.head = div('cyc');
+    this.head.style.background = this.col;
+    this.head.style.boxShadow = '0 0 14px ' + this.col + ', 0 0 4px #fff';
+    this.start();
+    this.place();
+  }
+  /* a new stretch: a wall of light that grows from here */
+  Rider.prototype.start = function () {
+    this.x0 = this.X;
+    this.z0 = this.Z;
+    if (segs >= MAX_SEGS) {
+      this.wall = null;
+      return;
+    }
+    var halo = div('seg halo'),
+      line = div('seg');
+    halo.style.background = this.col;
+    line.style.background = this.col;
+    this.wall = { line: line, halo: halo };
+    this.walls.push(this.wall);
+    segs++;
+  };
+  Rider.prototype.place = function () {
+    var s = 1.3 / this.Z,
+      x = sx(this.X, this.Z),
+      y = sy(this.Z),
+      along = this.d[1] === 0;
+    this.head.style.width = Math.round((along ? 40 : 14) * s) + 'px';
+    this.head.style.height = Math.round((along ? 12 : 26) * s) + 'px';
+    this.head.style.transform =
+      'translate(' + (x - (along ? 20 : 7) * s).toFixed(1) + 'px,' + (y - (along ? 6 : 13) * s).toFixed(1) + 'px)';
+    if (this.wall) {
+      var th = Math.max(1.5, 5 / this.Z);
+      lay(this.wall.line, sx(this.x0, this.z0), sy(this.z0), x, y, th);
+      lay(this.wall.halo, sx(this.x0, this.z0), sy(this.z0) - th, x, y - th, th * 3);
+    }
+  };
+  Rider.prototype.tick = function (now, dt) {
+    var v = (this.d[1] === 0 ? 2.4 : 1.9) * c.rate;
+    this.X += this.d[0] * v * dt;
+    this.Z += this.d[1] * v * dt;
+    var out = this.X < -XMAX || this.X > XMAX || this.Z < ZMIN || this.Z > ZMAX;
+    if (out || now >= this.turnAt) {
+      /* a right-angle turn, away from the edge it reached */
+      this.X = Math.min(XMAX, Math.max(-XMAX, this.X));
+      this.Z = Math.min(ZMAX, Math.max(ZMIN, this.Z));
+      var nd;
+      if (this.d[1] === 0)
+        nd =
+          this.Z > (ZMIN + ZMAX) / 2 && Math.random() < 0.6
+            ? [0, -1]
+            : this.Z < ZMIN + 1
+              ? [0, 1]
+              : pick([
+                  [0, 1],
+                  [0, -1],
+                ]);
+      else
+        nd =
+          this.X > 0 && Math.random() < 0.6
+            ? [-1, 0]
+            : this.X < -XMAX * 0.5
+              ? [1, 0]
+              : pick([
+                  [1, 0],
+                  [-1, 0],
+                ]);
+      this.place();
+      this.d = nd;
+      this.start();
+      this.turnAt = now + rnd(700, 3600) / c.rate;
+    }
+    this.place();
+    return now - this.born > this.life;
+  };
+  /* derezzed: the rider goes, its walls fade and are taken away */
+  Rider.prototype.end = function () {
+    if (this.head.parentNode) this.head.parentNode.removeChild(this.head);
+    var walls = this.walls;
+    for (var i = 0; i < walls.length; i++) {
+      walls[i].line.classList.add('fade');
+      walls[i].halo.classList.add('fade');
+    }
+    setTimeout(function () {
+      for (var i = 0; i < walls.length; i++) {
+        if (walls[i].line.parentNode) walls[i].line.parentNode.removeChild(walls[i].line);
+        if (walls[i].halo.parentNode) walls[i].halo.parentNode.removeChild(walls[i].halo);
+        segs--;
+      }
+    }, 2600);
+  };
+
+  /* ---- pulses of light sweeping the floor towards the horizon ---- */
+  function Pulse() {
+    this.Z = ZMIN;
+    this.el = div('pulse');
+    this.el.style.background = pick(c.colors);
+  }
+  Pulse.prototype.tick = function (dt) {
+    this.Z += (1.6 + this.Z * 0.5) * c.rate * dt;
+    if (this.Z > ZMAX * 1.3) return true;
+    var y = sy(this.Z),
+      th = Math.max(1, 4 / this.Z),
+      op = Math.max(0, 0.55 - this.Z * 0.045);
+    this.el.style.transform = 'translate(0,' + y.toFixed(1) + 'px) scale(1,' + th.toFixed(2) + ')';
+    this.el.style.opacity = op.toFixed(2);
+    return false;
+  };
+
+  /* ---- Recognizers: the big ships, drawn once as SVG and flown across the sky ---- */
+  function recSvg(col) {
+    var g = 'fill="none" stroke="' + col + '" stroke-linejoin="round" stroke-linecap="round"';
+    return (
+      '<svg viewBox="0 0 240 300" width="240" height="300">' +
+      '<path d="M20 20 L220 20 L220 290 L172 290 L172 86 L68 86 L68 290 L20 290 Z" fill="#04080e" stroke="' +
+      col +
+      '" stroke-opacity=".28" stroke-width="12" stroke-linejoin="round"/>' +
+      '<path d="M20 20 L220 20 L220 290 L172 290 L172 86 L68 86 L68 290 L20 290 Z" ' +
+      g +
+      ' stroke-width="3"/>' +
+      '<path d="M34 34 L206 34 M34 50 L206 50 M90 64 L150 64" ' +
+      g +
+      ' stroke-width="2" stroke-opacity=".8"/>' +
+      '<rect x="104" y="28" width="32" height="18" fill="' +
+      col +
+      '"/>' +
+      '<path d="M32 110 L56 110 M32 150 L56 150 M32 190 L56 190 M32 230 L56 230 M184 110 L208 110 M184 150 L208 150 M184 190 L208 190 M184 230 L208 230" ' +
+      g +
+      ' stroke-width="2" stroke-opacity=".7"/>' +
+      '<path d="M26 262 L62 262 M178 262 L214 262" ' +
+      g +
+      ' stroke-width="3"/>' +
+      '<rect x="30" y="272" width="28" height="10" fill="' +
+      col +
+      '" fill-opacity=".8"/><rect x="182" y="272" width="28" height="10" fill="' +
+      col +
+      '" fill-opacity=".8"/>' +
+      '</svg>'
+    );
+  }
+  function Rec(n) {
+    this.n = n;
+    this.el = div('rec');
+    this.col = n === 0 ? c.colors[1] : c.colors[0];
+    this.el.innerHTML = recSvg(this.col);
+    this.s = n === 0 ? 0.85 : n === 1 ? 0.42 : 0.26;
+    this.y0 = n === 0 ? 150 : n === 1 ? 80 : 210;
+    this.x = n === 0 ? rnd(200, 900) : n === 1 ? rnd(1100, 1700) : rnd(500, 1300);
+    this.dir = n === 1 ? -1 : 1;
+    this.v = (n === 0 ? 22 : n === 1 ? 14 : 9) * c.rate;
+    this.t = rnd(0, 100);
+  }
+  Rec.prototype.tick = function (dt) {
+    this.t += dt;
+    this.x += this.dir * this.v * dt;
+    if (this.dir > 0 && this.x > 2200) {
+      this.x = -400;
+      this.y0 = rnd(60, 240);
+    } else if (this.dir < 0 && this.x < -400) {
+      this.x = 2200;
+      this.y0 = rnd(40, 200);
+    }
+    var y = this.y0 + Math.sin(this.t * 0.35) * 18,
+      rot = Math.sin(this.t * 0.2) * 3;
+    this.el.style.transform =
+      'translate(' + this.x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + rot.toFixed(2) + 'deg) scale(' + this.s + ')';
+  };
+
+  /* ---- the portal beam and the rain of light: CSS animations, set up once ---- */
+  function city() {
+    var bx = c.beamX,
+      top = c.horizon - 40;
+    var halo = div('beam halo'),
+      beam = div('beam'),
+      flare = div('flare');
+    halo.style.left = bx - 30 + 'px';
+    halo.style.height = top + 'px';
+    beam.style.left = bx - 4 + 'px';
+    beam.style.height = top + 'px';
+    flare.style.left = bx - 90 + 'px';
+    flare.style.top = top - 30 + 'px';
+    for (var i = 0; i < 14; i++) {
+      var r = div('rain');
+      r.style.left = Math.round(rnd(0, 1920)) + 'px';
+      r.style.height = Math.round(rnd(30, 90)) + 'px';
+      r.style.background = pick(c.colors);
+      r.style.animationDuration = rnd(3.5, 8).toFixed(1) + 's';
+      r.style.animationDelay = (-rnd(0, 8)).toFixed(1) + 's';
+    }
+    for (var k = 0; k < 3; k++) recs.push(new Rec(k));
+  }
+
   function spawn() {
     timer = 0;
     if (!c || document.hidden) return;
-    if (live.length < 3) {
-      var u = rnd(0.12, 1),
-        y = c.horizon + (1080 - c.horizon) * Math.pow(u, 1.6),
-        s = 0.25 + u * 1.1,
-        dir = Math.random() < 0.5 ? 1 : -1,
-        col = c.colors[Math.floor(Math.random() * c.colors.length)],
-        head = document.createElement('div'),
-        trail = document.createElement('div');
-      head.className = 'cyc';
-      trail.className = 'cyct';
-      head.style.width = Math.round(34 * s) + 'px';
-      head.style.height = Math.round(9 * s) + 'px';
-      head.style.background = col;
-      head.style.boxShadow = '0 0 ' + Math.round(14 * s) + 'px ' + col;
-      trail.style.height = Math.max(2, Math.round(3 * s)) + 'px';
-      trail.style.background = col;
-      trail.style.boxShadow = '0 0 ' + Math.round(8 * s) + 'px ' + col;
-      var x0 = dir > 0 ? -80 : 2000;
-      el().appendChild(trail);
-      el().appendChild(head);
-      live.push({ head: head, trail: trail, x: x0, x0: x0, y: y, dir: dir, v: (380 + 520 * u) * c.rate, w: 34 * s, gone: 0 });
-      draw(live[live.length - 1]);
-      if (!raf) {
-        last = 0;
-        raf = requestAnimationFrame(tick);
-      }
+    if (c.cycles > 0 && riders.length < 3) riders.push(new Rider());
+    if (c.scene && pulses.length < 2 && Math.random() < 0.7) pulses.push(new Pulse());
+    if (!raf) {
+      last = 0;
+      raf = requestAnimationFrame(tick);
     }
-    timer = setTimeout(spawn, rnd(1400, 5200) / c.rate);
-  }
-  function draw(r) {
-    r.head.style.transform = 'translate(' + Math.round(r.x) + 'px,' + Math.round(r.y) + 'px)';
-    var len = Math.max(1, Math.abs(r.x - r.x0));
-    r.trail.style.transform =
-      'translate(' + Math.round(r.x0) + 'px,' + Math.round(r.y) + 'px) scaleX(' + (r.dir > 0 ? len : -len).toFixed(1) + ')';
+    timer = setTimeout(spawn, rnd(1500, 5000) / c.rate);
   }
   function tick(now) {
     raf = 0;
     if (!c || document.hidden) return;
-    var dt = Math.min(0.05, (now - (last || now)) / 1000);
+    var dt = Math.min(0.05, (now - (last || now)) / 1000),
+      i;
     last = now;
-    for (var i = live.length - 1; i >= 0; i--) {
-      var r = live[i];
-      if (!r.gone) {
-        r.x += r.dir * r.v * dt;
-        draw(r);
-        if (r.x < -120 || r.x > 2040) {
-          /* off the screen: the trail stays a moment, then fades and goes */
-          r.gone = now;
-          r.head.parentNode.removeChild(r.head);
-          r.trail.classList.add('fade');
-        }
-      } else if (now - r.gone > 2600) {
-        r.trail.parentNode.removeChild(r.trail);
-        live.splice(i, 1);
+    for (i = riders.length - 1; i >= 0; i--)
+      if (riders[i].tick(now, dt)) {
+        riders[i].end();
+        riders.splice(i, 1);
       }
-    }
-    if (live.length) raf = requestAnimationFrame(tick);
+    for (i = pulses.length - 1; i >= 0; i--)
+      if (pulses[i].tick(dt)) {
+        pulses[i].el.parentNode.removeChild(pulses[i].el);
+        pulses.splice(i, 1);
+      }
+    for (i = 0; i < recs.length; i++) recs[i].tick(dt);
+    if (riders.length || pulses.length || recs.length) raf = requestAnimationFrame(tick);
   }
   function clear() {
     clearTimeout(timer);
     timer = 0;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
-    for (var i = 0; i < live.length; i++) {
-      if (live[i].head.parentNode) live[i].head.parentNode.removeChild(live[i].head);
-      if (live[i].trail.parentNode) live[i].trail.parentNode.removeChild(live[i].trail);
-    }
-    live = [];
+    riders = [];
+    pulses = [];
+    recs = [];
+    segs = 0;
+    if (box) box.textContent = '';
   }
-  function start() {
-    if (c && !timer && !document.hidden) timer = setTimeout(spawn, rnd(400, 1500) / c.rate);
+  function build() {
+    if (!c || document.hidden) return;
+    el();
+    if (c.scene) city();
+    timer = setTimeout(spawn, rnd(300, 1200) / c.rate);
   }
   return {
-    /* the theme changed: its cycles (or none) and its animation speed (effects.speed) */
+    /* the theme changed: its scene (or none) and its animation speed (effects.speed) */
     apply: function (cc, spd) {
       clear();
       c = null;
-      if (!cc || !(cc.rate > 0) || !(spd > 0)) return;
-      c = { rate: cc.rate * spd, horizon: cc.horizon, colors: cc.colors };
-      start();
+      if (!cc || !(spd > 0) || !(cc.cycles > 0 || cc.scene)) return;
+      c = {
+        rate: Math.max(0.2, cc.cycles || 0.6) * spd,
+        cycles: cc.cycles || 0,
+        horizon: cc.horizon,
+        colors: cc.colors,
+        scene: cc.scene || '',
+        beamX: cc.beamX || 960,
+      };
+      f = 1080 - c.horizon;
+      build();
     },
-    shown: start,
+    shown: build,
     hidden: clear,
   };
 })();

@@ -370,9 +370,15 @@ run(async () => {
       mv.cycles.rate === 1 &&
       mv.cycles.horizon === 660 &&
       mv.cycles.colors[1] === '#ff8a3d' &&
+      mv.cycles.scene === '' &&
       mv.mascot.pixel === true &&
       mv.mascot.walk === 5,
     'a prompt prefix, a cursor, a drifting wallpaper, light cycles and a pixel mascot resolve'
+  );
+  const city = themeMod.resolve(themeMod.normalize({ effects: { scene: 'lightcity', beamX: 1230 } }, 'city'));
+  ok(
+    city.cycles && city.cycles.cycles === 0 && city.cycles.scene === 'lightcity' && city.cycles.beamX === 1230,
+    'a light city without riders still resolves its scene and the beam'
   );
   const nomv = themeMod.resolve(themeMod.normalize({ shelf: { prefix: 'a"b', cursor: 'yes' }, effects: { drift: 1, speed: 0 } }, 'nomv'));
   ok(
