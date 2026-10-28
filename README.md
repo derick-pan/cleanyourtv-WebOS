@@ -9,6 +9,10 @@
 
 # CleanYourTV for LG webOS
 
+> This is derick-pan's fork of [lasharor/cleanyourtv-WebOS](https://github.com/lasharor/cleanyourtv-WebOS) with four more themes
+> (Cupertino, The Grid, Claude and Terminal) and the launcher features they need: walking mascots, a drifting wallpaper, light
+> cycles, a glass clock and text-mode tiles. Its releases and themes come from this repository; everything else is the original.
+
 A fast home screen for rooted LG webOS TVs, with Live TV from your own playlist, an Inputs list on the Input key,
 picture notifications, optional on-device voice recognition and an optional debloat of LG's ads and telemetry.
 
@@ -45,14 +49,14 @@ sets up, updates and removes everything.
    - **From the Homebrew Channel.** Open the Homebrew Channel, the gear at the top, **Add repository**, and enter
 
      ```text
-     https://github.com/lasharor/cleanyourtv-WebOS/releases/latest/download/apps.json
+     https://github.com/derick-pan/cleanyourtv-WebOS/releases/latest/download/apps.json
      ```
 
      **CleanYourTV** then shows in the channel's list: open it and choose **Install**. New releases show there as updates.
    - **From your computer**, with your TV's IP address:
 
      ```sh
-     ssh root@192.168.1.50 'curl -fsSL https://raw.githubusercontent.com/lasharor/cleanyourtv-WebOS/main/install.sh | sh'
+     ssh root@192.168.1.50 'curl -fsSL https://raw.githubusercontent.com/derick-pan/cleanyourtv-WebOS/main/install.sh | sh'
      ```
 
 3. On the TV, open **CleanYourTV**, choose the options and **Set up now**. It takes about a minute and the screen blinks once.
