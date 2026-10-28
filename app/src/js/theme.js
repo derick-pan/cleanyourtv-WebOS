@@ -13,6 +13,7 @@ function applyTheme(t) {
   b.classList.remove('grid-open');
   if (!t || !t.vars) {
     TH = TH0;
+    MASCOT.apply(null, 1);
     return;
   }
   for (k in t.vars) {
@@ -43,6 +44,8 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
+  /* a theme's mascot (mascot.js): the picture is served from its folder; it stands still when the theme's animations are off */
+  MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
   TH = {
     cols: t.cols || 10,
     tileH: t.tileH || 151,
@@ -70,7 +73,10 @@ function setFocus(nr, nc, first) {
     n = $('name');
   if (n.textContent !== nm) n.textContent = nm;
   if (first) glowNow(e);
-  else glowSoon(e);
+  else {
+    glowSoon(e);
+    MASCOT.poke();
+  }
   var sh = 0;
   if (TH.push) {
     /* the grid sits under the dock: focusing it scrolls everything up (the dock stops at its 'up' position) and the grid fades in */

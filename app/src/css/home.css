@@ -3,6 +3,7 @@
 :root {
   --ink: #f5f6f8;
   --ink2: rgba(245, 246, 248, 0.62);
+  --ink3: rgba(245, 246, 248, 0.88);
   --night: #07080b;
   --night-rgb: 7, 8, 11;
   --panel: #14161b;
@@ -139,7 +140,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(245, 246, 248, 0.88);
+  color: var(--ink3);
   line-height: 1;
 }
 #time {
@@ -152,7 +153,7 @@ body {
 #date {
   display: var(--date-d);
   font-size: calc(28px * var(--fs) * var(--date-s));
-  color: rgba(245, 246, 248, 0.88);
+  color: var(--ink3);
   margin-left: 22px;
   padding-top: 14px;
 }
@@ -601,6 +602,30 @@ body {
 body.wpon {
   background-image: none;
 }
+/* the mascot (mascot.* in a theme, app/src/js/mascot.js): a strip of frames in a clipping box; the box is moved and the strip is
+   stepped with transforms only. Above the grid and the top row, below the menus, toasts and Live TV. */
+#mascot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+  display: none;
+  will-change: transform;
+}
+#mascot.on {
+  display: block;
+}
+#mascot-strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform-origin: 0 0;
+  will-change: transform;
+}
 /* cards: small widgets in the theme's slots (app/src/js/cards.js); placed like the clock, from the slot's edges */
 #cards {
   position: absolute;
@@ -640,7 +665,7 @@ body.wpon {
   display: flex;
   flex-direction: column;
   font-size: calc(24px * var(--fs) * var(--date-s));
-  color: rgba(245, 246, 248, 0.88);
+  color: var(--ink3);
   line-height: 1.2;
 }
 .card-greeting .l1,

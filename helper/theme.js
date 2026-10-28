@@ -1,13 +1,13 @@
 // Themes for the launcher's home screen. A theme is a folder in the themes/ folder of the GitHub repository (theme.json, a screenshot and
-// optionally a wallpaper and a typeface). Nothing is shipped with the service: the TV reads themes/index.json from GitHub, shows the list
-// with the screenshots and downloads a theme (and its wallpaper and typeface) when it is chosen; downloaded themes stay on the TV. Classic is built in. A theme sets
+// optionally a wallpaper, a typeface and a mascot). Nothing is shipped with the service: the TV reads themes/index.json from GitHub, shows the list
+// with the screenshots and downloads a theme (and its wallpaper, typeface and mascot) when it is chosen; downloaded themes stay on the TV. Classic is built in. A theme sets
 // values from the table SCHEMA below: colours, surfaces, text, and the position and size of every part of the screen (clock, buttons, app
-// name, dock, grid), plus effects and a wallpaper. There is no CSS or script in a theme. Every value is checked against SCHEMA and clamped,
+// name, dock, grid), plus effects, a wallpaper and a mascot (a small picture the launcher walks along the bottom). There is no CSS or script in a theme. Every value is checked against SCHEMA and clamped,
 // a value that is missing or invalid keeps the value of the theme it extends (or the default, the original look), and unknown keys are
 // ignored, so a theme can change how Home looks but nothing else. A new setting is one row in SCHEMA plus the CSS that reads its variable;
 // docs/themes.md is generated from SCHEMA (tools/theme-docs.js).
 // API (loopback only): GET /api/theme/list, POST /api/theme/set {id, accent}, POST /api/theme/revert, GET /api/theme/preview/<id>,
-// GET /api/theme/wallpaper/<id>/<file>, GET /api/theme/font/<id>/<file>.
+// GET /api/theme/wallpaper/<id>/<file>, GET /api/theme/font/<id>/<file>, GET /api/theme/mascot/<id>/<file>.
 const fs = require('fs'),
   path = require('path');
 const nc = require('./netcompat'),
@@ -22,6 +22,7 @@ const {
   ID,
   MAX_FONT,
   MAX_INDEX,
+  MAX_MASCOT,
   MAX_PREVIEW,
   MAX_THEME,
   MAX_WALLPAPER,
@@ -178,7 +179,7 @@ function create(ctx) {
     return catP;
   }
 
-  // download a theme (and the theme it extends, its wallpaper and its typeface) into themes/<id>/; nothing is kept when a file is invalid
+  // download a theme (and the theme it extends, its wallpaper, typeface and mascot) into themes/<id>/; nothing is kept when a file is invalid
   async function install(id, depth) {
     if (!ID.test(id) || id === DEFAULT_ID) throw new Error('unknown theme');
     if ((depth || 0) > 3) throw new Error('the theme extends too many themes');
@@ -205,11 +206,19 @@ function create(ctx) {
       font = await fetchBuf(base() + '/' + id + '/' + f, MAX_FONT, 25000);
       if (!fontOk(font, f)) throw new Error('the typeface is not a font of that type');
     }
+    const mf = getPath(raw, 'mascot.file');
+    let mascot = null;
+    if (typeof mf === 'string' && mf !== '') {
+      if (!FILE.test(mf)) throw new Error('the mascot name is not valid');
+      mascot = await fetchBuf(base() + '/' + id + '/' + mf, MAX_MASCOT, 25000);
+      if (!imageOk(mascot, mf, MAX_MASCOT)) throw new Error('the mascot is not an image of that type');
+    }
     const d = path.join(dir(), id),
       had = fs.existsSync(path.join(d, 'theme.json'));
     mkdirs(d);
     if (wall) writeAtomic(path.join(d, w), wall);
     if (font) writeAtomic(path.join(d, f), font);
+    if (mascot) writeAtomic(path.join(d, mf), mascot);
     writeAtomic(path.join(d, 'theme.json'), JSON.stringify(raw));
     cache = null;
     if (!load()[id]) {
@@ -319,6 +328,23 @@ function create(ctx) {
         if (!ok) throw new Error('not a theme typeface');
         const b = fs.readFileSync(path.join(dir(), m[1], m[2]));
         res.writeHead(200, { 'content-type': fontType(m[2]), 'cache-control': 'max-age=86400', 'access-control-allow-origin': '*' });
+        return res.end(b);
+      } catch (_) {
+        res.writeHead(404);
+        return res.end();
+      }
+    }
+    m = /^mascot\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(?:jpg|png|webp))$/.exec(act);
+    if (m) {
+      // only the mascot a theme names, from that theme's folder (also when a theme that extends it is chosen)
+      const ok = Object.keys(load()).some(k => {
+        const v = load()[k].v;
+        return v['mascot.file'] === m[2] && (v.mascotTheme || k) === m[1];
+      });
+      try {
+        if (!ok) throw new Error('not a theme mascot');
+        const b = fs.readFileSync(path.join(dir(), m[1], m[2]));
+        res.writeHead(200, { 'content-type': imageType(m[2]), 'cache-control': 'max-age=86400' });
         return res.end(b);
       } catch (_) {
         res.writeHead(404);

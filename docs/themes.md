@@ -38,6 +38,9 @@ folder of the GitHub repository (the `main` branch):
 | Horizon | A row of seven square apps along the bottom of a dusk landscape, the clock on the left and the buttons on the right at the top. Down moves the row up and shows all apps below it. It has slots for cards. |
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
+| Cupertino | In the manner of Apple's TV home screen: a centred row of wide rounded tiles that lift and grow in focus instead of a ring, frosted round buttons and a thin clock over a soft flowing gradient. |
+| The Grid | A neon world after dark: a black floor of glowing cyan lines running to the horizon, square-cornered tiles with a light-blue ring, outlined buttons and a cyan glow. Down opens the apps. |
+| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and a little Claude (a mascot, see below) who walks along the floor, hops when you move and gets up to tricks. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
 
@@ -134,7 +137,8 @@ theme lists only what it changes. Positions and sizes are in pixels on a 1920 x 
 Every part of the home screen has its own position and size, so themes can arrange the screen differently, not only recolour it:
 the **clock**, the top **buttons** (`bar`), the large app **name**, the **dock** and the **grid**. Each can be anchored to the top
 or bottom edge and aligned left, centre or right, with an offset. A dock at the bottom turns the grid into an overlay that opens
-when the focus moves down into it (Back or Up closes it); a dock at the top leaves the grid below it, scrolling.
+when the focus moves down into it (Back or Up closes it); a dock at the top leaves the grid below it, scrolling. A theme can also
+bring a **mascot**: a small picture that walks along the bottom of the screen (see [A mascot](#a-mascot) below).
 
 <!-- schema:start -->
 | Key | Values | Default | |
@@ -227,6 +231,13 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `effects.speed` | 0 to 2 | `1` | Animation speed multiplier; 0 switches the animations off. |
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
+| **mascot** | | | |
+| `mascot.file` | a file name | none | A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only. |
+| `mascot.frames` | 1 to 16 | `1` | Pictures in the strip, left to right. |
+| `mascot.size` | 32 to 240 | `96` | Height of the mascot on screen, in px. |
+| `mascot.y` | 0 to 900 | `36` | Distance of its feet from the bottom edge, in px. |
+| `mascot.speed` | 0 to 2 | `1` | How fast it walks and how often it plays; 0 keeps it standing still. `effects.speed` 0 stops it too. |
+| `mascot.flip` | `true` or `false` | `true` | Mirror the picture when it walks to the left (draw it facing right). |
 <!-- schema:end -->
 
 ### Slots for cards
@@ -254,8 +265,26 @@ At most eight slots; values out of range are clamped and a slot with a bad or re
 keeps its slots unless it has its own `"slots"` (an empty list removes them). In a right-to-left language the slots are mirrored
 like the rest of the screen.
 
+### A mascot
+
+A theme can have a mascot: a small character that walks along the bottom of Home, like the little Claude of the Claude theme. The
+theme only gives a picture; the launcher does the walking (`app/src/js/mascot.js`), with transforms only, so the TV draws it as one
+small layer. It walks left and right, rests, hops, spins, dashes, wiggles and peeks from an edge, and hops once when the focus moves.
+It stays under the menus, the toasts and Live TV, and stops while Home is not on screen.
+
+```json
+"mascot": { "file": "claude-walk.png", "frames": 6, "size": 104, "y": 28, "speed": 1, "flip": true }
+```
+
+- `mascot.file` is a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB, downloaded with the theme like a wallpaper. A PNG
+  with transparency looks best.
+- The picture is one frame, or a strip of `mascot.frames` frames of the same size side by side: the first one standing, the others a walk
+  cycle, played at eight frames a second while it walks. Draw the character facing right; with `mascot.flip` it is mirrored when it walks left.
+- `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast it
+  walks and how often it does something; 0 keeps it standing, and so does `effects.speed` 0.
+
 A theme file holds values only. The service checks every value against the table and clamps numbers to their range; there is no CSS
-and no script, and a wallpaper is accepted only as a plain file name from the theme's folder that is also a real image of the
+and no script, and a wallpaper or a mascot is accepted only as a plain file name from the theme's folder that is also a real image of the
 right type. Anything else is ignored. The launcher draws the wallpaper once and nothing blurs or filters it, because the TV's GPU is weak.
 
 From a shell on the TV:

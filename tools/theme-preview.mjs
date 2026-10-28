@@ -5,14 +5,14 @@
 // grid) and <out>/menu.png (the Customise menu), 1920 x 1080. With --write it also writes themes/<id>/preview.jpg (800 x 450, the screenshot
 // the TV shows). Needs Node.js 22 or newer and Google Chrome (set CHROME to its path when it is not found); nothing is installed.
 // The page talks to a small stand-in for the TV's service on 127.0.0.1:8765, so stop anything else that uses that port.
-import http from 'node:http'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawn, spawnSync } from 'node:child_process'; import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url), ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+import http from 'node:http'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawn, spawnSync } from 'node:child_process'; import { createRequire } from 'node:module'; import { fileURLToPath } from 'node:url';
+const require = createRequire(import.meta.url), ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), id = args.find(a => /^[a-z0-9-]{1,30}$/.test(a) && args[args.indexOf(a) - 1] !== '--out');
 const out = args.includes('--out') ? path.resolve(args[args.indexOf('--out') + 1]) : path.join(os.tmpdir(), 'cytv-theme-preview'), write = args.includes('--write');
 if (!id) { console.error('usage: node tools/theme-preview.mjs <theme id> [--out <folder>] [--write]'); process.exit(2); }
 if (id !== 'classic' && !fs.existsSync(path.join(ROOT, 'themes', id, 'theme.json'))) { console.error('there is no themes/' + id + '/theme.json'); process.exit(2); }
 if (typeof WebSocket === 'undefined') { console.error('this needs Node.js 22 or newer (WebSocket)'); process.exit(2); }
-const chromePath = process.env.CHROME || ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(p => fs.existsSync(p));
+const chromePath = process.env.CHROME || ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find(p => fs.existsSync(p));
 if (!chromePath) { console.error('Chrome was not found: set CHROME to its path'); process.exit(2); }
 
 // the theme module reads themes from a folder: give it a copy of this theme
@@ -55,6 +55,7 @@ try {
   await send('Page.navigate', { url: 'http://127.0.0.1:8765/home.html' }); await sleep(3000);
   const shot = async name => { await sleep(700); const r = await send('Page.captureScreenshot', { format: 'png' }); const f = path.join(out, name + '.png'); fs.writeFileSync(f, Buffer.from(r.result.data, 'base64')); console.log(f); return f; };
   const key = async (code, name) => { await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', windowsVirtualKeyCode: code, key: name }); await send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: code, key: name }); await sleep(350); };
+  await send('Runtime.evaluate', { expression: "typeof MASCOT!=='undefined'&&MASCOT.still&&MASCOT.still();0" }); // a theme's mascot stands still for the picture
   const restFile = await shot('rest');
   await key(40, 'ArrowDown'); await shot('grid'); await key(38, 'ArrowUp');
   await send('Runtime.evaluate', { expression: "openMenu('Customise',[{label:'Edit the top buttons'},{label:'Add a button'},{label:'Hidden apps',sub:'2'}]);0" }); await shot('menu');

@@ -181,6 +181,7 @@ run(async () => {
     orphan: JSON.stringify({ name: 'Orphan', extends: 'missing-base' }),
     pixkid: JSON.stringify({ name: 'Pixel kid', extends: 'pixel', dock: { count: 4 } }),
     badfont: JSON.stringify({ name: 'Bad typeface', type: { fontFile: 'f.woff2' } }),
+    badmascot: JSON.stringify({ name: 'Bad mascot', mascot: { file: 'm.png' } }),
   };
   let ghUp = true;
   const ghHits = [];
@@ -196,6 +197,7 @@ run(async () => {
     if (m && tWrong[m[1]]) return send(200, tWrong[m[1]]);
     if (/^\/themes\/badwall\/w\.jpg$/.test(u)) return send(200, Buffer.from('this is not a jpeg at all, just text'));
     if (/^\/themes\/badfont\/f\.woff2$/.test(u)) return send(200, Buffer.from('this is not a font file, only some text'));
+    if (/^\/themes\/badmascot\/m\.png$/.test(u)) return send(200, Buffer.from('this is not a png, only some text'));
     const f = path.join(root, u);
     if (!f.startsWith(tdir + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send(404, 'no');
     send(200, fs.readFileSync(f));
@@ -298,6 +300,47 @@ run(async () => {
   );
   r = await tcall('set', { id: 'badfont' });
   ok(r.code !== 200 && !fs.existsSync(path.join(tlocal, 'badfont')), 'a typeface that is not a font is refused and nothing is kept');
+  // a mascot (mascot.*): an image in the theme's folder, checked like a wallpaper, downloaded with the theme and served from its folder;
+  // only a theme with one has the key in its reply, so the other themes' replies stay as they were
+  const mt = themeMod.normalize(
+    { mascot: { file: 'claude-walk.png', frames: 6, size: 999, y: 28, speed: 1, flip: false } },
+    'claude',
+    null,
+    path.join(tdir, 'claude')
+  );
+  const mr = themeMod.resolve(mt);
+  ok(
+    mr.mascot &&
+      mr.mascot.id === 'claude' &&
+      mr.mascot.file === 'claude-walk.png' &&
+      mr.mascot.frames === 6 &&
+      mr.mascot.size === 240 &&
+      mr.mascot.y === 28 &&
+      mr.mascot.flip === false,
+    'a mascot resolves with its frames, its position and a clamped size'
+  );
+  ok(
+    !('mascot' in plain) && themeMod.normalize({ mascot: { file: 'nope.png' } }, 'nomascot').v['mascot.file'] === '',
+    'a theme without a mascot has no mascot key, and a mascot file that is not there is dropped'
+  );
+  ok(
+    themeMod.resolve(themeMod.normalize({ name: 'kid' }, 'claude-kid', mt.v)).mascot.id === 'claude',
+    'a theme that extends one with a mascot uses that file from its folder'
+  );
+  r = await tcall('set', { id: 'claude' });
+  ok(
+    r.code === 200 &&
+      fs.existsSync(path.join(tlocal, 'claude', 'claude-walk.png')) &&
+      th.resolved().mascot &&
+      th.resolved().mascot.id === 'claude',
+    "a theme's mascot is downloaded with it"
+  );
+  r = await tcall('mascot/claude/claude-walk.png', null, 'GET');
+  ok(r.code === 200, 'the mascot is served');
+  r = await tcall('mascot/claude/other.png', null, 'GET');
+  ok(r.code === 404, 'a file the theme does not name is not served as a mascot');
+  r = await tcall('set', { id: 'badmascot' });
+  ok(r.code !== 200 && !fs.existsSync(path.join(tlocal, 'badmascot')), 'a mascot that is not an image is refused and nothing is kept');
   r = await tcall('set', { id: 'kid' });
   ok(
     r.code === 200 &&

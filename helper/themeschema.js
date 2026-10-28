@@ -9,6 +9,7 @@ const dir = () => process.env.CYTV_THEMES || path.join(__dirname, 'themes');
 const DEFAULT_ID = 'classic',
   MAX_WALLPAPER = 1.5 * 1024 * 1024,
   MAX_FONT = 400 * 1024,
+  MAX_MASCOT = 256 * 1024,
   MAX_PREVIEW = 600 * 1024,
   MAX_THEME = 32 * 1024,
   MAX_INDEX = 128 * 1024;
@@ -168,6 +169,24 @@ const SCHEMA = [
     'A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080.',
   ],
   ['effects.wallpaperDim', 'num', [0, 0.9], 0.4, 'How far the wallpaper is darkened with the background colour.'],
+  [
+    'mascot.file',
+    'file',
+    null,
+    '',
+    "A small character that walks along the bottom of Home: a `.png`, `.webp` or `.jpg` in the theme's folder, at most 256 KB. One picture, or a strip of `mascot.frames` pictures of the same size side by side (a walk cycle, the first one standing). The launcher moves it with transforms only.",
+  ],
+  ['mascot.frames', 'int', [1, 16], 1, 'Pictures in the strip, left to right.'],
+  ['mascot.size', 'int', [32, 240], 96, 'Height of the mascot on screen, in px.'],
+  ['mascot.y', 'int', [0, 900], 36, 'Distance of its feet from the bottom edge, in px.'],
+  [
+    'mascot.speed',
+    'num',
+    [0, 2],
+    1,
+    'How fast it walks and how often it plays; 0 keeps it standing still. `effects.speed` 0 stops it too.',
+  ],
+  ['mascot.flip', 'bool', null, true, 'Mirror the picture when it walks to the left (draw it facing right).'],
 ];
 const DEFAULTS = {};
 for (const r of SCHEMA) DEFAULTS[r[0]] = r[3];
@@ -262,6 +281,16 @@ function normalize(raw, id, base, wallDir) {
       }
     } catch (_) {}
   } else if (f === '') v['type.fontFile'] = '';
+  // a mascot: a small image, kept with the id of the theme whose folder holds it, like a typeface
+  const m = getPath(raw, 'mascot.file');
+  if (typeof m === 'string' && FILE.test(m)) {
+    try {
+      if (imageOk(fs.readFileSync(path.join(wallDir || path.join(dir(), id), m)), m, MAX_MASCOT)) {
+        v['mascot.file'] = m;
+        v.mascotTheme = id;
+      }
+    } catch (_) {}
+  } else if (m === '') v['mascot.file'] = '';
   // slots for cards: a list in the theme (not in SCHEMA, which holds single values); a theme without "slots" keeps its base's
   if (raw.slots !== undefined) v.slots = slots(raw.slots);
   return {
@@ -354,6 +383,7 @@ function resolve(t, accent) {
     '--panel2': mix(v['colors.panel'], v['colors.ink'], 0.06),
     '--ink': v['colors.ink'],
     '--ink2': 'rgba(' + ink.join(',') + ',.62)',
+    '--ink3': 'rgba(' + ink.join(',') + ',.88)',
     '--acc': A,
     '--acc-ink': lum(A) > 0.35 ? '#0b0c10' : '#ffffff',
     '--focus': v['colors.focus'] || A,
@@ -462,6 +492,17 @@ function resolve(t, accent) {
     });
   // only a theme with a typeface has this key, so the replies for the other themes stay as they were
   if (v['type.fontFile']) out.font = { id: v.fontTheme || t.id, file: v['type.fontFile'] };
+  // only a theme with a mascot has this key (the same reason); the launcher animates it (app/src/js/mascot.js)
+  if (v['mascot.file'])
+    out.mascot = {
+      id: v.mascotTheme || t.id,
+      file: v['mascot.file'],
+      frames: v['mascot.frames'],
+      size: v['mascot.size'],
+      y: v['mascot.y'],
+      speed: v['mascot.speed'],
+      flip: v['mascot.flip'],
+    };
   return out;
 }
 
@@ -475,6 +516,7 @@ module.exports = {
   ID,
   MAX_FONT,
   MAX_INDEX,
+  MAX_MASCOT,
   MAX_PREVIEW,
   MAX_THEME,
   MAX_WALLPAPER,

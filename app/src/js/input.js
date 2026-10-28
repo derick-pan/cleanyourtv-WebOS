@@ -209,6 +209,7 @@ document.addEventListener('visibilitychange', function () {
       return;
     }
     WALL.hidden();
+    MASCOT.hidden();
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();
   } else if (guarded()) LIVE.resume();
@@ -218,6 +219,7 @@ document.addEventListener('visibilitychange', function () {
     liveBlip = false;
     load();
     WALL.shown();
+    MASCOT.shown();
   }
 });
 
