@@ -55,9 +55,13 @@ document.addEventListener('mousemove', function (ev) {
 
 /* watch mode (world.watch in a theme): after that many minutes without a key on Home, with no menu open, the grid closed and no Live
    TV, the clock, the buttons and the apps fade away and the world has the screen; a key or a real pointer move brings them back, and
-   that key does nothing else. A coloured key that starts a show in the world starts it and leaves the world the screen */
+   that key does nothing else. A coloured key that starts a show in the world (show) gives it the screen the same way while it lasts */
 var watchT = 0,
-  watchXY = null;
+  watchXY = null,
+  showT = 0,
+  woke = 0 /* the key that ended watch mode: it does nothing else while it is held (webOS repeats it) */,
+  wokeAt = 0,
+  wokeClick = false;
 function watchLater() {
   clearTimeout(watchT);
   var m = WORLD.watch();
@@ -68,26 +72,84 @@ function watchLater() {
     }, m * 60000);
 }
 function unwatch() {
+  clearTimeout(showT);
+  showT = 0;
   watchLater();
   watchXY = null;
   if (!document.body.classList.contains('watch')) return false;
   document.body.classList.remove('watch');
   return true;
 }
+/* a coloured key (403 to 406): the world's show for it starts (world events with a key) and the clock, the buttons and the apps fade
+   away until it is over (or a key brings them back); in watch mode they stay away. False when the world has no show for that key */
+function show(k) {
+  if (r >= GR) return false; /* the grid is open: the world stands under it */
+  var t = WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403]),
+    b = document.body.classList;
+  if (!t) return false;
+  if (b.contains('watch') && !showT) return true;
+  clearTimeout(watchT);
+  clearTimeout(showT);
+  b.add('watch');
+  showT = setTimeout(function () {
+    showT = 0;
+    unwatch();
+  }, t * 1000);
+  return true;
+}
+/* a press of the pointer in watch mode only brings the apps back: the tile under it is not opened (nor its options) */
+document.addEventListener(
+  'mousedown',
+  function (ev) {
+    wokeClick = document.body.classList.contains('watch');
+    if (!wokeClick) return;
+    unwatch();
+    ev.stopPropagation();
+    ev.preventDefault();
+  },
+  true
+);
+document.addEventListener(
+  'click',
+  function (ev) {
+    if (!wokeClick) return;
+    wokeClick = false;
+    ev.stopPropagation();
+    ev.preventDefault();
+  },
+  true
+);
+/* a real move of the pointer (24 px or more) counts as a key: it keeps watch mode away, or ends it */
 document.addEventListener('mousemove', function (ev) {
-  if (!document.body.classList.contains('watch')) return;
-  if (!watchXY) watchXY = [ev.clientX, ev.clientY];
-  else if (Math.abs(ev.clientX - watchXY[0]) + Math.abs(ev.clientY - watchXY[1]) >= 24) unwatch();
+  var p = [ev.clientX, ev.clientY],
+    far = !watchXY || Math.abs(p[0] - watchXY[0]) + Math.abs(p[1] - watchXY[1]) >= 24;
+  if (!document.body.classList.contains('watch')) {
+    if (far) {
+      watchXY = p;
+      watchLater();
+    }
+    return;
+  }
+  if (!watchXY) watchXY = p;
+  else if (far) unwatch();
 });
 
 document.addEventListener('keydown', function (e) {
   var k = e.keyCode;
-  if (k >= 403 && k <= 406 && document.body.classList.contains('watch') && WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) {
+  if (k === woke && Date.now() - wokeAt < 1500) {
+    wokeAt = Date.now();
+    e.preventDefault();
+    return;
+  }
+  woke = 0;
+  if (k >= 403 && k <= 406 && document.body.classList.contains('watch') && show(k)) {
     e.preventDefault();
     return;
   }
   if (unwatch()) {
     lastKey = Date.now();
+    woke = k;
+    wokeAt = lastKey;
     e.preventDefault();
     return;
   }
@@ -138,7 +200,7 @@ document.addEventListener('keydown', function (e) {
   } /* Back on the home screen: the running apps */
   /* the coloured keys start the world's shows (world events with a key: red, green, yellow, blue) */
   if (k >= 403 && k <= 406) {
-    if (WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) e.preventDefault();
+    if (show(k)) e.preventDefault();
     return;
   }
   var len = rows[r].length;
@@ -176,6 +238,10 @@ document.addEventListener('keydown', function (e) {
   e.preventDefault();
 });
 document.addEventListener('keyup', function (e) {
+  if (e.keyCode === woke) {
+    woke = 0;
+    return;
+  }
   if (e.keyCode !== 13) return;
   lastKey = Date.now();
   clearTimeout(downT);
@@ -229,6 +295,8 @@ document.addEventListener('webOSRelaunch', function () {
     p = JSON.parse(webOSSystem.launchParams || '{}');
   } catch (e) {}
   logLine('launcher relaunch ' + JSON.stringify(p).slice(0, 120) + (LIVE.on ? ' (live on)' : ''));
+  /* out of watch mode first: the Inputs list or Live TV that the launch opens takes the next key */
+  unwatch();
   if (LIVE.on && p && p.guide && liveOn()) {
     LIVE.toggleGuide();
     return;
@@ -254,6 +322,8 @@ document.addEventListener('visibilitychange', function () {
     SCENE.hidden();
     WORLD.hidden();
     clearTimeout(watchT);
+    clearTimeout(showT);
+    showT = 0;
     document.body.classList.remove('watch');
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();

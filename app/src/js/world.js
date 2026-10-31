@@ -33,6 +33,7 @@ var WORLD = (function () {
     parts = [] /* particles on screen */,
     live = null /* the event going on */,
     stillAt = 0 /* the time the hours are at for a screenshot (still), or 0 for the clock's */,
+    waiting = [] /* the events waiting for their turn, by index */,
     level = 0 /* how much a TV that cannot keep up sheds: 0 nothing, 1 some, 2 more */,
     CAP = [36, 18, 8] /* particles at a time, at each level */,
     wxDay = -1 /* the day the weather was picked for */,
@@ -865,7 +866,7 @@ var WORLD = (function () {
       this.after(this.walk(x, o.y, h.speed, h.walk, 8), function () {
         this.face = o.x > this.x ? 1 : -1;
         this.show(h.acts[0] || h.stand, 6);
-        if (h.fx) emit(h.fx, Math.round((this.x + o.x) / 2), this.y, 1);
+        if (h.fx && this.shown !== false) emit(h.fx, Math.round((this.x + o.x) / 2), this.y, 1);
         this.after(rnd(1.5, 3) / rate, this.next);
       });
     }
@@ -891,20 +892,26 @@ var WORLD = (function () {
      one at a time, each a while (every) after it was last over, when its chance says so. One can follow another (then), and a
      coloured key starts one at once (key) ---- */
   function events() {
+    waiting = [];
     if (rate > 0)
       W.events.forEach(function (e) {
         if (e.chance > 0) wait(e);
       });
   }
+  /* each event waits for its turn in one chain (waiting, by its index) */
   function wait(e) {
+    var i = W.events.indexOf(e);
+    waiting[i] = true;
     later(
       function () {
+        waiting[i] = false;
         if (!live && active(e.when) && Math.random() < e.chance) start(e);
         else wait(e);
       },
       rnd(e.every[0], e.every[1]) / rate
     );
   }
+  /* it begins; returns how many seconds it lasts */
   function start(e) {
     var ev = { e: e, props: [], drift: [], spot: null };
     live = ev;
@@ -946,18 +953,21 @@ var WORLD = (function () {
         });
       ev.want = Math.min(e.call, s.n) - called.length;
     }
-    later(
-      function () {
-        end(ev);
-      },
-      rnd(e.time[0], e.time[1]) / rate
-    );
+    var t = rnd(e.time[0], e.time[1]) / rate;
+    later(function () {
+      end(ev);
+    }, t);
+    return t;
   }
   /* over: its props fade out over their fade (its drift and its spot's props at once), the ones at its spot go back to their business,
      and the one that follows it comes (not when the world stops or a key started another: alone) */
   function end(ev, alone) {
+    /* once: a key that cut it short already ended it, and its own end comes later */
+    if (ev.over) return;
+    ev.over = true;
     if (live === ev) live = null;
-    if (ev.e.chance > 0) wait(ev.e);
+    /* it waits for its next turn again, unless it is waiting already (a key or another event started it, not its turn) */
+    if (ev.e.chance > 0 && !waiting[W.events.indexOf(ev.e)]) wait(ev.e);
     var s = ev.spot,
       gone = ev.drift.slice(),
       slow = 0.9;
@@ -987,7 +997,7 @@ var WORLD = (function () {
     }, 900);
     if (s) {
       s.on = null;
-      spots.splice(spots.indexOf(s), 1);
+      if (spots.indexOf(s) >= 0) spots.splice(spots.indexOf(s), 1);
       s.who.forEach(function (m) {
         if (m && m.spot === s) m.after(rnd(0, 1.5) / rate, m.next);
       });
@@ -999,7 +1009,15 @@ var WORLD = (function () {
   /* ---- what depends on the hour and the day: props and drift shown or not, herds out or in, the tint of the night ---- */
   /* shown or not: it fades in or out over fade seconds (at once the first time, or for a screenshot), out of the way once it is out */
   function showAt(x, on, fade, instant) {
-    if (x.shown === on) return;
+    if (x.shown === on) {
+      /* at once (Home is back): a fade still going is over */
+      if (instant && x.o.clip.style.animation) {
+        x.fk = (x.fk || 0) + 1;
+        x.o.clip.style.animation = '';
+        if (!on) x.a.style.display = 'none';
+      }
+      return;
+    }
     var first = x.shown === undefined,
       a = x.a,
       c = x.o.clip.style,
@@ -1009,6 +1027,14 @@ var WORLD = (function () {
     if (on) {
       a.style.display = '';
       c.animation = t ? 'wo-fin ' + t.toFixed(1) + 's linear' : '';
+      /* done fading in: no animation left, or it would play again each time the world is back in the page */
+      if (t)
+        setTimeout(
+          function () {
+            if (x.fk === k) c.animation = '';
+          },
+          t * 1000 + 100
+        );
     } else if (!t) {
       a.style.display = 'none';
       c.animation = '';
@@ -1069,16 +1095,17 @@ var WORLD = (function () {
       requestAnimationFrame(tick);
     }, 6);
   }
-  /* late: more than twice the usual time between frames (and over 50 ms); too slow: frames over 40 ms apart, or one in ten late */
+  /* late: more than twice the usual time between frames (and over 50 ms); too slow: frames over 40 ms apart, one in ten late, or so
+     few frames in the three seconds (under 20) that the TV can hardly draw at all */
   function judge(gaps) {
-    if (gaps.length < 20) return;
+    if (!gaps.length) return;
     var med = gaps.slice().sort(function (a, b) {
         return a - b;
       })[Math.floor(gaps.length / 2)],
       late = gaps.filter(function (g) {
         return g > Math.max(2.2 * med, 50);
       }).length;
-    if (med <= 40 && late * 10 <= gaps.length) return;
+    if (gaps.length >= 20 && med <= 40 && late * 10 <= gaps.length) return;
     level++;
     if (level >= 2)
       props.forEach(function (q) {
@@ -1197,7 +1224,8 @@ var WORLD = (function () {
     token++;
     parts.forEach(drop);
     parts = [];
-    hours(still);
+    /* what came or went with the hours while Home was hidden is there at once */
+    hours(true);
     props.forEach(function (q) {
       panning(q, still);
       startProp(q);
@@ -1250,16 +1278,16 @@ var WORLD = (function () {
       };
       im.src = u;
     },
-    /* a coloured key on Home (red, green, yellow, blue): the event that has it starts now; false when there is none */
+    /* a coloured key on Home (red, green, yellow, blue): the event that has it starts now; how many seconds it lasts, 0 when there is
+       none */
     key: function (name) {
-      if (!box || !W || !(rate > 0) || box.style.display === 'none') return false;
+      if (!box || !W || !(rate > 0) || box.style.display === 'none') return 0;
       for (var i = 0; i < W.events.length; i++)
         if (W.events[i].key === name) {
           if (live) end(live, true);
-          start(W.events[i]);
-          return true;
+          return start(W.events[i]);
         }
-      return false;
+      return 0;
     },
     /* an app opens: two of them wave goodbye */
     bye: function () {

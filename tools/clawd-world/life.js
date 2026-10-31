@@ -340,6 +340,58 @@ function aurora(k) {
   return p;
 }
 const AURORA = [0, 1, 2].map(aurora);
+// a big firework (the red key's show): a rocket rises with a trail of sparks, bursts white in two rings that open in its colours, and
+// the sparks droop and thin out as they fade
+function rocket(c1, c2) {
+  const W = 41,
+    H = 61,
+    cx = 20,
+    cy = 20,
+    out = [];
+  for (let f = 0; f < 16; f++) {
+    const p = new Pic(W, H),
+      dot = (x, y, c) => {
+        x = Math.round(x);
+        y = Math.round(y);
+        if (x >= 0 && y >= 0 && x < W && y < H) p.set(x, y, c);
+      };
+    if (f < 5) {
+      const y = 58 - f * 9;
+      dot(cx, y, '#FFFFFF');
+      dot(cx, y + 1, '#FFE9A8');
+      dot(cx + (f % 2 ? 1 : -1), y + 3, '#F5A54A');
+      dot(cx, y + 5, '#C9772E');
+    } else {
+      const g = f - 5,
+        r = [2, 6, 10, 13, 15, 16.5, 17.5, 18, 18.5, 19, 19][g],
+        fall = [0, 0, 0, 0.5, 1, 2, 3, 4.5, 6, 8, 10][g];
+      if (g === 0)
+        for (const [dx, dy] of [
+          [0, 0],
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ])
+          dot(cx + dx, cy + dy, dx || dy ? '#FFF4C2' : '#FFFFFF');
+      for (let i = 0; i < 28; i++) {
+        if (g >= 7 && i % (g - 5)) continue;
+        const a = (i / 28) * Math.PI * 2;
+        dot(cx + Math.cos(a) * r, cy + Math.sin(a) * r + fall, g < 2 ? '#FFFFFF' : g < 7 ? (i % 2 ? c1 : c2) : i % 2 ? c1 : '#FFFFFF');
+        if (g >= 2 && g < 8) dot(cx + Math.cos(a) * (r - 2), cy + Math.sin(a) * (r - 2) + fall * 0.7, i % 2 ? c2 : c1);
+        if (g >= 1 && g < 7 && i % 2 === 0)
+          dot(cx + Math.cos(a + 0.11) * r * 0.55, cy + Math.sin(a + 0.11) * r * 0.55 + fall * 0.5, g < 3 ? '#FFFFFF' : c2);
+      }
+    }
+    out.push(p);
+  }
+  return out;
+}
+const ROCKETS = [
+  ['#F5C542', '#E5484D'],
+  ['#8ECDF5', '#A98BF5'],
+  ['#6EE7A0', '#F6A5B8'],
+].map(([a, b]) => rocket(a, b));
 // a wisp of mist (a morning of fog): a long thin band, thickest in the middle, frayed towards its ends, in steps of alpha
 function mist(w, h, k) {
   const p = new Pic(w, h);
@@ -388,4 +440,5 @@ module.exports = {
   COMET,
   AURORA,
   MIST,
+  ROCKETS,
 };

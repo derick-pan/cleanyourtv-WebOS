@@ -339,11 +339,11 @@ Everything is drawn from one **sprite sheet**, a picture in the theme's folder t
 times without smoothing so pixel art stays crisp. Usually the static part of the place (the buildings, the ground) is the wallpaper,
 drawn at the same scale, and the world puts the moving parts on it. It moves with transforms and opacity only and in whole art pixels,
 and the frames are CSS animations, so the TV's GPU draws each piece as a small layer and the script only acts when a character starts
-something new. The crew hop when the focus moves, and two of them wave when Home comes back or an app opens. With `watch`, the
-clock, the buttons and the apps fade away after that many minutes without a key and the world has the screen (watch mode, see
-[the launcher](launcher.md#keys)). The world sits under the dock, the grid and the menus, stands still under the open grid, and with `effects.speed` 0 each character just stands at a spot. While Home is
-hidden (an app is open) the world is taken out of the page, so it costs the TV nothing, not even memory on its GPU, and an event going
-on ends.
+something new. The crew hop when the focus moves, and two of them wave when Home comes back or an app opens. With `watch`, the clock,
+the buttons and the apps fade away after that many minutes without a key and the world has the screen (watch mode, see [the
+launcher](launcher.md#keys)). The world sits under the dock, the grid and the menus; under the open grid its animations pause behind
+the grid's dark layer, and with `effects.speed` 0 each character just stands at a spot. While Home is hidden (an app is open) or Live
+TV plays, the world is taken out of the page, so it costs the TV nothing, not even memory on its GPU, and an event going on ends.
 
 A TV that cannot keep up loses nothing it needs: a few seconds after Home shows, the world times the TV's frames, and only when many
 come late does it shed what is least seen, a step at a time, timing them again after each. First it keeps fewer particles at a time
@@ -397,7 +397,7 @@ nothing flares. A TV that keeps up sheds nothing. The step is written to the ser
 |---|---|---|
 | `file` | a file name | The sprite sheet: a `.png` (with transparency), `.webp` or `.jpg` in the theme's folder, at most 256 KB, downloaded with the theme. Without it, or when it is not an image, the theme has no world. |
 | `px` | 1 to 12 | How many screen pixels an art pixel of the sheet is (default 4). |
-| `watch` | 0 to 120 minutes | Watch mode: after that many minutes without a key on Home (no menu open, the grid closed, no Live TV) the clock, the buttons and the apps fade away and the world has the screen; a key or a move of the pointer brings them back. 0 (the default): never. |
+| `watch` | 0 to 120 whole minutes | Watch mode: after that many minutes without a key or a move of the pointer on Home (no menu open, the grid closed, no Live TV) the clock, the buttons and the apps fade away and the world has the screen; a key or a move of the pointer brings them back. 0 (the default): never. |
 | `sprites` | name: `[x, y, w, h, frames, ax, ay, looks]` | A strip of `frames` frames, each `w` x `h`, side by side in the sheet from `x`, `y` (art pixels). `ax`, `ay` is the point of a frame that stands on a place (its feet); it defaults to the middle of the bottom edge and may be below the frame (someone sitting behind a desk). `looks` (1 to 16) strips of the same size may follow under it, one for each look of the crew (a cap of another colour). Names are lower-case letters, digits and `-`. Draw characters facing right. |
 | `crew` | below | The characters. |
 | `spots` | a list | The places where something happens, below. |
@@ -406,7 +406,7 @@ nothing flares. A TV that keeps up sheds nothing. The step is written to the ser
 | `herds` | a list: `count`, `area`, `stand`, `walk`, `acts`, `speed`, `fx`, `when` | Up to 8 groups of little ones (1 to 12 each) that wander about `area` `[x0, y0, x1, y1]`, stand, hop, do one of `acts` now and then, and play in pairs with `fx` between them. A herd without a `stand` sprite is left out. |
 | `events` | a list, below | What comes now and then. |
 | `shade` | a list: `color`, `alpha`, `when` | A tint over the backdrop (the night, a grey day): the first whose `when` fits, `alpha` 0 to 0.9 strong. It comes and goes slowly. |
-| `weather` | a list: `name`, `w`, `when` | The weathers a day can have (up to 12): each day one of those whose days (`when` `d`) fit, by weight `w` (0 to 100, default 1), picked from the date, so it is the same all day and on every TV, and not the weather outside. The same name can come twice, for more weight on some days (snow at Christmas). Props, drift, spots, events, the tint and the wind can then keep to some weathers (`when` `w`). |
+| `weather` | a list: `name`, `w`, `when` | The weathers a day can have (up to 12): each day one of those whose days (`when` `d`) fit, by weight `w` (0 to 1000, default 1), picked from the date, so it is the same all day and on every TV, and not the weather outside. The same name can come twice, for more weight on some days (snow at Christmas). Props, drift, spots, events, the tint and the wind can then keep to some weathers (`when` `w`). |
 | `wind` | `every` `[min, max]` seconds, `speed` px/s, `dir`, `fps`, `fx`, `when` | Now and then a gust crosses the screen from the left (`dir` 1) or the right (-1, the `gust` sprites mirrored), and every prop with a `gust` plays it at `fps` as it passes, so what grows sways in a wave. `fx` comes off some of them (a petal, `kind` `blow`: carried away the way the wind goes). It can be a list of up to 4: the first whose `when` fits blows (a windy day's gusts first, the usual ones last). |
 
 The crew:
@@ -451,7 +451,7 @@ Its drift comes in from the edge of the screen, and its props fade in and out ov
 `chance` (0 to 1, default 1) is how likely it comes each time it is due: a rare sighting has a small one, and one with 0 never comes by
 itself. `then` is the index of the event that comes when it is over (when that one's `when` fits): a rainbow after a shower. `key`
 (`red`, `green`, `yellow` or `blue`) starts it at once with that coloured key of the remote on Home, whatever its `when`, ending one
-that is going on.
+that is going on; the clock, the buttons and the apps fade away while it lasts, so it can use the whole sky.
 
 `when` is `{"h": [from, to], "d": ["MM-DD", "MM-DD"], "w": [weathers]}`, any of them: from the hour `from` up to `to` (24 is midnight;
 `[22, 7]` is the night, across midnight), from the first day to the last (`["12-20", "01-06"]` goes across New Year) and on a day of one

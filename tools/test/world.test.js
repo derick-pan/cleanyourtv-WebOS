@@ -488,12 +488,13 @@ run(async () => {
     'a Clawd that is walking hops when the focus moves'
   );
 
-  // at eleven at night: the fireflies, the night window, the owl, the bats of Halloween and the tint; no sparrow, no cat
+  // at eleven at night: the night window, the owl, the bats of Halloween and the tint; no sparrow, no cat, and no fireflies at the end
+  // of October (they only come out in the warm months)
   pg.jump(new Date(2026, 9, 31, 23, 0, 0).getTime() - pg.now());
   pg.advance(61000);
   ok(
-    vis('firefly').every(Boolean) && vis('nightwin').every(Boolean) && vis('sparrow').every(v => !v),
-    'the fireflies and the night window at night'
+    vis('firefly').length > 0 && vis('firefly').every(v => !v) && vis('nightwin').every(Boolean) && vis('sparrow').every(v => !v),
+    'the night window at night (no fireflies in late October)'
   );
   ok(mini('owl').every(shown) && mini('cat').every(m => !shown(m)), 'the owl is out at night, the cat is in');
   const bats = all(b, 'wo-d').filter(d => name(d).name === 'bat');
@@ -573,7 +574,10 @@ run(async () => {
   /* the look each wears (a sprite with fewer strips shows its first) */
   const capsOf = t => crewOf(t.box()).map(m => namer(w)(m)),
     wears = (n, lk) => n.look === (w.sprites[n.name][7] > lk ? lk : 0);
-  ok(capsOf(pv).every(n => wears(n, 6)), 'still: today (Halloween), the witch hats');
+  ok(
+    capsOf(pv).every(n => wears(n, 6)),
+    'still: today (Halloween), the witch hats'
+  );
   pv.WORLD.still(new Date(2026, 5, 28).getTime());
   ok(
     capsOf(pv).every((n, i) => wears(n, i % 6)) && shown(pvSky('starfield')),
@@ -911,7 +915,10 @@ run(async () => {
       shown2 = n => propsOf(kb).filter(e => nm(e).name === n && e.parentNode === kb);
     k.advance(60000);
     ok(!shown2('banner').length, 'an event with no chance never comes by itself');
-    ok(k.WORLD.key('blue') === false && k.WORLD.key('red') === true && shown2('banner').length === 1, 'its coloured key starts it at once');
+    ok(
+      k.WORLD.key('blue') === 0 && k.WORLD.key('red') === 5 && shown2('banner').length === 1,
+      'its coloured key starts it at once and says how long it lasts (no event for a key: 0)'
+    );
     k.advance(6000); /* over at 5 s, its banner gone 0.9 s later */
     const late = propsOf(kb).filter(e => nm(e).name === 'table' && e.style.left === '960px')[0],
       firstDrift = kb.children.indexOf(all(kb, 'wo-d')[0]);
@@ -1056,5 +1063,131 @@ run(async () => {
     ok(met, 'a chat: two meet in the street, side by side, facing each other');
     ok(talked === 2, 'they talk in turn, a bubble over each');
     ok(acted, 'and do the chat’s act together at the end');
+  }
+  // a coloured key while another show is on: the one cut short ends once (its own end, later, does nothing), so every spot is still
+  // there after; without that, its second end took away the last spot of the world for good
+  {
+    const kw2 = made({
+      crew: { count: 1 },
+      spots: [300, 700, 1100, 1500].map(x => ({ x: x, y: 800, act: 'work', time: [2, 2] })),
+      events: ['red', 'blue'].map((key, i) => ({
+        chance: 0,
+        key: key,
+        time: [8, 8],
+        call: 1,
+        spot: { x: 960, y: 900 + i * 40, act: 'wave', time: [600, 600] },
+      })),
+    });
+    const g = page(53, HALLOWEEN);
+    g.WORLD.apply(kw2, 1);
+    g.advance(1);
+    g.WORLD.key('red');
+    g.advance(3000);
+    g.WORLD.key('blue');
+    g.advance(20000);
+    const m = crewOf(g.box())[0];
+    let last = 0;
+    g.advance(600000, 250, () => {
+      if (same(xy(m.style.transform), [1500, 800])) last++;
+    });
+    ok(last > 0, 'a coloured key while another show is on: every spot is still there after');
+  }
+  // an event its key starts while it is waiting for its turn still waits in one chain: pressed again and again, it comes no more
+  // often by itself after than before
+  {
+    const ew = made({
+      crew: { count: 1 },
+      spots: [300, 1500].map(x => ({ x: x, y: 800, act: 'work', time: [30, 30] })),
+      events: [{ every: [20, 20], time: [5, 5], key: 'yellow', props: [{ s: 'banner', x: 960, y: 300, fade: 0 }] }],
+    });
+    const nm = namer(ew),
+      g = page(59, HALLOWEEN);
+    g.WORLD.apply(ew, 1);
+    g.advance(1);
+    const count = ms => {
+      const seen = new Set();
+      g.advance(ms, 250, () => propsOf(g.box()).forEach(e => nm(e).name === 'banner' && seen.add(e)));
+      return seen.size;
+    };
+    const before = count(250000);
+    for (let i = 0; i < 6; i++) {
+      g.WORLD.key('yellow');
+      g.advance(1000);
+    }
+    g.advance(10000);
+    const after = count(250000);
+    ok(before >= 8 && after <= before + 1, 'an event its key starts waits in one chain still (' + before + ' then ' + after + ' in 250 s)');
+  }
+  // Home back after the hours changed: what came with them is there at once, not fading in for minutes; a fade in that is over leaves
+  // no animation behind, so it does not play again when the world is back in the page
+  {
+    const hw = made({
+      crew: { count: 1 },
+      spots: [{ x: 300, y: 800, act: 'work', time: [60, 60] }],
+      props: [{ s: 'table', x: 100, y: 100, when: { h: [21, 5] }, fade: 300 }],
+    });
+    const g = page(61, new Date(2026, 9, 31, 18, 30).getTime());
+    g.WORLD.apply(hw, 1);
+    g.advance(1);
+    const night = propsOf(g.box()).filter(e => e.style.left === '100px')[0],
+      clip = () => all(night, 'wo-c')[0].style.animation || '';
+    const before = night.style.display;
+    g.WORLD.hidden();
+    g.jump(new Date(2026, 9, 31, 22, 0).getTime() - g.now());
+    g.WORLD.shown();
+    ok(before === 'none' && night.style.display === '' && clip() === '', 'Home back after the hours changed: the night is there at once');
+    g.WORLD.hidden();
+    g.jump(new Date(2026, 10, 1, 20, 58, 30).getTime() - g.now());
+    g.WORLD.shown();
+    g.advance(120000);
+    const fading = clip();
+    g.advance(320000);
+    const done = clip();
+    g.WORLD.hidden();
+    g.advance(1000);
+    g.WORLD.shown();
+    ok(
+      /^wo-fin 300\.0s linear$/.test(fading) && done === '' && clip() === '' && night.style.display === '',
+      'by the clock it fades in over its fade, and then has no animation left to play again'
+    );
+  }
+  // a TV so slow that only a few frames come in the three seconds (four a second) sheds too, a step at a time
+  {
+    const crawl = page(4, HALLOWEEN, 250);
+    crawl.WORLD.apply(w, 1);
+    crawl.advance(1);
+    crawl.advance(40000);
+    ok(
+      crawl.marks.length === 2 && /^world level 2 /.test(crawl.marks[1]),
+      'a TV that can hardly draw sheds both steps (' + crawl.marks.join('; ') + ')'
+    );
+  }
+  // a herd out of its hours gives off nothing (one in its hours does)
+  {
+    const herd = when => ({
+      count: 4,
+      area: [600, 900, 1300, 1000],
+      stand: 'mini',
+      walk: 'mini-walk',
+      acts: ['mini'],
+      speed: 30,
+      fx: { s: 'say-hi', kind: 'rise', every: 1 },
+      when: when,
+    });
+    const fxOf = h => {
+      const hw2 = made({ crew: { count: 0 }, spots: [], herds: [h] }),
+        nm = namer(hw2),
+        g = page(67, HALLOWEEN);
+      g.WORLD.apply(hw2, 1);
+      g.advance(1);
+      let n = 0;
+      g.advance(300000, 200, () => {
+        n += g.box().children.filter(c => c.classList.contains('wo-f') && nm(c).name === 'say-hi').length;
+      });
+      return n;
+    };
+    const awake = fxOf(herd(null)),
+      asleep = fxOf(herd({ h: [0, 1] }));
+    ok(awake > 0 && asleep === 0, 'a herd out of its hours gives off nothing (' + awake + ' in its hours)');
   }
 });

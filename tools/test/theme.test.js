@@ -46,6 +46,9 @@ run(async () => {
   }
   ok(allOk, 'every theme folder has a valid theme.json, its wallpaper and a screenshot' + (tbad.length ? ': ' + tbad.join('; ') : ''));
   ok(unknownKeys.length === 0, 'theme files use only keys of the schema' + (unknownKeys.length ? ': ' + unknownKeys.join(', ') : ''));
+  // a theme here may be up to 64 KB, but the services before that took 32 KB and read the themes from GitHub too: keep each under it
+  const over32 = folders.filter(id => fs.statSync(path.join(tdir, id, 'theme.json')).size > 32 * 1024);
+  ok(!over32.length, 'every theme.json is under 32 KB, so older services still take it' + (over32.length ? ': ' + over32.join(', ') : ''));
   ok(
     fs.readFileSync(path.join(tdir, 'index.json'), 'utf8') === require(path.join(root, 'tools', 'theme-index.js')).build(),
     'themes/index.json is up to date (run: node tools/theme-index.js)'
@@ -539,7 +542,7 @@ run(async () => {
         ],
         shade: [{ color: '#06051a', alpha: 2, when: { h: [0, 5] } }, { color: 'nope', alpha: 0.5 }, { color: '#FFFFFF' }],
         wind: [{ every: [1, 99999], speed: 1, dir: 7, fps: 99, fx: { s: 'cap', kind: 'blow' } }, { when: { w: ['wind'] } }],
-        weather: [{ name: 'sun', w: 999 }, { name: 'Bad Name' }, { name: 'snow', w: 5, when: { d: ['12-01', '02-28'] } }],
+        weather: [{ name: 'sun', w: 5000 }, { name: 'Bad Name' }, { name: 'snow', w: 5, when: { d: ['12-01', '02-28'] } }],
         watch: 999,
       },
     },
@@ -660,7 +663,8 @@ run(async () => {
   const sp9 = wr.spots[2],
     p2 = wr.props[1];
   ok(
-    JSON.stringify(wr.weather) === '[{"name":"sun","w":100,"when":null},{"name":"snow","w":5,"when":{"h":null,"d":[1201,228],"w":null}}]' &&
+    JSON.stringify(wr.weather) ===
+      '[{"name":"sun","w":1000,"when":null},{"name":"snow","w":5,"when":{"h":null,"d":[1201,228],"w":null}}]' &&
       wr.watch === 120 &&
       JSON.stringify(wr.crew.hats) === '[{"look":15,"when":{"h":null,"d":[1031,1031],"w":null}}]' &&
       JSON.stringify(wr.crew.members) === '[{"name":"cap","likes":["games","code"]},{"name":"","likes":[]}]' &&
@@ -681,6 +685,13 @@ run(async () => {
       e1.key === '' &&
       JSON.stringify(wr.events[0].spot.when) === '{"h":null,"d":null,"w":["rain","snow"]}',
     'the weather of the days, watch mode, hats, names and likes, hellos, tags, play and phase, the chance, then and key of an event: clamped'
+  );
+  // watch mode in whole minutes, at least one (a fraction of a minute would leave Home no time between keys); none, or not a number: off
+  const watchOf = v =>
+    themeMod.resolve(themeMod.normalize({ world: { file: 'clawd.png', watch: v } }, 'claude', null, path.join(tdir, 'claude'))).world.watch;
+  ok(
+    [0.001, 2.6, 0, -5, 'x', 3].map(watchOf).join() === '1,3,0,0,0,3',
+    'watch mode: whole minutes, at least one; 0, below or not a number is off'
   );
   ok(
     !('world' in plain) &&
