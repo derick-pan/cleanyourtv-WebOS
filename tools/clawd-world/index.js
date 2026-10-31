@@ -10,6 +10,7 @@ const fs = require('fs'),
 const { Pic, png, spr } = require('./pic');
 const K = require('./clawd');
 const T = require('./things');
+const WD = require('./wind');
 const P = require('./place');
 const OUT = path.join(__dirname, '..', '..', 'themes', 'claude');
 
@@ -142,7 +143,8 @@ add('bubble', T.BUBBLE);
 add('ember', T.EMBER);
 add('smoke', T.SMOKE, { pal: T.smokePal });
 add('glint', T.GLINT);
-add('reeds', T.REEDS);
+add('reeds', WD.REEDS.still);
+add('reeds-gust', WD.REEDS.gust);
 add('choir', T.CHOIR);
 add('swim', T.SWIM);
 add('fishjump', T.FISHJ);
@@ -159,6 +161,26 @@ add('lamp-glow', T.GLOW(9, '#ffd27a'));
 add('forge-glow', T.GLOW(8, '#ff8a3a'));
 add('flasks', T.FLASKS);
 add('emitter', T.DOT);
+// the night sky: the stars and the moon on their layer, the moon's glow, a star that flares
+add('starfield', [P.STARFIELD], { ax: 0, ay: 0 });
+add('moon-glow', WD.moonGlow(13));
+add('twinkle', WD.TWINKLE);
+// the wind: what sways as a gust goes over it (still, and the gust's frames: the same size and anchor), the flag on the house, the
+// pond's ripples and a petal carried away
+const sway = (name, x, o) => {
+  add(name, x.still, o);
+  add(name + '-gust', x.gust, o);
+};
+sway('garden', WD.GARDEN, { ax: 0, ay: 9 });
+'abc'.split('').forEach((k, i) => {
+  sway('tuft-' + k, WD.TUFTS[i]);
+  sway('bloom-' + k, WD.BLOOMS[i]);
+});
+sway('flag', WD.FLAG, { ax: 0, ay: 7 });
+sway('bunting', WD.BUNTING, { ax: 0, ay: 0 });
+[3, 2.5, 2].forEach((r, i) => sway('pad-' + 'abc'[i], WD.PADS[i], { ax: Math.ceil(r) + 1, ay: Math.ceil(r) + 2 }));
+add('ripple', WD.RIPPLE, { pal: WD.ripplePal });
+add('blossom', WD.BLOSSOM);
 // the tops of the roof and the tower, cut from the land: over the clouds that drift behind them
 const OCC = { roof: [128, 97, 142, 26], 'tower-top': [278, 90, 39, 33] };
 for (const k in OCC) add(k, P.cut(...OCC[k]), { ax: 0, ay: 0 });
@@ -213,6 +235,8 @@ const TOWER = [
 const say = (s, every) => ({ s: s.map(x => 'say-' + x), every });
 const prop = (s, x, y, o) => Object.assign({ s, x: S(x), y: S(y) }, o || {});
 const spot = (x, y, o) => Object.assign({ x: S(x), y: S(y) }, o);
+// the sky wheels: PAN art pixels to the left over 8 minutes, and back
+const SKY = [-S(P.PAN), 480];
 const DAY = { h: [7, 21] },
   NIGHT = { h: [21, 6] },
   GF = G.street,
@@ -311,8 +335,8 @@ const props = [
   prop('lamp-glow', G.lamp, 152, { pulse: 3.2 }),
   prop('flasks', 311, 165, { fps: 3 }),
   prop('choir', 106, G.stage[2], { fps: 3, fx: { s: 'note', kind: 'rise', every: 1.5, dx: 0, dy: -S(8) } }),
-  prop('reeds', 372, 178, { fps: 1.5 }),
-  prop('reeds', 383, 181, { fps: 1.2 }),
+  prop('reeds', 372, 178, { fps: 1.5, gust: 'reeds-gust' }),
+  prop('reeds', 383, 181, { fps: 1.2, gust: 'reeds-gust' }),
   ...[
     [344, 186, 4],
     [342, 194, 3],
@@ -332,15 +356,49 @@ const props = [
     [354, 191, 2.4],
     [228, 200, 3],
   ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6] } })),
+  // the night sky, under the clouds: the stars and the moon wheel slowly to and fro, the bright stars twinkling as they go and a glow
+  // breathing round the moon; other stars flare now and then, and a star shoots across
+  prop('starfield', 0, 0, { under: true, pan: SKY }),
+  prop('moon-glow', G.moon[0], G.moon[1] + 14, { under: true, pan: SKY, pulse: 6 }),
+  ...P.BIG.map(([x, y], i) => prop('star2', x, y + 2, { under: true, pan: SKY, pulse: [3, 2.4, 3.8, 2.8, 3.3, 2.2, 3.5, 2.6][i] })),
+  ...P.TWINKLES.map(([x, y], i) => prop('twinkle', x, y + 3, { under: true, fps: 8, rest: 4 + (i % 5) * 1.4 })),
+  prop('shoot', 140, 40, { fps: 12, rest: 35, under: true }),
+  // the wind: the flag on the house's roof, the bunting over the stage, the garden's flowers, tufts of grass and flowers in the meadow, the
+  // lily pads; and rings spreading on the pond now and then
+  prop('flag', 199, 99, { fps: 4, gust: 'flag-gust' }),
+  prop('bunting', G.stage[0], G.stage[2] - 22, { gust: 'bunting-gust' }),
+  prop('garden', 297, 204, { gust: 'garden-gust' }),
   ...[
-    [226, 10, 3],
-    [120, 44, 2.4],
-    [300, 38, 3.8],
-    [58, 72, 2.8],
-    [356, 76, 3.3],
-    [252, 60, 2.2],
-  ].map(f => prop('star2', f[0], f[1], { pulse: f[2] })),
-  prop('shoot', 140, 40, { fps: 12, rest: 35 }),
+    [8, 213],
+    [52, 199],
+    [57, 214],
+    [130, 214],
+    [151, 193],
+    [175, 215],
+    [214, 193],
+    [240, 214],
+    [251, 201],
+    [281, 214],
+    [296, 214],
+  ].map(([x, y], i) => prop('tuft-' + 'abc'[i % 3], x, y, { gust: 'tuft-' + 'abc'[i % 3] + '-gust' })),
+  ...[
+    [22, 192],
+    [100, 213],
+    [128, 191],
+    [196, 214],
+    [231, 205],
+    [268, 212],
+  ].map(([x, y], i) => prop('bloom-' + 'abc'[i % 3], x, y, { gust: 'bloom-' + 'abc'[i % 3] + '-gust' })),
+  ...[
+    [370, 196],
+    [330, 206],
+    [378, 210],
+  ].map(([x, y], i) => prop('pad-' + 'abc'[i], x, y, { gust: 'pad-' + 'abc'[i] + '-gust' })),
+  ...[
+    [334, 197, 7],
+    [358, 212, 9],
+    [372, 189, 11],
+  ].map(([x, y, r]) => prop('ripple', x, y, { fps: 5, rest: r })),
   prop('emitter', 85.5, 111, { fx: { s: 'smoke', kind: 'float', every: 1.7, dx: 0, dy: 0 } }),
   prop('emitter', 233.5, 98, { fx: { s: 'smoke', kind: 'float', every: 2.3, dx: 0, dy: 0 } }),
   prop('emitter', 38, 163, { fx: { s: 'sparkle', kind: 'pop', every: 1.8, dx: 0, dy: 0 } }),
@@ -472,7 +530,7 @@ const events = [
     time: [30, 45],
     call: 3,
     when: { h: [21, 5] },
-    props: [60, 150, 240, 330].map((x, i) => prop('shoot', x, 30 + (i % 2) * 18, { fps: 12, rest: 3 + i })),
+    props: [60, 150, 240, 330].map((x, i) => prop('shoot', x, 30 + (i % 2) * 18, { fps: 12, rest: 3 + i, under: true })),
     spot: spot(200, 206, { n: 3, gap: S(20), act: 'love', fps: 8, time: [600, 600] }),
   },
   // a deer comes to look from the bushes on the hill, by day
@@ -517,6 +575,8 @@ const world = {
     { color: '#0b0a26', alpha: 0.38, when: { h: [21, 24] } },
     { color: '#1a1030', alpha: 0.18, when: { h: [5, 7] } },
   ],
+  // a gust from the left every 14 to 36 seconds, across the screen in about five, petals carried off
+  wind: { every: [14, 36], speed: 460, dir: 1, fps: 10, fx: { s: 'blossom', kind: 'blow', every: 1, dx: 0, dy: -S(5) } },
 };
 // JSON as the other themes write it (one space), but a list of numbers and a little object on one line
 function fmt(v, ind) {

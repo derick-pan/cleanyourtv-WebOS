@@ -184,8 +184,11 @@ in the evening with fireworks and confetti, a juggling show, a shower that sends
 at night (with a crowd pointing at it), a deer looking out of the bushes, or the server room overheating. The hours change things too:
 the night darkens the sky, the lamps glow, fireflies come out, a sparrow sits on the sill by day; and so does the year: pumpkins and
 bats at Halloween, a fir in December, snow in winter, lanterns at the new year, leaves in autumn and petals in spring. Around them the
-fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, stars twinkle, and clouds,
-birds and a balloon drift past behind the roofs.
+fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and clouds, birds and a
+balloon drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the flowers of the garden and
+the meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams out, the lily pads drift and
+a few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly across the sky and back, the
+bright stars twinkle, others flare now and then, and a star shoots across.
 
 Everything was drawn for this theme pixel by pixel by `tools/clawd-world/` (`node tools/clawd-world`), which writes `world.png` (the
 backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet: every Clawd in every cap) and the `"world"` of

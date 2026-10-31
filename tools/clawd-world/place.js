@@ -1,6 +1,8 @@
 // The place of Clawd World (tools/clawd-world): the backdrop, a 384 x 216 picture drawn pixel by pixel. The sky is a layer of its
-// own and the land another, so the tops of the roof and the tower can be cut from the land as props the clouds pass behind. `G` holds
-// the places the picture and the theme's spots share. The house is after clawd-sidekick by Tunai (MIT): its five rooms, their colours
+// own and the land another, so the tops of the roof and the tower can be cut from the land as props the clouds pass behind; the stars
+// and the moon are a layer of their own too (STARFIELD), a little wider than the picture, that wheels slowly to and fro over the sky.
+// What sways in the wind (the garden's flowers, the bunting, the lily pads) is left out: those are props (wind.js). `G` holds the
+// places the picture and the theme's spots share. The house is after clawd-sidekick by Tunai (MIT): its five rooms, their colours
 // and furniture, redrawn on two floors.
 'use strict';
 const { Pic, ri, rand, reseed, dith } = require('./pic');
@@ -64,39 +66,68 @@ function skyAt(x, y) {
   return dith(x, y, t) ? c1 : c0;
 }
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) sky.set(x, y, skyAt(x, y));
-// stars, thinner towards the horizon; a few bigger ones
+// ---- the night sky over it all: the stars and the moon, on a layer PAN art pixels wider than the picture that pans PAN to the left
+// and back (the prop "starfield"); where it starts, it lines up with the picture. The bright stars (BIG) twinkle as props that pan
+// with it; others flare now and then where they are (TWINKLES) ----
+const PAN = 48,
+  STARS_H = 96,
+  BIG = [
+    [226, 8],
+    [120, 42],
+    [300, 36],
+    [58, 70],
+    [356, 74],
+    [252, 58],
+    [402, 24],
+    [418, 62],
+  ];
+const STARFIELD = new Pic(W + PAN, STARS_H);
+// a pixel as it is (with its own alpha, not blended with what is under it)
+const raw = (p, x, y, c) => {
+  const i = (y * p.w + x) * 4;
+  for (let k = 0; k < 4; k++) p.d[i + k] = c[k];
+};
+// stars, thinner towards the horizon, none near the moon
 reseed(11);
-for (let i = 0; i < 150; i++) {
-  const x = ri(0, W - 1),
+for (let i = 0; i < 170; i++) {
+  const x = ri(0, W + PAN - 1),
     y = Math.floor(Math.pow(rand(), 1.6) * 92);
   if (Math.hypot(x - G.moon[0], y - G.moon[1]) < 14) continue;
-  sky.set(x, y, rand() < 0.3 ? '#efe4d2' : rand() < 0.5 ? '#a796c6' : '#7d6c9e');
+  STARFIELD.set(x, y, rand() < 0.3 ? '#efe4d2' : rand() < 0.5 ? '#a796c6' : '#7d6c9e');
 }
-for (const [x, y] of [
-  [226, 8],
-  [120, 42],
-  [300, 36],
-  [58, 70],
-  [356, 74],
-  [252, 58],
-]) {
-  sky.set(x, y, '#f6efe4');
+for (const [x, y] of BIG) {
+  STARFIELD.set(x, y, '#f6efe4');
   for (const [dx, dy] of [
     [1, 0],
     [-1, 0],
     [0, 1],
     [0, -1],
   ])
-    sky.set(x + dx, y + dy, '#9d8dc0');
+    STARFIELD.set(x + dx, y + dy, '#9d8dc0');
 }
-// the moon, a crescent with a soft halo in steps
-for (let r = 12; r > 7; r -= 2) sky.disc(G.moon[0], G.moon[1], r, [246, 233, 204, 14]);
-sky.disc(G.moon[0], G.moon[1], 7, '#f6e9cc');
-sky.disc(G.moon[0] + 1, G.moon[1], 6, '#fff7e4');
+// the moon, a crescent in a soft halo of three faint rings
+for (let y = G.moon[1] - 12; y <= G.moon[1] + 12; y++)
+  for (let x = G.moon[0] - 12; x <= G.moon[0] + 12; x++) {
+    const d = Math.hypot(x - G.moon[0], y - G.moon[1]),
+      n = (d <= 12) + (d <= 10) + (d <= 8);
+    if (n) raw(STARFIELD, x, y, [246, 233, 204, Math.round(255 * (1 - Math.pow(1 - 14 / 255, n)))]);
+  }
+STARFIELD.disc(G.moon[0], G.moon[1], 7, '#f6e9cc');
+STARFIELD.disc(G.moon[0] + 1, G.moon[1], 6, '#fff7e4');
 for (let y = G.moon[1] - 8; y <= G.moon[1] + 8; y++)
   for (let x = G.moon[0] - 8; x <= G.moon[0] + 8; x++)
     if (Math.hypot(x - G.moon[0] - 4, y - G.moon[1] + 2) <= 6.2 && Math.hypot(x - G.moon[0], y - G.moon[1]) <= 7.5)
-      sky.set(x, y, skyAt(x, y));
+      raw(STARFIELD, x, y, [0, 0, 0, 0]);
+// stars that flare now and then, where they are (not where the moon passes, nor on a bright star)
+reseed(13);
+const TWINKLES = [];
+while (TWINKLES.length < 14) {
+  const x = ri(4, W - 4),
+    y = 2 + Math.floor(Math.pow(rand(), 1.4) * 82);
+  if (x > 104 && x < 188 && y > 4 && y < 42) continue;
+  if (BIG.concat(TWINKLES).some(([bx, by]) => Math.abs(bx - x) < 8 && Math.abs(by - y) < 8)) continue;
+  TWINKLES.push([x, y]);
+}
 // the sun, just going down behind the far hills, with rings of glow
 for (let r = 26; r > 15; r -= 3) sky.disc(G.sun[0], G.sun[1], r, [255, 196, 120, 26]);
 sky.disc(G.sun[0], G.sun[1], 14, '#ffc98a');
@@ -822,7 +853,7 @@ for (const sx of [FX - 21, FX + 11]) {
   land.rect(sx + (sx < FX ? 0 : 9), FY - 1, 2, 3, '#d6b07c');
 }
 
-// the pond: the sun on the water, a sandy shore, lily pads, and a pier out over it
+// the pond: the sun on the water, a sandy shore, and a pier out over it
 const P0 = 316;
 for (let y = 176; y < H; y++)
   for (let x = P0; x < W; x++) {
@@ -853,17 +884,7 @@ for (let y = 179; y < H; y += ri(1, 2)) {
     land.set(x, y, mid && t < 0.6 ? '#ffd9a0' : mid ? '#f8b878' : '#e8905e');
   }
 }
-for (const [x, y, r] of [
-  [370, 196, 3],
-  [330, 206, 2.5],
-  [378, 210, 2],
-]) {
-  land.disc(x, y, r, '#3f7a4a');
-  land.set(x + Math.round(r), y, '#2a4166');
-  land.set(x - 1, y - 1, '#5a9a5a');
-}
-land.rect(369, 194, 2, 2, '#ff86a6');
-land.set(369, 194, '#ffd0dc');
+// (the lily pads on it are props that drift in the wind: wind.js)
 // the pier
 const [PR0, PR1, PRY] = G.pier;
 for (const x of [PR0 + 8, PR0 + 22, PR1 - 3]) land.rect(x, PRY + 2, 2, 9, '#4a2c1c');
@@ -871,24 +892,14 @@ land.rect(PR0, PRY - 1, PR1 - PR0 + 1, 3, '#a8744c');
 for (let x = PR0; x <= PR1; x++) land.set(x, PRY + 1, x % 4 === 0 ? '#5e3a25' : '#7a4a30');
 land.hline(PR0, PR1, PRY - 1, '#c48e5e');
 
-// the stage for the little choir, with bunting
+// the stage for the little choir, its posts for the bunting
 const [S0, S1, SY] = G.stage;
 land.rect(S0, SY, S1 - S0 + 1, 2, '#b07a4c');
 land.rect(S0, SY + 2, S1 - S0 + 1, 6, '#6a4028');
 for (let x = S0; x <= S1; x += 6) land.vline(x, SY + 2, SY + 7, '#5e3a25');
 land.hline(S0, S1, SY + 7, '#4a2c1c');
 for (const x of [S0, S1]) land.rect(x, SY - 22, 2, 22, '#6a4028');
-for (let x = S0 + 2; x < S1; x++) {
-  const y = SY - 21 + Math.round(Math.sin(((x - S0) / (S1 - S0)) * Math.PI) * 5);
-  land.set(x, y, '#3a2a22');
-  if ((x - S0) % 6 === 3) {
-    const c = ['#d97757', '#f2c94c', '#9fe6f2', '#ff86a6'][Math.floor((x - S0) / 6) % 4];
-    land.set(x, y + 1, c);
-    land.set(x - 1, y + 1, c);
-    land.set(x + 1, y + 1, c);
-    land.set(x, y + 2, c);
-  }
-}
+// (the bunting between the posts is a prop that lifts in the wind: wind.js)
 // the burrow: a sandy patch with a hole
 reseed(41);
 for (let y = 194; y < 206; y++)
@@ -898,22 +909,9 @@ for (let y = 194; y < 206; y++)
   }
 land.rect(27, 199, 5, 2, '#3a2a22');
 land.hline(26, 32, 198, '#a8835a');
-// the garden bed by the pond, flowers along it
+// the garden bed by the pond (its flowers are a prop that sways in the wind: wind.js)
 land.rect(286, 203, 30, 4, '#5a3a2a');
 for (let x = 287; x < 316; x += 3) land.set(x, 204, '#3e281c');
-for (const [x, c] of [
-  [300, '#e2493b'],
-  [303, '#f2c94c'],
-  [306, '#ff86a6'],
-  [309, '#e2493b'],
-  [312, '#f2c94c'],
-  [315, '#8b67d8'],
-]) {
-  land.vline(x, 198, 203, '#4f8a3f');
-  land.set(x - 1, 200, '#4f8a3f');
-  land.rect(x - 1, 196, 3, 2, c);
-  land.set(x, 195, c);
-}
 // flowers all over the meadow
 reseed(51);
 for (let i = 0; i < 120; i++) {
@@ -941,4 +939,4 @@ function backdrop() {
   bg.draw(land, 0, 0);
   return bg;
 }
-module.exports = { G, W, H, PX, sky, land, cut, backdrop };
+module.exports = { G, W, H, PX, sky, land, cut, backdrop, STARFIELD, PAN, BIG, TWINKLES };

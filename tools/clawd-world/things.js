@@ -537,40 +537,6 @@ const GLINT = [
   ['.W..O..W.', '.........'],
   ['....Y....', '.........'],
 ];
-const REEDS = [0, 1, 2].map(k => {
-  const sway = [0, 1, 0][k],
-    sw2 = [1, 0, -1][k];
-  const f = Array(14).fill('.'.repeat(10));
-  const stalk = (x, top, s) => {
-    let r = f;
-    r = over(r, ['h', 'H', 'H', 'h'], x + s, top);
-    for (let y = top + 4; y < 14; y++) r = over(r, [y < top + 7 && s ? 'N' : 'n'], x + (y < top + 6 ? s : 0), y);
-    return r;
-  };
-  let r = stalk(1, 2, sway);
-  r = r.map((x, i) => x);
-  const a = stalk(4, 0, sw2);
-  r = r.map((row, i) =>
-    row
-      .split('')
-      .map((c, j) => (c !== '.' ? c : a[i][j]))
-      .join('')
-  );
-  const b = stalk(7, 3, sway);
-  r = r.map((row, i) =>
-    row
-      .split('')
-      .map((c, j) => (c !== '.' ? c : b[i][j]))
-      .join('')
-  );
-  return over(r, ['n.N..n.N..', 'NnnNnNnnNn'], 0, 12);
-});
-// prettier-ignore
-const FLAG = [
-  ['BBBBB...', 'BLLBBBB.', 'BBBBBB..', 'BS......'],
-  ['BBBB....', 'BLLBBB..', 'BBBBBBB.', 'BSS.....'],
-  ['BBBBBB..', 'BLLBBB..', 'BBBBB...', 'BS......'],
-];
 // the game on the TV in the game room, in a handheld's four greens: a little one hopping along
 const gb = { 1: '#9bbc0f', 2: '#8bac0f', 3: '#306230', 4: '#0f380f' };
 // prettier-ignore
@@ -761,8 +727,6 @@ module.exports = {
   SMOKE,
   smokePal,
   GLINT,
-  REEDS,
-  FLAG,
   TV,
   gbPal,
   TERM,

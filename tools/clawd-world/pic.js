@@ -26,9 +26,12 @@ class Pic {
       this.d[i + 2] = v[2];
       this.d[i + 3] = 255;
     } else if (v[3] > 0) {
-      const a = v[3] / 255;
-      for (let k = 0; k < 3; k++) this.d[i + k] = Math.round(this.d[i + k] * (1 - a) + v[k] * a);
-      this.d[i + 3] = Math.max(this.d[i + 3], v[3]);
+      // over what is there (straight alpha): on a clear pixel it is its own colour, not darkened
+      const a = v[3] / 255,
+        b = this.d[i + 3] / 255,
+        o = a + b * (1 - a);
+      for (let k = 0; k < 3; k++) this.d[i + k] = Math.round((v[k] * a + this.d[i + k] * b * (1 - a)) / o);
+      this.d[i + 3] = Math.round(o * 255);
     }
   }
   get(x, y) {
