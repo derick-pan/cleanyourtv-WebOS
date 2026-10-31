@@ -211,6 +211,7 @@ document.addEventListener('visibilitychange', function () {
     WALL.hidden();
     MASCOT.hidden();
     SCENE.hidden();
+    WORLD.hidden();
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();
   } else if (guarded()) LIVE.resume();
@@ -222,6 +223,7 @@ document.addEventListener('visibilitychange', function () {
     WALL.shown();
     MASCOT.shown();
     SCENE.shown();
+    WORLD.shown();
   }
 });
 

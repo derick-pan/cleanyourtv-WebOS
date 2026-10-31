@@ -15,7 +15,7 @@ run(async () => {
   const walk = (o, pre) => {
     for (const k of Object.keys(o)) {
       const key = pre ? pre + '.' + k : k;
-      if (key === 'slots') continue; // a list, checked by themeschema.slots
+      if (key === 'slots' || key === 'world') continue; // checked by themeschema.slots and themeschema.world
       if (o[k] && typeof o[k] === 'object') walk(o[k], key);
       else if (!known.has(key) && ['name', 'author', 'description', 'extends'].indexOf(key) < 0) unknownKeys.push(key);
     }
@@ -182,6 +182,8 @@ run(async () => {
     pixkid: JSON.stringify({ name: 'Pixel kid', extends: 'pixel', dock: { count: 4 } }),
     badfont: JSON.stringify({ name: 'Bad typeface', type: { fontFile: 'f.woff2' } }),
     badmascot: JSON.stringify({ name: 'Bad mascot', mascot: { file: 'm.png' } }),
+    walker: JSON.stringify({ name: 'Walker', mascot: { file: 'w.png', frames: 2 } }),
+    badworld: JSON.stringify({ name: 'Bad world', world: { file: 'w.png', crew: { count: 2 } } }),
   };
   let ghUp = true;
   const ghHits = [];
@@ -198,6 +200,8 @@ run(async () => {
     if (/^\/themes\/badwall\/w\.jpg$/.test(u)) return send(200, Buffer.from('this is not a jpeg at all, just text'));
     if (/^\/themes\/badfont\/f\.woff2$/.test(u)) return send(200, Buffer.from('this is not a font file, only some text'));
     if (/^\/themes\/badmascot\/m\.png$/.test(u)) return send(200, Buffer.from('this is not a png, only some text'));
+    if (/^\/themes\/walker\/w\.png$/.test(u)) return send(200, fs.readFileSync(path.join(tdir, 'claude', 'clawd.png')));
+    if (/^\/themes\/badworld\/w\.png$/.test(u)) return send(200, Buffer.from('this is not a sprite sheet, only some text'));
     const f = path.join(root, u);
     if (!f.startsWith(tdir + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send(404, 'no');
     send(200, fs.readFileSync(f));
@@ -354,7 +358,7 @@ run(async () => {
       {
         shelf: { prefix: '$ ', cursor: true },
         effects: { drift: 0.5, cycles: 1, cyclesHorizon: 660, cyclesColor: '#ff8a3d', speed: 0.5 },
-        mascot: { file: 'claude-pixel.png', pixel: true, frames: 11, walk: 5 },
+        mascot: { file: 'clawd.png', pixel: true, frames: 11, walk: 5 },
       },
       'claude',
       null,
@@ -433,7 +437,7 @@ run(async () => {
   // a mascot (mascot.*): an image in the theme's folder, checked like a wallpaper, downloaded with the theme and served from its folder;
   // only a theme with one has the key in its reply, so the other themes' replies stay as they were
   const mt = themeMod.normalize(
-    { mascot: { file: 'claude-pixel.png', frames: 6, walk: 0, count: 9, size: 999, y: 28, speed: 1, flip: false } },
+    { mascot: { file: 'clawd.png', frames: 6, walk: 0, count: 9, size: 999, y: 28, speed: 1, flip: false } },
     'claude',
     null,
     path.join(tdir, 'claude')
@@ -442,7 +446,7 @@ run(async () => {
   ok(
     mr.mascot &&
       mr.mascot.id === 'claude' &&
-      mr.mascot.file === 'claude-pixel.png' &&
+      mr.mascot.file === 'clawd.png' &&
       mr.mascot.frames === 6 &&
       mr.mascot.walk === 0 &&
       mr.mascot.count === 4 &&
@@ -459,18 +463,110 @@ run(async () => {
     themeMod.resolve(themeMod.normalize({ name: 'kid' }, 'claude-kid', mt.v)).mascot.id === 'claude',
     'a theme that extends one with a mascot uses that file from its folder'
   );
-  r = await tcall('set', { id: 'claude' });
+  // a world: values are clamped, names that are not sprites are dropped (a prop or a drift without one is left out), lists are cut to
+  // their limits; it needs a sprite sheet that is there, a theme that extends one keeps it, and only a theme with one has the key
+  const wd = themeMod.normalize(
+    {
+      world: {
+        file: 'clawd.png',
+        px: 99,
+        sprites: {
+          stand: [0, 0, 16, 10, 8],
+          walk: [0, 10, 16, 11, 4, 8, 11],
+          'Bad Name': [1, 2, 3, 4],
+          short: [1, 2],
+          huge: [1e9, -5, 9999, 0, 99, 99, -3],
+        },
+        crew: { count: 50, speed: 1, stand: 'stand', climb: 'nope', lane: [905, 1570, -999] },
+        spots: [
+          { x: 9999, y: 860, act: 'walk', time: [30, 2], via: [940, 860], fx: { s: 'stand', kind: 'boom', every: 0 } },
+          { act: 'nope', n: 9 },
+          'junk',
+        ],
+        props: [{ s: 'nope' }, { s: 'stand', front: true, bob: 99, rest: -1 }],
+        drift: [{ s: 'walk', dir: -1, speed: 0 }, { y: 5 }],
+      },
+    },
+    'claude',
+    null,
+    path.join(tdir, 'claude')
+  );
+  const wr = themeMod.resolve(wd).world;
   ok(
-    r.code === 200 &&
-      fs.existsSync(path.join(tlocal, 'claude', 'claude-pixel.png')) &&
-      th.resolved().mascot &&
-      th.resolved().mascot.id === 'claude',
+    wr &&
+      wr.id === 'claude' &&
+      wr.px === 12 &&
+      Object.keys(wr.sprites).join() === 'stand,walk,huge' &&
+      wr.sprites.stand.join() === '0,0,16,10,8,8,10' &&
+      wr.sprites.huge.join() === '4096,0,512,1,32,99,0',
+    'world sprites are rectangles of the sheet, clamped, with their anchor in the middle of the bottom edge unless given'
+  );
+  ok(
+    wr.crew.count === 12 &&
+      wr.crew.speed === 10 &&
+      wr.crew.walk === 'stand' &&
+      wr.crew.climb === '' &&
+      wr.crew.lane.join() === '905,-400,1570' &&
+      wr.spots.length === 2 &&
+      wr.spots[0].x === 2320 &&
+      wr.spots[0].time.join() === '2,30' &&
+      wr.spots[0].via.join() === '940,860' &&
+      wr.spots[0].fx.kind === 'rise' &&
+      wr.spots[0].fx.every === 0.2 &&
+      wr.spots[1].act === '' &&
+      wr.spots[1].n === 4 &&
+      wr.props.length === 1 &&
+      wr.props[0].bob === 8 &&
+      wr.props[0].rest === 0 &&
+      wr.props[0].front === true &&
+      wr.drift.length === 1 &&
+      wr.drift[0].speed === 1 &&
+      wr.drift[0].dir === -1,
+    'the crew (walking with the standing picture when there is no walk), spots, props and drift are checked and clamped, and what names no sprite is left out'
+  );
+  ok(
+    !('world' in plain) &&
+      themeMod.normalize({ world: { file: 'nope.png', crew: { count: 3 } } }, 'noworld').v.world === null &&
+      themeMod.normalize({ world: { file: '../../etc/passwd' } }, 'evilworld').v.world === null &&
+      !('world' in themeMod.resolve(themeMod.normalize({ world: { file: 'nope.png' } }, 'noworld2'))),
+    'a theme without a world has no world key, and a world whose sprite sheet is not there is dropped'
+  );
+  ok(
+    themeMod.resolve(themeMod.normalize({ name: 'kid' }, 'claude-kid', wd.v)).world.id === 'claude' &&
+      !('world' in themeMod.resolve(themeMod.normalize({ world: null }, 'claude-kid2', wd.v))),
+    'a theme that extends one with a world uses its sprite sheet from that folder, and "world": null takes it away'
+  );
+  r = await tcall('set', { id: 'walker' });
+  ok(
+    r.code === 200 && fs.existsSync(path.join(tlocal, 'walker', 'w.png')) && th.resolved().mascot && th.resolved().mascot.id === 'walker',
     "a theme's mascot is downloaded with it"
   );
-  r = await tcall('mascot/claude/claude-pixel.png', null, 'GET');
+  r = await tcall('mascot/walker/w.png', null, 'GET');
   ok(r.code === 200, 'the mascot is served');
-  r = await tcall('mascot/claude/other.png', null, 'GET');
+  r = await tcall('mascot/walker/other.png', null, 'GET');
   ok(r.code === 404, 'a file the theme does not name is not served as a mascot');
+  // a world (world.*): its sprite sheet is downloaded with the theme, checked like a wallpaper and served from the theme's folder
+  r = await tcall('set', { id: 'claude' });
+  const cw = th.resolved().world;
+  ok(
+    r.code === 200 &&
+      fs.existsSync(path.join(tlocal, 'claude', 'clawd.png')) &&
+      fs.existsSync(path.join(tlocal, 'claude', 'world.png')) &&
+      cw &&
+      cw.id === 'claude' &&
+      cw.file === 'clawd.png' &&
+      cw.crew.count > 0,
+    "a theme's world is downloaded with it: the sprite sheet and the backdrop"
+  );
+  r = await tcall('world/claude/clawd.png', null, 'GET');
+  ok(r.code === 200 && Buffer.isBuffer(r.out) && r.out.slice(1, 4).toString() === 'PNG', 'the sprite sheet is served');
+  r = await tcall('world/claude/world.png', null, 'GET');
+  ok(r.code === 404, 'a file the world does not name is not served as its sprite sheet');
+  r = await tcall('set', { id: 'badworld' });
+  ok(
+    r.code === 502 && /sprite sheet/.test(r.j.error) && !fs.existsSync(path.join(tlocal, 'badworld')),
+    'a sprite sheet that is not an image is refused and nothing is kept'
+  );
   r = await tcall('set', { id: 'badmascot' });
   ok(r.code !== 200 && !fs.existsSync(path.join(tlocal, 'badmascot')), 'a mascot that is not an image is refused and nothing is kept');
   r = await tcall('set', { id: 'kid' });

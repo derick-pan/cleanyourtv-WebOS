@@ -1,13 +1,14 @@
 // Themes for the launcher's home screen. A theme is a folder in the themes/ folder of the GitHub repository (theme.json, a screenshot and
-// optionally a wallpaper, a typeface and a mascot). Nothing is shipped with the service: the TV reads themes/index.json from GitHub, shows the list
-// with the screenshots and downloads a theme (and its wallpaper, typeface and mascot) when it is chosen; downloaded themes stay on the TV. Classic is built in. A theme sets
+// optionally a wallpaper, a typeface, a mascot and a world's sprite sheet). Nothing is shipped with the service: the TV reads themes/index.json from GitHub, shows the list
+// with the screenshots and downloads a theme (and its wallpaper, typeface, mascot and sprite sheet) when it is chosen; downloaded themes stay on the TV. Classic is built in. A theme sets
 // values from the table SCHEMA below: colours, surfaces, text, and the position and size of every part of the screen (clock, buttons, app
-// name, dock, grid), plus effects, a wallpaper and a mascot (a small picture the launcher walks along the bottom). There is no CSS or script in a theme. Every value is checked against SCHEMA and clamped,
+// name, dock, grid), plus effects, a wallpaper, a mascot (a small picture the launcher walks along the bottom) and a world (characters and
+// props from a sprite sheet that the launcher sets going behind Home). There is no CSS or script in a theme. Every value is checked against SCHEMA and clamped,
 // a value that is missing or invalid keeps the value of the theme it extends (or the default, the original look), and unknown keys are
 // ignored, so a theme can change how Home looks but nothing else. A new setting is one row in SCHEMA plus the CSS that reads its variable;
 // docs/themes.md is generated from SCHEMA (tools/theme-docs.js).
 // API (loopback only): GET /api/theme/list, POST /api/theme/set {id, accent}, POST /api/theme/revert, GET /api/theme/preview/<id>,
-// GET /api/theme/wallpaper/<id>/<file>, GET /api/theme/font/<id>/<file>, GET /api/theme/mascot/<id>/<file>.
+// GET /api/theme/wallpaper/<id>/<file>, GET /api/theme/font/<id>/<file>, GET /api/theme/mascot/<id>/<file>, GET /api/theme/world/<id>/<file>.
 const fs = require('fs'),
   path = require('path');
 const nc = require('./netcompat'),
@@ -26,6 +27,7 @@ const {
   MAX_PREVIEW,
   MAX_THEME,
   MAX_WALLPAPER,
+  MAX_WORLD,
   PREVIEW_PATH,
   SCHEMA,
   dir,
@@ -179,7 +181,8 @@ function create(ctx) {
     return catP;
   }
 
-  // download a theme (and the theme it extends, its wallpaper, typeface and mascot) into themes/<id>/; nothing is kept when a file is invalid
+  // download a theme (and the theme it extends, its wallpaper, typeface, mascot and sprite sheet) into themes/<id>/; nothing is kept when a
+  // file is invalid
   async function install(id, depth) {
     if (!ID.test(id) || id === DEFAULT_ID) throw new Error('unknown theme');
     if ((depth || 0) > 3) throw new Error('the theme extends too many themes');
@@ -220,6 +223,13 @@ function create(ctx) {
       mascot = await fetchBuf(base() + '/' + id + '/' + mf, MAX_MASCOT, 25000);
       if (!imageOk(mascot, mf, MAX_MASCOT)) throw new Error('the mascot is not an image of that type');
     }
+    const wf = getPath(raw, 'world.file');
+    let sheet = null;
+    if (typeof wf === 'string' && wf !== '') {
+      if (!FILE.test(wf)) throw new Error("the world's sprite sheet name is not valid");
+      sheet = await fetchBuf(base() + '/' + id + '/' + wf, MAX_WORLD, 25000);
+      if (!imageOk(sheet, wf, MAX_WORLD)) throw new Error("the world's sprite sheet is not an image of that type");
+    }
     const d = path.join(dir(), id),
       had = fs.existsSync(path.join(d, 'theme.json'));
     mkdirs(d);
@@ -227,6 +237,7 @@ function create(ctx) {
     if (font) writeAtomic(path.join(d, f), font);
     if (clockFont) writeAtomic(path.join(d, cf), clockFont);
     if (mascot) writeAtomic(path.join(d, mf), mascot);
+    if (sheet) writeAtomic(path.join(d, wf), sheet);
     writeAtomic(path.join(d, 'theme.json'), JSON.stringify(raw));
     cache = null;
     if (!load()[id]) {
@@ -353,6 +364,23 @@ function create(ctx) {
       });
       try {
         if (!ok) throw new Error('not a theme mascot');
+        const b = fs.readFileSync(path.join(dir(), m[1], m[2]));
+        res.writeHead(200, { 'content-type': imageType(m[2]), 'cache-control': 'max-age=86400' });
+        return res.end(b);
+      } catch (_) {
+        res.writeHead(404);
+        return res.end();
+      }
+    }
+    m = /^world\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(?:jpg|png|webp))$/.exec(act);
+    if (m) {
+      // only the sprite sheet a theme's world names, from that theme's folder (also when a theme that extends it is chosen)
+      const ok = Object.keys(load()).some(k => {
+        const v = load()[k].v;
+        return !!v.world && v.world.file === m[2] && (v.worldTheme || k) === m[1];
+      });
+      try {
+        if (!ok) throw new Error('not a theme sprite sheet');
         const b = fs.readFileSync(path.join(dir(), m[1], m[2]));
         res.writeHead(200, { 'content-type': imageType(m[2]), 'cache-control': 'max-age=86400' });
         return res.end(b);
