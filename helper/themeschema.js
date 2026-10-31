@@ -474,25 +474,39 @@ function slots(list) {
 
 // A world: a little place going on behind Home (app/src/js/world.js), drawn from a sprite sheet in the theme's folder. "world" is an
 // object in the theme (not in SCHEMA, which holds single values):
-//   {file, px, sprites: {name: [x, y, w, h, frames, ax, ay]}, crew: {count, speed, stand, walk, climb, wave, lane: [y, x0, x1]},
-//    spots: [{x, y, act, fps, face, time: [min, max], n, gap, via: [x, y], inside, back, w, fx}],
-//    props: [{s, x, y, fps, pulse, bob, front, rest, fx}], drift: [{s, y, speed, dir, fps, bob}]}
-// with fx {s, kind: rise|float|pop, every, dx, dy}. A sprite is a strip of `frames` frames of w x h art pixels side by side in the sheet,
-// (ax, ay) the point of a frame that stands on a place, in it or below it (default: the middle of its bottom edge); px is how many screen
-// pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers are clamped, a name that is not a sprite is dropped (a prop or a drift without
-// one is left out) and the lists are cut to their limits, so a world can only arrange its own pictures.
+//   {file, px, sprites: {name: [x, y, w, h, frames, ax, ay, looks]},
+//    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act}},
+//    spots: [{x, y, act, acts: [names], fps, face, time: [min, max], n, gap, path: [[x, y, climb]], via: [x, y], inside, back, carry,
+//             w, fx, say, show: [props], group, when}],
+//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when}], drift: [{s, y, speed, dir, fps, bob, when}],
+//    herds: [{count, area: [x0, y0, x1, y1], stand, walk, acts: [names], speed, fx, when}],
+//    events: [{every: [min, max], time: [min, max], call, spot, props, drift, when}], shade: [{color, alpha, when}]}
+// with fx {s, kind: rise|float|pop|fall, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD']}. A sprite
+// is a strip of `frames` frames of w x h art pixels side by side in the sheet, (ax, ay) the point of a frame that stands on a place, in
+// it or below it (default: the middle of its bottom edge); `looks` strips of the same size may follow under it, one per look of the
+// crew (a cap of another colour). px is how many screen pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers
+// are clamped, a name that is not a sprite is dropped (a prop, a drift or a herd without one is left out) and the lists are cut to
+// their limits, so a world can only arrange its own pictures.
 const SPRITE = /^[a-z][a-z0-9-]{0,23}$/,
-  MAX_SPRITES = 96,
-  MAX_SPOTS = 32,
-  MAX_PROPS = 64,
+  MAX_SPRITES = 160,
+  MAX_SPOTS = 40,
+  MAX_PROPS = 80,
   MAX_DRIFT = 16,
-  FX_KINDS = ['rise', 'float', 'pop'];
+  MAX_HERDS = 4,
+  MAX_EVENTS = 16,
+  FX_KINDS = ['rise', 'float', 'pop', 'fall'];
 function world(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
   const int = (n, lo, hi, d) => (typeof n === 'number' && isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n))) : d);
   const num = (n, lo, hi, d) => (typeof n === 'number' && isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d);
   const obj = x => (x && typeof x === 'object' && !Array.isArray(x) ? x : null);
   const list = (l, max) => (Array.isArray(l) ? l.slice(0, max).filter(obj) : []);
+  const range = (t, lo, hi, a, b) => {
+    t = Array.isArray(t) ? t : [];
+    const x = num(t[0], lo, hi, a),
+      y = num(t[1], lo, hi, Math.max(x, b));
+    return [Math.min(x, y), Math.max(x, y)];
+  };
   const sprites = {};
   const so = obj(o.sprites) || {};
   for (const k of Object.keys(so).slice(0, MAX_SPRITES)) {
@@ -508,9 +522,11 @@ function world(o) {
       int(r[4], 1, 32, 1),
       int(r[5], 0, w, Math.floor(w / 2)),
       int(r[6], 0, 512, h),
+      int(r[7], 1, 16, 1),
     ];
   }
   const sp = n => (typeof n === 'string' && Object.prototype.hasOwnProperty.call(sprites, n) ? n : '');
+  const sps = (l, max) => (Array.isArray(l) ? l.slice(0, max).map(sp).filter(Boolean) : []);
   const X = n => int(n, -400, 2320, 960),
     Y = n => int(n, -200, 1280, 900);
   const fx = f => {
@@ -524,65 +540,152 @@ function world(o) {
       dy: int(f.dy, -400, 400, 0),
     };
   };
+  // speech bubbles now and then: sprites, one every so many seconds
+  const say = v => {
+    const s = obj(v) ? sps(v.s, 12) : [];
+    return s.length ? { s, every: num(v.every, 1, 600, 8) } : null;
+  };
+  // from one hour to another (across midnight when the first is later) and/or between two days of the year ('MM-DD', across New Year)
+  const md = v => (typeof v === 'string' && /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v) ? +v.slice(0, 2) * 100 + +v.slice(3) : 0);
+  const when = v => {
+    const w = obj(v);
+    if (!w) return null;
+    const h = Array.isArray(w.h) && w.h.length === 2 ? [int(w.h[0], 0, 24, 0), int(w.h[1], 0, 24, 24)] : null,
+      d = Array.isArray(w.d) && w.d.length === 2 && md(w.d[0]) && md(w.d[1]) ? [md(w.d[0]), md(w.d[1])] : null;
+    return h || d ? { h, d } : null;
+  };
   const c = obj(o.crew) || {},
-    stand = sp(c.stand);
+    stand = sp(c.stand),
+    ch = obj(c.chat);
   const crew = {
-    count: stand ? int(c.count, 0, 12, 0) : 0,
+    count: stand ? int(c.count, 0, 16, 0) : 0,
     speed: num(c.speed, 10, 400, 60),
     stand,
     walk: sp(c.walk) || stand,
     climb: sp(c.climb),
     wave: sp(c.wave),
+    // what one does at a game (a spot with props to show) until the other players are there
+    wait: sp(c.wait),
+    // how many looks each member can have (a sprite's strips under it), and how high over their feet a speech bubble shows
+    looks: int(c.looks, 1, 16, 1),
+    bubble: int(c.bubble, 0, 400, 80),
     // a street they keep to between spots: [y, from x, to x]; without one they walk straight across
     lane:
       Array.isArray(c.lane) && c.lane.length === 3
         ? [Y(c.lane[0]), Math.min(X(c.lane[1]), X(c.lane[2])), Math.max(X(c.lane[1]), X(c.lane[2]))]
         : null,
+    // now and then two of them meet on the street and talk (bubbles in turn), then do `act` together
+    chat: ch && sps(ch.say, 12).length ? { every: range(ch.every, 3, 3600, 20, 60), say: sps(ch.say, 12), act: sp(ch.act) } : null,
   };
-  const spots = list(o.spots, MAX_SPOTS).map(e => {
-    const t = Array.isArray(e.time) ? e.time : [],
-      a = num(t[0], 1, 600, 6),
-      b = num(t[1], 1, 600, Math.max(a, 14));
+  const prop = e => ({
+    s: sp(e.s),
+    x: X(e.x),
+    y: Y(e.y),
+    fps: num(e.fps, 0.2, 30, 6),
+    pulse: num(e.pulse, 0, 60, 0),
+    bob: int(e.bob, 0, 8, 0),
+    front: e.front === true,
+    under: e.under === true,
+    rest: num(e.rest, 0, 600, 0),
+    fx: fx(e.fx),
+    when: when(e.when),
+  });
+  // a spot: where a character goes and what it does there; `path` is the way in from the street (a door, stairs: [x, y, climb])
+  const spot = e => {
+    const path = (Array.isArray(e.path) ? e.path.slice(0, 6) : [])
+      .filter(p => Array.isArray(p) && p.length >= 2)
+      .map(p => [X(p[0]), Y(p[1]), p[2] ? 1 : 0]);
+    if (!path.length && Array.isArray(e.via) && e.via.length === 2) path.push([X(e.via[0]), Y(e.via[1]), 0], [X(e.via[0]), Y(e.y), 1]);
     return {
       x: X(e.x),
       y: Y(e.y),
       act: sp(e.act),
+      // what each place does, for a spot where they do different things (two turn a rope, one jumps)
+      acts: (Array.isArray(e.acts) ? e.acts.slice(0, 6) : []).map(sp),
       fps: num(e.fps, 0.2, 30, 6),
       face: e.face === -1 || e.face === 1 ? e.face : 0,
-      time: [Math.min(a, b), Math.max(a, b)],
-      n: int(e.n, 1, 4, 1),
+      time: range(e.time, 1, 1800, 6, 14),
+      n: int(e.n, 1, 6, 1),
       gap: int(e.gap, 0, 600, 0),
-      via: Array.isArray(e.via) && e.via.length === 2 ? [X(e.via[0]), Y(e.via[1])] : null,
+      path,
       inside: e.inside === true,
       back: sp(e.back),
+      // what it walks away with (a crate from the mine) until its next spot
+      carry: sp(e.carry),
       w: num(e.w, 0, 10, 1),
       fx: fx(e.fx),
+      say: say(e.say),
+      // props shown while every place of the spot is taken (the table, the rope, the ball of a game)
+      show: list(e.show, 4)
+        .map(prop)
+        .filter(p => p.s),
+      // a name shared by spots of which only one can be in use at a time (the games of a room)
+      group: typeof e.group === 'string' && /^[a-z][a-z0-9-]{0,15}$/.test(e.group) ? e.group : '',
+      when: when(e.when),
     };
+  };
+  const drifter = e => ({
+    s: sp(e.s),
+    y: Y(e.y),
+    speed: num(e.speed, 1, 600, 20),
+    dir: e.dir === -1 ? -1 : 1,
+    fps: num(e.fps, 0.2, 30, 6),
+    bob: int(e.bob, 0, 8, 0),
+    when: when(e.when),
   });
+  const spots = list(o.spots, MAX_SPOTS).map(spot);
   const props = list(o.props, MAX_PROPS)
-    .map(e => ({
-      s: sp(e.s),
-      x: X(e.x),
-      y: Y(e.y),
-      fps: num(e.fps, 0.2, 30, 6),
-      pulse: num(e.pulse, 0, 60, 0),
-      bob: int(e.bob, 0, 8, 0),
-      front: e.front === true,
-      rest: num(e.rest, 0, 600, 0),
-      fx: fx(e.fx),
-    }))
+    .map(prop)
     .filter(p => p.s);
   const drift = list(o.drift, MAX_DRIFT)
-    .map(e => ({
-      s: sp(e.s),
-      y: Y(e.y),
-      speed: num(e.speed, 1, 600, 20),
-      dir: e.dir === -1 ? -1 : 1,
-      fps: num(e.fps, 0.2, 30, 6),
-      bob: int(e.bob, 0, 8, 0),
-    }))
+    .map(drifter)
     .filter(d => d.s);
-  return { file: typeof o.file === 'string' ? o.file : '', px: int(o.px, 1, 12, 4), sprites, crew, spots, props, drift };
+  // herds: little ones that wander about an area, hop, play and keep each other company
+  const herds = list(o.herds, MAX_HERDS)
+    .map(e => {
+      const a = Array.isArray(e.area) ? e.area : [];
+      return {
+        count: int(e.count, 1, 12, 3),
+        area: [X(a[0]), Y(a[1]), X(a[2]), Y(a[3])],
+        stand: sp(e.stand),
+        walk: sp(e.walk) || sp(e.stand),
+        acts: sps(e.acts, 8),
+        speed: num(e.speed, 5, 400, 40),
+        fx: fx(e.fx),
+        when: when(e.when),
+      };
+    })
+    .filter(h => h.stand);
+  // events: now and then something happens for a while: things appear, a spot opens and some of the crew are called to it
+  const events = list(o.events, MAX_EVENTS).map(e => ({
+    every: range(e.every, 10, 7200, 120, 300),
+    time: range(e.time, 5, 900, 30, 60),
+    call: int(e.call, 0, 16, 0),
+    spot: obj(e.spot) ? spot(e.spot) : null,
+    props: list(e.props, 12)
+      .map(prop)
+      .filter(p => p.s),
+    drift: list(e.drift, 6)
+      .map(drifter)
+      .filter(d => d.s),
+    when: when(e.when),
+  }));
+  // a tint over the backdrop at some hours (night): a colour and how strong
+  const shade = list(o.shade, 4)
+    .map(e => ({ color: hex(e.color) || '', alpha: num(e.alpha, 0, 0.9, 0.4), when: when(e.when) }))
+    .filter(x => x.color);
+  return {
+    file: typeof o.file === 'string' ? o.file : '',
+    px: int(o.px, 1, 12, 4),
+    sprites,
+    crew,
+    spots,
+    props,
+    drift,
+    herds,
+    events,
+    shade,
+  };
 }
 
 // What the launcher applies: CSS variables, attributes for the few layouts that need more than a variable, and the numbers its scrolling needs.

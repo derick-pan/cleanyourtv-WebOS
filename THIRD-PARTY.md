@@ -43,6 +43,45 @@ Kazuhiko Arase, unmodified (npm package `qrcode-generator@1.4.4`, SHA-256 of the
 `18ae399f81182bc9de916e9c77b195df20cc58d6f2d55a62b085a299f1bf1780`), licensed under the MIT license (the notice is in
 the file header). The manager app loads it to draw the QR code.
 
+## Clawd World (the Claude theme)
+
+The Claude theme's pictures and its world (`themes/claude/`, drawn by `tools/clawd-world/`) redraw parts of three MIT-licensed Clawd
+projects. Nothing of them is shipped as it was and none of their code runs: the generator was written for this project after reading
+theirs, and draws everything pixel by pixel.
+
+| Project | What Clawd World takes from it | Source |
+|---|---|---|
+| clawd-sidekick by Tunai | The Clawd body and its pose system (eyes, arms, a lift, legs), the beanies and hats, the house and its rooms, colours and furniture, the errands and games (pong, jump rope, the block tower, volleyball), the pals (cat, owl, crab), the sparrow, the deer and the saucer, from `hooks/scene.ts`, `hooks/pixels.ts` and `hooks/themes.ts` | [Tunai-0511/clawd-sidekick](https://github.com/Tunai-0511/clawd-sidekick) at `2c1c19e` |
+| Clawd Tank by Marcio Granzotto Rodrigues | The jobs a Clawd does: juggling, conducting, building, hammering, the pickaxe, sweeping, debugging, dancing, the eureka, the dizzy spell, the wizard and the coffee, as ideas redrawn on the same body (not rendered from its SVGs) | [marciogranzotto/clawd-tank](https://github.com/marciogranzotto/clawd-tank) at `ee5c079` |
+| claude-clawd by Kien Hoang Trung | The meadow of little Clawds (its subagents), the speech bubbles and the moods | [kreddevils18/claude-clawd](https://github.com/kreddevils18/claude-clawd) at `8f3701a` |
+
+Clawd, the character, is Anthropic's Claude Code mascot; the theme is a fan work, not made or endorsed by Anthropic. The three projects
+use the same MIT license:
+
+```
+Copyright (c) 2026 Tunai
+Copyright (c) 2026 Marcio Granzotto Rodrigues
+Copyright (c) 2026 Kien Hoang Trung
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## Design
 
 The home-screen design follows the Android TV project [CleanYourTV](https://github.com/Gathin23/cleanyourtv) (MIT).

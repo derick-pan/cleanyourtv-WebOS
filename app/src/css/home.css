@@ -261,7 +261,9 @@ body {
 .wo-d,
 .wo-b,
 .wo-c,
-.wo-s {
+.wo-s,
+.wo-q,
+.wo-sh {
   position: absolute;
   left: 0;
   top: 0;
@@ -285,6 +287,31 @@ body {
 }
 .wo-f {
   z-index: 950;
+}
+/* a speech bubble over a character's head (it pops up and fades: wo-say1, wo-say2) */
+.wo-q {
+  opacity: 0;
+}
+/* the tint of the night over the backdrop, under everything else of the world; it comes and goes slowly */
+.wo-sh {
+  width: 1920px;
+  height: 1080px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity calc(20s * var(--spd)) linear;
+}
+/* what an event brings comes and goes with a fade */
+.wo-in {
+  animation: wo-in 0.8s linear;
+}
+.wo-out {
+  opacity: 0 !important;
+  transition: opacity 0.8s linear;
+}
+@keyframes wo-in {
+  from {
+    opacity: 0;
+  }
 }
 /* under the open grid the world stands still: nothing to draw while the dark layer covers it */
 .grid-open #world * {

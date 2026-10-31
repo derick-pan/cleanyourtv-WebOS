@@ -36,6 +36,19 @@ is built against the Moonshine C header.
 `third-party/qrcode-generator/qrcode.js` is [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko
 Arase, unmodified, licensed under the MIT license. The manager app loads it to draw QR codes.
 
+## Clawd World (the Claude theme)
+
+The Claude theme's pictures and its world are drawn by `tools/clawd-world/` and redraw parts of three MIT-licensed Clawd projects.
+Nothing of them is shipped as it was and none of their code runs; the licence texts are in `THIRD-PARTY.md`.
+
+| Project | What Clawd World takes from it | Source |
+|---|---|---|
+| clawd-sidekick by Tunai | The Clawd body and its poses, the beanies and hats, the house and its rooms, the errands and games, the pals and the visitors | [Tunai-0511/clawd-sidekick](https://github.com/Tunai-0511/clawd-sidekick) |
+| Clawd Tank by Marcio Granzotto Rodrigues | The jobs a Clawd does (juggling, conducting, building, the wizard and more), redrawn on the same body | [marciogranzotto/clawd-tank](https://github.com/marciogranzotto/clawd-tank) |
+| claude-clawd by Kien Hoang Trung | The meadow of little Clawds, the speech bubbles and the moods | [kreddevils18/claude-clawd](https://github.com/kreddevils18/claude-clawd) |
+
+Clawd, the character, is Anthropic's Claude Code mascot; the theme is a fan work, not made or endorsed by Anthropic.
+
 ## Design
 
 The home-screen design follows the Android TV project [CleanYourTV](https://github.com/Gathin23/cleanyourtv) (MIT). No code from
