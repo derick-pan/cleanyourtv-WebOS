@@ -261,6 +261,8 @@ body {
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
+  /* what happens in the world (a sprite changing, a particle coming or going) never makes the rest of Home lay out or paint again */
+  contain: strict;
 }
 .wo,
 .wo-d,
@@ -4199,7 +4201,8 @@ var SCENE = (function () {
    says (in at a door, up the stairs or a ladder, inside for a while), herds of little ones who wander about an area and play, events
    that come now and then (a match, a party, a visitor) and a tint for the night. Some things only happen at some hours or on some days
    (when). Characters say things in bubbles, meet in the street for a chat, hop when the focus moves and wave when Home comes back.
-   Now and then a gust of wind crosses the screen and what grows sways as it passes; the stars can wheel slowly (pan).
+   Now and then a gust of wind crosses the screen and what grows sways as it passes; the stars can wheel slowly (pan). What comes and
+   goes with the hours fades in and out (a sky by day, another by night). On a TV that cannot keep up, it sheds what is least seen.
    Everything moves with transforms and opacity only and in whole art pixels (steps), so pixel art stays crisp and the weak GPU draws
    each piece as a small layer; the frames are CSS animations, so the script only acts when someone starts something new. effects.speed
    0 leaves everyone standing at a spot. It stops while Home is hidden and stands still under the open grid. ---------- */
@@ -4221,7 +4224,10 @@ var WORLD = (function () {
     drifts = [],
     minis = [],
     parts = [] /* particles on screen */,
-    live = null; /* the event going on */
+    live = null /* the event going on */,
+    stillAt = 0 /* the time the hours are at for a screenshot (still), or 0 for the clock's */,
+    level = 0 /* how much a TV that cannot keep up sheds: 0 nothing, 1 some, 2 more */,
+    CAP = [36, 18, 8]; /* particles at a time, at each level */
   function rnd(a, b) {
     return a + Math.random() * (b - a);
   }
@@ -4247,7 +4253,7 @@ var WORLD = (function () {
   /* is it the hour and the day for it (when: {h: [from, to], d: [from, to]}, both across midnight or New Year when needed)? */
   function active(w) {
     if (!w) return true;
-    var t = new Date(Date.now()),
+    var t = new Date(stillAt || Date.now()),
       h = t.getHours(),
       d = (t.getMonth() + 1) * 100 + t.getDate();
     if (w.h && !(w.h[0] <= w.h[1] ? h >= w.h[0] && h < w.h[1] : h >= w.h[0] || h < w.h[1])) return false;
@@ -4354,6 +4360,7 @@ var WORLD = (function () {
       'px,' +
       -8 * P +
       'px);opacity:0}}' +
+      '@keyframes wo-fin{from{opacity:0}}@keyframes wo-fout{to{opacity:0}}' +
       '@keyframes wo-sway{50%{transform:translateX(' +
       P +
       'px)}}' +
@@ -4372,7 +4379,7 @@ var WORLD = (function () {
   /* ---- particles (fx): a sprite that rises, floats away, pops where it is, falls or is blown away (the way the wind goes: face),
      playing its frames once over its life ---- */
   function emit(f, x, y, face) {
-    if (!box || parts.length >= 36 || document.hidden) return;
+    if (!box || parts.length >= CAP[level] || document.hidden) return;
     var s = W.sprites[f.s];
     if (!s) return;
     var life = f.kind === 'float' ? 4 : f.kind === 'pop' ? 1.1 : f.kind === 'fall' ? 5 : f.kind === 'blow' ? 3.2 : 2.6,
@@ -4435,7 +4442,7 @@ var WORLD = (function () {
     panning(q, false);
     var an = [];
     if (rate > 0 && p.bob) an.push(bob(p.bob));
-    if (rate > 0 && p.pulse)
+    if (rate > 0 && p.pulse && level < 2)
       an.push('wo-pulse ' + (p.pulse / 2 / rate).toFixed(2) + 's ease-in-out ' + (-rnd(0, p.pulse)).toFixed(2) + 's infinite alternate');
     if (an.length) b.style.animation = an.join(',');
     return q;
@@ -4458,6 +4465,8 @@ var WORLD = (function () {
           ') ' +
           (-((Date.now() / 1000) % (2 * per))).toFixed(3) +
           's infinite alternate';
+    /* a TV that cannot keep up: the sky holds where it is */
+    if (level >= 2) q.a.style.animationPlayState = 'paused';
   }
   /* a prop's timers: one that plays now and then is out of sight between plays; particles while it is shown */
   function startProp(q) {
@@ -4467,12 +4476,12 @@ var WORLD = (function () {
     if (p.rest) {
       q.a.style.opacity = '0';
       var play = function () {
-        if (q.on) {
+        if (q.on && level < 2) {
           q.a.style.opacity = '1';
           var t = paint(q.o, p.s, p.fps, true, 1, 0);
           later(function () {
             q.a.style.opacity = '0';
-            later(play, (rnd(0.6, 1.4) * p.rest) / rate);
+            later(play, (rnd(0.6, 1.4) * p.rest * (level ? 2 : 1)) / rate);
           }, t);
         } else later(play, p.rest / rate);
       };
@@ -4482,10 +4491,10 @@ var WORLD = (function () {
       every(
         p.fx.every,
         function () {
-          emit(p.fx, p.x, p.y, 1);
+          if (q.on) emit(p.fx, p.x, p.y, 1);
         },
         function () {
-          return q.on && !!q.a.parentNode;
+          return !!q.a.parentNode;
         }
       );
   }
@@ -4508,7 +4517,7 @@ var WORLD = (function () {
               later(function () {
                 if (q.on) paint(q.o, p.s, p.fps, false, 1, 0, true);
               }, t + 0.05);
-              if (w.fx && Math.random() < 0.35) emit(w.fx, p.x, p.y, w.dir);
+              if (w.fx && level < 1 && Math.random() < 0.35) emit(w.fx, p.x, p.y, w.dir);
             },
             ((w.dir > 0 ? p.x : 1920 - p.x) + 400) / w.speed / rate
           );
@@ -4534,7 +4543,7 @@ var WORLD = (function () {
     a.style.top = d.y - s[6] * P + 'px';
     if (!(rate > 0)) {
       a.style.transform = 'translateX(' + Math.round(((i + 0.5) * 1920) / n - fw / 2) + 'px)';
-      return { d: d, a: a };
+      return { d: d, a: a, o: o };
     }
     var span = 1920 + fw,
       dur = span / (0.6 * d.speed * rate);
@@ -4547,7 +4556,7 @@ var WORLD = (function () {
       (-rnd(0, dur)).toFixed(1) +
       's infinite';
     if (d.bob) b.style.animation = bob(d.bob);
-    return { d: d, a: a };
+    return { d: d, a: a, o: o };
   }
 
   /* ---- a character: a box moved with transitions, a wrapper that hops and fades, the sprite, and a bubble over its head ---- */
@@ -5063,24 +5072,44 @@ var WORLD = (function () {
   }
 
   /* ---- what depends on the hour and the day: props and drift shown or not, herds out or in, the tint of the night ---- */
-  function hours() {
+  /* shown or not: it fades in or out over fade seconds (at once the first time, or for a screenshot), out of the way once it is out */
+  function showAt(x, on, fade, instant) {
+    if (x.shown === on) return;
+    var first = x.shown === undefined,
+      a = x.a,
+      c = x.o.clip.style,
+      t = !first && !instant && fade > 0 && rate > 0 ? fade / rate : 0,
+      k = (x.fk = (x.fk || 0) + 1);
+    x.shown = on;
+    if (on) {
+      a.style.display = '';
+      c.animation = t ? 'wo-fin ' + t.toFixed(1) + 's linear' : '';
+    } else if (!t) {
+      a.style.display = 'none';
+      c.animation = '';
+    } else {
+      c.animation = 'wo-fout ' + t.toFixed(1) + 's linear forwards';
+      setTimeout(function () {
+        if (x.fk === k) a.style.display = 'none';
+      }, t * 1000);
+    }
+  }
+  function hours(instant) {
     props.forEach(function (q) {
-      var on = active(q.p.when);
-      if (on !== q.on) {
-        q.on = on;
-        q.a.style.display = on ? '' : 'none';
-      }
+      q.on = active(q.p.when);
+      showAt(q, q.on, q.p.fade, instant);
     });
     drifts.forEach(function (x) {
-      x.a.style.display = active(x.d.when) ? '' : 'none';
+      showAt(x, active(x.d.when), x.d.fade, instant);
     });
     minis.forEach(function (m) {
-      m.a.style.display = active(m.h.when) ? '' : 'none';
+      showAt(m, active(m.h.when), 8, instant);
     });
     var sh = null;
     W.shade.forEach(function (x) {
       if (!sh && active(x.when)) sh = x;
     });
+    shadeEl.style.transition = instant ? 'none' : '';
     if (sh) shadeEl.style.backgroundColor = sh.color;
     shadeEl.style.opacity = sh ? String(sh.alpha) : '0';
   }
@@ -5089,6 +5118,50 @@ var WORLD = (function () {
       hours();
       clock();
     }, 60);
+  }
+
+  /* ---- a TV that cannot keep up: a few seconds after Home shows, frames are timed for three seconds; when many come late, the world
+     sheds what is least seen, a step at a time (level 1: fewer particles at a time, no petals in the wind, flares half as often; level
+     2: fewer still, the sky holds still, glows stop pulsing and nothing flares), and times them again. A TV that keeps up sheds
+     nothing. The level holds until another world is applied ---- */
+  function measure() {
+    if (level >= 2 || !(rate > 0) || typeof requestAnimationFrame !== 'function') return;
+    later(function () {
+      if (!box || document.hidden) return;
+      var gaps = [],
+        t0 = 0,
+        last = 0,
+        tok = token;
+      var tick = function (now) {
+        if (tok !== token || !box) return;
+        if (last) gaps.push(now - last);
+        last = now;
+        if (!t0) t0 = now;
+        if (now - t0 < 3000) requestAnimationFrame(tick);
+        else judge(gaps);
+      };
+      requestAnimationFrame(tick);
+    }, 6);
+  }
+  /* late: more than twice the usual time between frames (and over 50 ms); too slow: frames over 40 ms apart, or one in ten late */
+  function judge(gaps) {
+    if (gaps.length < 20) return;
+    var med = gaps.slice().sort(function (a, b) {
+        return a - b;
+      })[Math.floor(gaps.length / 2)],
+      late = gaps.filter(function (g) {
+        return g > Math.max(2.2 * med, 50);
+      }).length;
+    if (med <= 40 && late * 10 <= gaps.length) return;
+    level++;
+    if (level >= 2)
+      props.forEach(function (q) {
+        panning(q, false);
+        if (q.p.pulse) q.b.style.animation = q.p.bob ? bob(q.p.bob) : '';
+      });
+    if (typeof perfMark === 'function')
+      perfMark('world level ' + level + ' (frames ' + Math.round(med) + ' ms apart, ' + late + ' of ' + gaps.length + ' late)');
+    measure();
   }
 
   /* everyone at a spot of their own, already doing it: shuffled, or in the order of the spots (still, for a screenshot) */
@@ -5198,7 +5271,7 @@ var WORLD = (function () {
     token++;
     parts.forEach(drop);
     parts = [];
-    hours();
+    hours(still);
     props.forEach(function (q) {
       panning(q, still);
       startProp(q);
@@ -5209,6 +5282,7 @@ var WORLD = (function () {
     events();
     wind();
     clock();
+    measure();
   }
   function clear() {
     token++;
@@ -5231,6 +5305,8 @@ var WORLD = (function () {
       sig = s;
       var g = ++gen;
       W = null;
+      level = 0;
+      stillAt = 0;
       clear();
       if (!s) return;
       rate = typeof spd === 'number' ? spd : 1;
@@ -5252,20 +5328,30 @@ var WORLD = (function () {
       for (var i = 0; i < crew.length; i++) crew[i].poke();
       for (i = 0; i < minis.length; i++) if (Math.random() < 0.5) minis[i].hop();
     },
-    /* for a screenshot (tools/theme-preview.mjs): everyone at the first spots, in order, and staying there */
+    /* for a screenshot (tools/theme-preview.mjs): everyone at the first spots, in order, and staying there, at half past seven in the
+       evening (dusk, the lamps lit) whatever the clock says */
     still: function () {
-      if (box) go(true);
+      if (!box) return;
+      var d = new Date(Date.now());
+      stillAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 19, 30).getTime();
+      go(true);
     },
     shown: function () {
       if (!W) return;
+      stillAt = 0;
       if (!box) build();
-      else go(false);
+      else {
+        box.style.display = '';
+        go(false);
+      }
     },
+    /* Home hidden: the timers stop and the world is out of the page, so it costs nothing (not even GPU memory) while an app plays */
     hidden: function () {
       if (live) end(live);
       token++;
       parts.forEach(drop);
       parts = [];
+      if (box) box.style.display = 'none';
     },
   };
 })();

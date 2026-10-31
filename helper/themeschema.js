@@ -478,7 +478,8 @@ function slots(list) {
 //    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act}},
 //    spots: [{x, y, act, acts: [names], fps, face, time: [min, max], n, gap, path: [[x, y, climb]], via: [x, y], inside, back, carry,
 //             w, fx, say, show: [props], group, when}],
-//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, pan: [px, seconds], gust}], drift: [{s, y, speed, dir, fps, bob, when}],
+//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, fade, pan: [px, seconds], gust}],
+//    drift: [{s, y, speed, dir, fps, bob, when, fade}],
 //    herds: [{count, area: [x0, y0, x1, y1], stand, walk, acts: [names], speed, fx, when}],
 //    events: [{every: [min, max], time: [min, max], call, spot, props, drift, when}], shade: [{color, alpha, when}],
 //    wind: {every: [min, max], speed, dir, fps, fx}}
@@ -594,6 +595,8 @@ function world(o) {
     pan: Array.isArray(e.pan) && int(e.pan[0], -1920, 1920, 0) ? [int(e.pan[0], -1920, 1920, 0), num(e.pan[1], 10, 7200, 600)] : null,
     // what it plays once when a gust of wind passes over it (wind)
     gust: sp(e.gust),
+    // seconds it takes to fade in or out when its hours (when) come or go
+    fade: num(e.fade, 0, 1800, 20),
   });
   // a spot: where a character goes and what it does there; `path` is the way in from the street (a door, stairs: [x, y, climb])
   const spot = e => {
@@ -637,6 +640,7 @@ function world(o) {
     fps: num(e.fps, 0.2, 30, 6),
     bob: int(e.bob, 0, 8, 0),
     when: when(e.when),
+    fade: num(e.fade, 0, 1800, 20),
   });
   const spots = list(o.spots, MAX_SPOTS).map(spot);
   const props = list(o.props, MAX_PROPS)

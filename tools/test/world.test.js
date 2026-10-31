@@ -94,8 +94,9 @@ function seeded(n) {
   };
 }
 const src = fs.readFileSync(path.join(root, 'app', 'src', 'js', 'world.js'), 'utf8');
-// a page with the world script in it, its clock starting at `start` (ms, local time)
-function page(seed, start) {
+// a page with the world script in it, its clock starting at `start` (ms, local time); `frame`, if given, is the time between the frames
+// of a requestAnimationFrame (ms, or a function of the frame's number), and what the page logs with perfMark goes in pg.marks
+function page(seed, start, frame) {
   let now = start;
   const timers = [];
   const add = (at, fn) => {
@@ -115,10 +116,12 @@ function page(seed, start) {
   body.appendChild(wall);
   const M = Object.create(Math);
   M.random = seeded(seed);
-  function D(t) {
-    return new Date(t === undefined ? now : t);
+  function D(...a) {
+    return a.length > 1 ? new Date(...a) : new Date(a.length ? a[0] : now);
   }
   D.now = () => now;
+  const marks = [];
+  let frames = 0;
   const sandbox = {
     document: { body, head, hidden: false, createElement: tag => new El(tag) },
     API: 'http://tv',
@@ -133,7 +136,13 @@ function page(seed, start) {
     Date: D,
     Math: M,
     JSON,
+    perfMark: m => marks.push(m),
   };
+  if (frame)
+    sandbox.requestAnimationFrame = fn => {
+      const at = now + (typeof frame === 'function' ? frame(frames++) : frame);
+      add(at, () => fn(at));
+    };
   vm.runInNewContext(src, sandbox, { filename: 'world.js' });
   const pg = {
     WORLD: sandbox.WORLD,
@@ -141,6 +150,7 @@ function page(seed, start) {
     head,
     wall,
     timers,
+    marks,
     now: () => now,
     box: () => body.children.filter(c => c.id === 'world')[0],
     // the clock moves on and the timers that are due run in order; each() is called every `step` ms of it
@@ -292,6 +302,16 @@ run(async () => {
   ok(mini('cat').every(shown) && mini('owl').every(m => !shown(m)), 'the cat is out by day, the owl is not');
   const shade = b.children.filter(c => c.classList.contains('wo-sh'))[0];
   ok(!!shade && shade.style.opacity === '0', 'no tint by day');
+  // the hours: by day the day's sky and ground lie over the backdrop (which is dusk) and the stars are not out
+  const sky = n => propsOf(b).filter(e => name(e).name === n)[0];
+  ok(
+    shown(sky('sky-day')) &&
+      shown(sky('ground-day')) &&
+      !shown(sky('sky-night')) &&
+      !shown(sky('ground-night')) &&
+      !shown(sky('starfield')),
+    "by day: the day's sky over the backdrop, no stars"
+  );
 
   // the night sky wheels slowly: the starfield, the moon's glow and the bright stars drift together, one px at a time, under the clouds
   const pans = propsOf(b).filter(e => /^wo-pan/.test(e.style.animation || '')),
@@ -446,10 +466,21 @@ run(async () => {
   const bats = all(b, 'wo-d').filter(d => name(d).name === 'bat');
   ok(bats.length === 2 && bats.every(shown), 'bats fly at night on Halloween');
   ok(shade.style.opacity === '0.38' && shade.style.backgroundColor === '#0b0a26', 'the night tints the backdrop');
+  const clip = e => all(e, 'wo-c')[0].style.animation || '';
+  ok(
+    shown(sky('sky-night')) &&
+      /^wo-fin 300\.0s linear$/.test(clip(sky('sky-night'))) &&
+      shown(sky('sky-day')) &&
+      /^wo-fout 300\.0s linear forwards$/.test(clip(sky('sky-day'))) &&
+      shown(sky('starfield')),
+    "the night's sky fades in over five minutes as the day's fades out, the stars are out"
+  );
+  pg.advance(300000);
+  ok(!shown(sky('sky-day')) && !shown(sky('ground-day')) && shown(sky('ground-night')), "and then the day's is gone (out of the page)");
 
   // Home is hidden: nobody moves, the particles go; Home is back: everyone is at a spot again, and someone waves
   pg.WORLD.hidden();
-  ok(all(b, 'wo-f').length === 0, 'the particles go when Home is hidden');
+  ok(all(b, 'wo-f').length === 0 && b.style.display === 'none', 'the particles go when Home is hidden, and the world is out of the page');
   crew.concat(minis).forEach(m => (m.moves = []));
   pg.advance(600000);
   ok(
@@ -457,6 +488,7 @@ run(async () => {
     'nobody moves while Home is hidden'
   );
   pg.WORLD.shown();
+  ok(b.style.display === '', 'it is back in the page with Home');
   const back = crew.map(m => xy(m.style.transform)),
     allPlaces = [].concat.apply([], w.spots.map(places));
   ok(
@@ -495,6 +527,44 @@ run(async () => {
   ok(
     propsOf(pv.box()).some(e => name(e).name === w.spots[3].show[0].s),
     'still: the game among them has its table out'
+  );
+  const pvSky = n => propsOf(pv.box()).filter(e => name(e).name === n)[0];
+  ok(
+    !shown(pvSky('sky-day')) &&
+      !shown(pvSky('sky-night')) &&
+      shown(pvSky('starfield')) &&
+      !all(pv.box(), 'wo-c').some(c => /^wo-f(in|out) /.test(c.style.animation || '')),
+    'still: at dusk (half past seven) whatever the clock says, at once (no fades), the stars out'
+  );
+
+  // a TV that keeps up (a frame every 16.7 ms) sheds nothing; one that falls behind (every third frame 120 ms late) sheds in two steps
+  const fast = page(4, HALLOWEEN, 16.7),
+    slow = page(4, HALLOWEEN, k => (k % 3 ? 16.7 : 140));
+  for (const t of [fast, slow]) {
+    t.WORLD.apply(w, 1);
+    t.advance(1);
+  }
+  fast.advance(30000);
+  slow.advance(30000);
+  const pansOf = t => propsOf(t.box()).filter(e => /^wo-pan/.test(e.style.animation || ''));
+  ok(!fast.marks.length && pansOf(fast).every(e => e.style.animationPlayState !== 'paused'), 'a TV that keeps up sheds nothing');
+  ok(
+    slow.marks.length === 2 &&
+      /^world level 1 \(frames \d+ ms apart, \d+ of \d+ late\)$/.test(slow.marks[0]) &&
+      /^world level 2 /.test(slow.marks[1]),
+    'one that falls behind sheds a step, is timed again and sheds another (' + slow.marks.join('; ') + ')'
+  );
+  let most = 0;
+  slow.advance(120000, 250, () => {
+    most = Math.max(most, all(slow.box(), 'wo-f').length);
+  });
+  ok(
+    pansOf(slow).length > 0 &&
+      pansOf(slow).every(e => e.style.animationPlayState === 'paused') &&
+      propsOf(slow.box()).every(e => !/wo-pulse/.test(e.children[0].style.animation || '')) &&
+      most > 0 &&
+      most <= 8,
+    'at the second step the sky holds still, nothing pulses and at most 8 particles are out (' + most + ')'
   );
 
   // ================= small worlds, one for each rule =================

@@ -66,8 +66,9 @@ go to a TV. The mock needs to answer `/api/apps`, `/api/live/*` and `/api/manage
 ## Timings on a TV
 
 The launcher, the Inputs picker, the Input key and Live TV write short `perf` lines to the service log: how long the launcher takes to
-draw (from the saved layout, and with the service's answer), how long from the Input key to the picker on screen, and how long from
-choosing a channel to moving picture. After using the TV for a while,
+draw (from the saved layout, and with the service's answer), how long from the Input key to the picker on screen, how long from
+choosing a channel to moving picture, and whether a theme's world had to shed load because the TV could not keep up (the step, and
+how far apart its frames came). After using the TV for a while,
 
 ```sh
 sh tools/perf-tv.sh <tv-ip>

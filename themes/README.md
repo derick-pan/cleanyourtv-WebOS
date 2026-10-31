@@ -162,10 +162,12 @@ Folder: [`the-grid/`](the-grid/)
 
 ### Claude
 
-Clawd World: a pixel village at dusk where the little Clawds of Claude Code live, going on under the apps (a world, `world` in
-`theme.json`; see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting, the clock and the
-buttons sit in a night sky with a crescent moon, the focused app's name is big above a row of six apps, and the sun is going down
-behind the hills. Down opens all the apps over the village, which stands still under them.
+Clawd World: a pixel village where the little Clawds of Claude Code live, going on under the apps (a world, `world` in `theme.json`;
+see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting and the clock sit in the sky, the
+focused app's name is big above a row of six apps, and Down opens all the apps over the village, which stands still under them. The
+village keeps the hours of the TV's clock: by day a blue sky with the sun high, the mountains, the hills and the pond in daylight and
+white clouds; from six the sun goes down behind the hills, the sky turns red and purple and the stars and a crescent moon come out;
+from nine a deep night sky, the lamps and the windows lit; at five the dawn. Each sky fades into the next over a few minutes.
 
 Eight Clawds, each in a beanie of its own colour, walk the village street from spot to spot and get on with things. In the house they
 go in at the door and climb the ladder: reading in the library, pinning notes and stamping mail in the workshop, coding at the desk and

@@ -256,6 +256,8 @@ body {
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
+  /* what happens in the world (a sprite changing, a particle coming or going) never makes the rest of Home lay out or paint again */
+  contain: strict;
 }
 .wo,
 .wo-d,

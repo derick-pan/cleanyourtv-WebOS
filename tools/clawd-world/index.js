@@ -154,6 +154,12 @@ add('shoot', T.SHOOT);
 add('cloud-a', T.CLOUDA);
 add('cloud-b', T.CLOUDB);
 add('cloud-c', T.CLOUDC);
+'abc'.split('').forEach((k, i) => add('cloud-d' + k, T.DAYCLOUDS[i]));
+// the hours: the sky (with the scenery) and the ground (the meadow, the pond) by day and by night, over the backdrop, which is dusk
+for (const k of ['day', 'night']) {
+  add('sky-' + k, [P.SKIES[k].sky], { ax: 0, ay: 0 });
+  add('ground-' + k, [P.SKIES[k].ground], { ax: 0, ay: 0 });
+}
 add('bird', T.BIRD);
 add('balloon', T.BALLOON);
 add('butterfly', T.BUTTERFLY);
@@ -237,6 +243,11 @@ const prop = (s, x, y, o) => Object.assign({ s, x: S(x), y: S(y) }, o || {});
 const spot = (x, y, o) => Object.assign({ x: S(x), y: S(y) }, o);
 // the sky wheels: PAN art pixels to the left over 8 minutes, and back
 const SKY = [-S(P.PAN), 480];
+// the hours of the day: the day's sky from 7 to 6 in the evening, the night's from 9 to 5; dusk and dawn are the backdrop's own, and
+// the stars are out from 6 in the evening to 7 in the morning
+const DAYTIME = { h: [7, 18] },
+  NIGHTTIME = { h: [21, 5] },
+  STARRY = { h: [18, 7] };
 const DAY = { h: [7, 21] },
   NIGHT = { h: [21, 6] },
   GF = G.street,
@@ -318,6 +329,11 @@ const spots = [
   spot(-20, 181, { inside: true, time: [8, 24], w: 0.6 }),
 ];
 const props = [
+  // the day's sky with the sun high and the land in daylight, the night's deep one; each fades in and out over five minutes
+  prop('sky-day', 0, 0, { under: true, when: DAYTIME, fade: 300 }),
+  prop('ground-day', 0, P.SKIES.ground, { under: true, when: DAYTIME, fade: 300 }),
+  prop('sky-night', 0, 0, { under: true, when: NIGHTTIME, fade: 300 }),
+  prop('ground-night', 0, P.SKIES.ground, { under: true, when: NIGHTTIME, fade: 300 }),
   ...Object.keys(OCC).map(k => prop(k, OCC[k][0], OCC[k][1])),
   // the house: the screen's code, the terminal, the rack, the arcade, the globe, the window at night, a sparrow on the sill by day
   prop('monitor', 205, GF - 15, { fps: 4 }),
@@ -342,7 +358,7 @@ const props = [
     [342, 194, 3],
     [347, 202, 5],
     [343, 210, 3.5],
-  ].map(g => prop('glint', g[0], g[1], { fps: g[2] })),
+  ].map(g => prop('glint', g[0], g[1], { fps: g[2], when: { h: [7, 21] } })),
   prop('swim', 366, 205, { fps: 2, bob: 1 }),
   prop('fishjump', 377, 197, { fps: 8, rest: 9 }),
   prop('butterfly', 184, 195, { fps: 6, bob: 2, when: DAY }),
@@ -358,11 +374,13 @@ const props = [
   ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6] } })),
   // the night sky, under the clouds: the stars and the moon wheel slowly to and fro, the bright stars twinkling as they go and a glow
   // breathing round the moon; other stars flare now and then, and a star shoots across
-  prop('starfield', 0, 0, { under: true, pan: SKY }),
-  prop('moon-glow', G.moon[0], G.moon[1] + 14, { under: true, pan: SKY, pulse: 6 }),
-  ...P.BIG.map(([x, y], i) => prop('star2', x, y + 2, { under: true, pan: SKY, pulse: [3, 2.4, 3.8, 2.8, 3.3, 2.2, 3.5, 2.6][i] })),
-  ...P.TWINKLES.map(([x, y], i) => prop('twinkle', x, y + 3, { under: true, fps: 8, rest: 4 + (i % 5) * 1.4 })),
-  prop('shoot', 140, 40, { fps: 12, rest: 35, under: true }),
+  prop('starfield', 0, 0, { under: true, pan: SKY, when: STARRY, fade: 240 }),
+  prop('moon-glow', G.moon[0], G.moon[1] + 14, { under: true, pan: SKY, pulse: 6, when: STARRY, fade: 240 }),
+  ...P.BIG.map(([x, y], i) =>
+    prop('star2', x, y + 2, { under: true, pan: SKY, pulse: [3, 2.4, 3.8, 2.8, 3.3, 2.2, 3.5, 2.6][i], when: STARRY, fade: 240 })
+  ),
+  ...P.TWINKLES.map(([x, y], i) => prop('twinkle', x, y + 3, { under: true, fps: 8, rest: 4 + (i % 5) * 1.4, when: STARRY })),
+  prop('shoot', 140, 40, { fps: 12, rest: 35, under: true, when: STARRY }),
   // the wind: the flag on the house's roof, the bunting over the stage, the garden's flowers, tufts of grass and flowers in the meadow, the
   // lily pads; and rings spreading on the pond now and then
   prop('flag', 199, 99, { fps: 4, gust: 'flag-gust' }),
@@ -420,9 +438,13 @@ const props = [
   ),
 ];
 const drift = [
-  { s: 'cloud-c', y: S(109), speed: 7, dir: 1 },
-  { s: 'cloud-a', y: S(103), speed: 9, dir: -1 },
-  { s: 'cloud-b', y: S(98), speed: 6, dir: 1 },
+  // clouds lit pink from below from dusk to dawn (dimmed by the night's tint), white by day
+  { s: 'cloud-c', y: S(109), speed: 7, dir: 1, when: STARRY, fade: 120 },
+  { s: 'cloud-a', y: S(103), speed: 9, dir: -1, when: STARRY, fade: 120 },
+  { s: 'cloud-b', y: S(98), speed: 6, dir: 1, when: STARRY, fade: 120 },
+  { s: 'cloud-dc', y: S(106), speed: 8, dir: 1, when: DAYTIME, fade: 120 },
+  { s: 'cloud-da', y: S(100), speed: 10, dir: -1, when: DAYTIME, fade: 120 },
+  { s: 'cloud-db', y: S(95), speed: 6, dir: 1, when: DAYTIME, fade: 120 },
   { s: 'balloon', y: S(110), speed: 11, dir: -1, bob: 2, when: DAY },
   { s: 'bird', y: S(99), speed: 38, dir: -1, fps: 5, bob: 1, when: DAY },
   { s: 'bird', y: S(104), speed: 33, dir: 1, fps: 6, bob: 1, when: DAY },
@@ -578,17 +600,17 @@ const world = {
   // a gust from the left every 14 to 36 seconds, across the screen in about five, petals carried off
   wind: { every: [14, 36], speed: 460, dir: 1, fps: 10, fx: { s: 'blossom', kind: 'blow', every: 1, dx: 0, dy: -S(5) } },
 };
-// JSON as the other themes write it (one space), but a list of numbers and a little object on one line
+// JSON as the other themes write it (one space), but a list of numbers and a little object on one line, as tight as JSON goes (the
+// world is big, and the service takes a theme.json of up to 32 KB)
 function fmt(v, ind) {
   const pad = ' '.repeat(ind);
   if (Array.isArray(v)) {
-    if (v.every(x => typeof x !== 'object' || (Array.isArray(x) && x.every(y => typeof y !== 'object'))))
-      return JSON.stringify(v).replace(/,/g, ', ');
+    if (v.every(x => typeof x !== 'object' || (Array.isArray(x) && x.every(y => typeof y !== 'object')))) return JSON.stringify(v);
     return '[\n' + v.map(x => pad + ' ' + fmt(x, ind + 1)).join(',\n') + '\n' + pad + ']';
   }
   if (v && typeof v === 'object') {
     const flat = JSON.stringify(v);
-    if (ind >= 3 && flat.length < 150) return flat.replace(/":/g, '": ').replace(/,"/g, ', "');
+    if (ind >= 3 && flat.length < 150) return flat;
     return (
       '{\n' +
       Object.keys(v)
