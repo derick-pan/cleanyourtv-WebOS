@@ -166,31 +166,48 @@ Clawd World: a pixel village where the little Clawds of Claude Code live, going 
 see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting and the clock sit in the sky, the
 focused app's name is big above a row of six apps, and Down opens all the apps over the village, which stands still under them. The
 village keeps the hours of the TV's clock: by day a blue sky with the sun high, the mountains, the hills and the pond in daylight and
-white clouds; from six the sun goes down behind the hills, the sky turns red and purple and the stars and a crescent moon come out;
-from nine a deep night sky, the lamps and the windows lit; at five the dawn. Each sky fades into the next over a few minutes.
+white clouds; from six the sun goes down behind the hills, the sky turns red and purple and the stars and the moon come out, the moon
+in its real phase that night; from nine a deep night sky, the lamps and the windows lit; at five the dawn. Each sky fades into the next
+over a few minutes.
 
-Eight Clawds, each in a beanie of its own colour, walk the village street from spot to spot and get on with things. In the house they
-go in at the door and climb the ladder: reading in the library, pinning notes and stamping mail in the workshop, coding at the desk and
-at the terminal, debugging in the server room, playing the arcade, pong, jump rope or the block tower in the game room upstairs (the
-first one there waves the others over with a "!" until they come, and the table, the rope or the tower comes out when they are all
-there), gazing out of the lookout, and at night four of them sleep up there. Outside they hammer at the anvil of the Code Forge, swing
-a pickaxe at the Token Mine and go in past the cart to come back pushing it, cast spells from the wizard's tower, have a eureka at the
-lab, fish off the pier, conduct the choir on the stage, juggle, sweep, build, water the garden, have a coffee, roast marshmallows by the
-campfire, dance in the meadow with hearts between them, burrow into the sand to pop up again, or wander off the edge of the world and
-back. They say what they are up to in little speech bubbles (code, a bug, an idea, a heart), and now and then two of them meet in the
-street for a chat and clap. They hop when you move the focus and wave when you come back to Home. Five little Clawds play in the
-meadow, a crab scuttles on the sand, a cat strolls the street by day and an owl by night.
+Every day has its own weather, picked from the date (not the weather outside), the same all day: mostly sunny, with butterflies in the
+warm months and a balloon drifting by; some days grey with clouds, or windy with gusts every few seconds; on a day of rain (spring to
+autumn) showers come again and again and send everyone indoors, puddles ripple on the street, and after a shower by day a rainbow rises
+behind the village; some mornings a bank of fog hides the mountains and wisps of mist drift past until noon; in winter, often snow
+falling all day, and nearly always at Christmas.
+
+Eight Clawds, each in a beanie of its own colour and each with a name (Byte, Pixel, Moss, Nova, Spark, Sunny, Mochi and Tink) and a
+favourite kind of spot (Byte codes, Pixel games, Moss is happiest outdoors, Nova likes magic, Spark and Tink build things, Sunny puts
+on shows, Mochi likes it cosy), walk the village street from spot to spot and get on with things. In the house they go in at the door
+and climb the ladder: reading in the library, pinning notes and stamping mail in the workshop, coding at the desk and at the terminal,
+debugging in the server room, playing the arcade, pong, jump rope or the block tower in the game room upstairs (the first one there
+waves the others over with a "!" until they come, and the table, the rope or the tower comes out when they are all there), gazing out
+of the lookout, and at night four of them sleep up there. Outside they hammer at the anvil of the Code Forge, swing a pickaxe at the
+Token Mine and go in past the cart to come back pushing it, cast spells from the wizard's tower, have a eureka at the lab, fish off the
+pier, conduct the choir on the stage, juggle, sweep, build, water the garden, have a coffee, roast marshmallows by the campfire, dance
+in the meadow with hearts between them, burrow into the sand to pop up again, or wander off the edge of the world and back. They say
+what they are up to in little speech bubbles (code, a bug, an idea, a heart), and now and then two of them meet in the street, say each
+other's name, chat and clap. They hop when you move the focus, and two of them wave hello when you come back to Home and goodbye when
+you open an app. They keep a routine: stretches and coffee together at seven in the morning, marshmallows round the campfire at eight
+in the evening. Five little Clawds play in the meadow, a crab scuttles on the sand, a cat strolls the street by day and an owl by
+night, two ducks paddle about the pond and dive, and a frog hops off its lily pad now and then.
 
 Now and then something happens: a game of volleyball in the meadow, lunch on a picnic cloth at noon, tea at three, a party on the stage
-in the evening with fireworks and confetti, a juggling show, a shower that sends everyone indoors, a flying saucer or a meteor shower
-at night (with a crowd pointing at it), a deer looking out of the bushes, or the server room overheating. The hours change things too:
-the night darkens the sky, the lamps glow, fireflies come out, a sparrow sits on the sill by day; and so does the year: pumpkins and
-bats at Halloween, a fir in December, snow in winter, lanterns at the new year, leaves in autumn and petals in spring. Around them the
-fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and clouds, birds and a
-balloon drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the flowers of the garden and
-the meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams out, the lily pads drift and
-a few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly across the sky and back, the
-bright stars twinkle, others flare now and then, and a star shoots across.
+in the evening with fireworks and confetti, a juggling show, a flying saucer or a meteor shower at night (with a crowd pointing at it),
+a deer looking out of the bushes, or the server room overheating. Some things are rare: a dragon flying over at dusk, a golden Clawd
+running along the street, a comet crossing the night sky, the northern lights on a winter night, a balloon festival on a sunny day. The
+hours change things too: the night darkens the sky, the lamps glow, fireflies come out, a sparrow sits on the sill by day; and so does
+the year: blossom on the trees in spring, the trees red and gold in autumn, snow on the ground and the roofs and a snowman in winter;
+pumpkins, bats and witch hats at Halloween, a fir and Santa hats in December, lanterns and party hats at the new year. By the house a
+shed goes up over the week (begun on Monday, done on Sunday) and a sapling grows over the month.
+
+The coloured keys of the remote start a show on Home: red fireworks, green a shower, yellow a dance party, blue a snow flurry. After
+three minutes without a key the clock, the buttons and the apps fade away and the village has the screen (watch mode); any key brings
+them back. Around them the fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and
+clouds, birds and a balloon drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the
+flowers of the garden and the meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams
+out, the lily pads drift and a few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly
+across the sky and back, the bright stars twinkle, others flare now and then, and a star shoots across.
 
 Everything was drawn for this theme pixel by pixel by `tools/clawd-world/` (`node tools/clawd-world`), which writes `world.png` (the
 backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet: every Clawd in every cap) and the `"world"` of

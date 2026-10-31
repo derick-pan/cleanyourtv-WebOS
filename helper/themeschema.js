@@ -12,7 +12,7 @@ const DEFAULT_ID = 'classic',
   MAX_MASCOT = 256 * 1024,
   MAX_WORLD = 256 * 1024,
   MAX_PREVIEW = 600 * 1024,
-  MAX_THEME = 32 * 1024,
+  MAX_THEME = 64 * 1024,
   MAX_INDEX = 128 * 1024;
 const HEX = /^#[0-9a-f]{6}$/i,
   FILE = /^[\w-]{1,40}\.(?:jpg|png|webp)$/,
@@ -474,28 +474,33 @@ function slots(list) {
 
 // A world: a little place going on behind Home (app/src/js/world.js), drawn from a sprite sheet in the theme's folder. "world" is an
 // object in the theme (not in SCHEMA, which holds single values):
-//   {file, px, sprites: {name: [x, y, w, h, frames, ax, ay, looks]},
-//    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act}},
+//   {file, px, watch, sprites: {name: [x, y, w, h, frames, ax, ay, looks]},
+//    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act},
+//           hats: [{look, when}], members: [{name, likes: [tags]}], hello: [names]},
 //    spots: [{x, y, act, acts: [names], fps, face, time: [min, max], n, gap, path: [[x, y, climb]], via: [x, y], inside, back, carry,
-//             w, fx, say, show: [props], group, when}],
-//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, fade, pan: [px, seconds], gust}],
+//             w, fx, say, show: [props], group, tag, when}],
+//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, fade, pan: [px, seconds], gust, play: {s, every, fps}, phase}],
 //    drift: [{s, y, speed, dir, fps, bob, when, fade}],
 //    herds: [{count, area: [x0, y0, x1, y1], stand, walk, acts: [names], speed, fx, when}],
-//    events: [{every: [min, max], time: [min, max], call, spot, props, drift, when}], shade: [{color, alpha, when}],
-//    wind: {every: [min, max], speed, dir, fps, fx}}
-// with fx {s, kind: rise|float|pop|fall|blow, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD']}. A sprite
+//    events: [{every: [min, max], time: [min, max], chance, call, spot, props, drift, when, then, key}], shade: [{color, alpha, when}],
+//    weather: [{name, w, when}], wind: [{every: [min, max], speed, dir, fps, fx, when}] (or one)}
+// with fx {s, kind: rise|float|pop|fall|blow, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD'],
+// w: [weathers]}. A sprite
 // is a strip of `frames` frames of w x h art pixels side by side in the sheet, (ax, ay) the point of a frame that stands on a place, in
 // it or below it (default: the middle of its bottom edge); `looks` strips of the same size may follow under it, one per look of the
 // crew (a cap of another colour). px is how many screen pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers
 // are clamped, a name that is not a sprite is dropped (a prop, a drift or a herd without one is left out) and the lists are cut to
 // their limits, so a world can only arrange its own pictures.
 const SPRITE = /^[a-z][a-z0-9-]{0,23}$/,
-  MAX_SPRITES = 200,
+  MAX_SPRITES = 256,
   MAX_SPOTS = 40,
-  MAX_PROPS = 128,
-  MAX_DRIFT = 16,
-  MAX_HERDS = 4,
-  MAX_EVENTS = 16,
+  MAX_PROPS = 160,
+  MAX_DRIFT = 24,
+  MAX_HERDS = 8,
+  MAX_EVENTS = 32,
+  NAME = /^[a-z][a-z0-9-]{0,15}$/,
+  KEYS = ['red', 'green', 'yellow', 'blue'],
+  PHASES = ['moon', 'month', 'week'],
   FX_KINDS = ['rise', 'float', 'pop', 'fall', 'blow'];
 function world(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
@@ -549,12 +554,16 @@ function world(o) {
   };
   // from one hour to another (across midnight when the first is later) and/or between two days of the year ('MM-DD', across New Year)
   const md = v => (typeof v === 'string' && /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v) ? +v.slice(0, 2) * 100 + +v.slice(3) : 0);
+  // names (of a weather, a group, a tag): lower-case letters, digits and -
+  const names = (l, max) => (Array.isArray(l) ? l.slice(0, max).filter(x => typeof x === 'string' && NAME.test(x)) : []);
+  // ... and/or in some weathers of the day (w: names from `weather`)
   const when = v => {
     const w = obj(v);
     if (!w) return null;
     const h = Array.isArray(w.h) && w.h.length === 2 ? [int(w.h[0], 0, 24, 0), int(w.h[1], 0, 24, 24)] : null,
-      d = Array.isArray(w.d) && w.d.length === 2 && md(w.d[0]) && md(w.d[1]) ? [md(w.d[0]), md(w.d[1])] : null;
-    return h || d ? { h, d } : null;
+      d = Array.isArray(w.d) && w.d.length === 2 && md(w.d[0]) && md(w.d[1]) ? [md(w.d[0]), md(w.d[1])] : null,
+      ws = names(w.w, 8);
+    return h || d || ws.length ? { h, d, w: ws.length ? ws : null } : null;
   };
   const c = obj(o.crew) || {},
     stand = sp(c.stand),
@@ -578,6 +587,12 @@ function world(o) {
         : null,
     // now and then two of them meet on the street and talk (bubbles in turn), then do `act` together
     chat: ch && sps(ch.say, 12).length ? { every: range(ch.every, 3, 3600, 20, 60), say: sps(ch.say, 12), act: sp(ch.act) } : null,
+    // looks worn by everyone on some days (a hat for a holiday: a strip of each sprite, like a look), the first that fits
+    hats: list(c.hats, 6).map(e => ({ look: int(e.look, 1, 15, 1), when: when(e.when) })),
+    // who they are, one after the other: a name (a sprite, said when two meet) and the tags of the spots they like best
+    members: list(c.members, 16).map(e => ({ name: sp(e.name), likes: names(e.likes, 6) })),
+    // what they say when they wave hello or goodbye
+    hello: sps(c.hello, 8),
   };
   const prop = e => ({
     s: sp(e.s),
@@ -597,6 +612,10 @@ function world(o) {
     gust: sp(e.gust),
     // seconds it takes to fade in or out when its hours (when) come or go
     fade: num(e.fade, 0, 1800, 20),
+    // now and then (every seconds or so) it plays sprite s once at fps, then goes back to its own frames (a frog that hops)
+    play: obj(e.play) && sp(e.play.s) ? { s: sp(e.play.s), every: num(e.play.every, 2, 3600, 20), fps: num(e.play.fps, 0.2, 30, 8) } : null,
+    // it shows the frame the date says instead of playing them: the moon's phase, the day of the month, the day of the week
+    phase: PHASES.indexOf(e.phase) >= 0 ? e.phase : '',
   });
   // a spot: where a character goes and what it does there; `path` is the way in from the street (a door, stairs: [x, y, climb])
   const spot = e => {
@@ -628,7 +647,9 @@ function world(o) {
         .map(prop)
         .filter(p => p.s),
       // a name shared by spots of which only one can be in use at a time (the games of a room)
-      group: typeof e.group === 'string' && /^[a-z][a-z0-9-]{0,15}$/.test(e.group) ? e.group : '',
+      group: typeof e.group === 'string' && NAME.test(e.group) ? e.group : '',
+      // what kind of place it is, for the crew's likes
+      tag: typeof e.tag === 'string' && NAME.test(e.tag) ? e.tag : '',
       when: when(e.when),
     };
   };
@@ -678,26 +699,36 @@ function world(o) {
       .map(drifter)
       .filter(d => d.s),
     when: when(e.when),
+    // the chance it comes when it is due (0: only after another one or by its key)
+    chance: num(e.chance, 0, 1, 1),
+    // the event (by its place in the list) that follows it when it is over, if that one's hours fit (a rainbow after the rain)
+    then: int(e.then, -1, MAX_EVENTS - 1, -1),
+    // a coloured key of the remote that starts it on Home
+    key: KEYS.indexOf(e.key) >= 0 ? e.key : '',
   }));
   // a tint over the backdrop at some hours (night): a colour and how strong
   const shade = list(o.shade, 4)
     .map(e => ({ color: hex(e.color) || '', alpha: num(e.alpha, 0, 0.9, 0.4), when: when(e.when) }))
     .filter(x => x.color);
   // the wind: now and then a gust crosses the screen from the left (dir 1) or the right (-1) at speed px/s; the props with a gust sprite
-  // play it at fps as it passes, and fx comes off some of them
-  const wo = obj(o.wind);
-  const wind = wo
-    ? {
-        every: range(wo.every, 3, 3600, 20, 40),
-        speed: num(wo.speed, 50, 4000, 400),
-        dir: wo.dir === -1 ? -1 : 1,
-        fps: num(wo.fps, 1, 30, 8),
-        fx: fx(wo.fx),
-      }
-    : null;
+  // play it at fps as it passes, and fx comes off some of them. A list: the first whose when fits blows (windier on a windy day)
+  const wind = (Array.isArray(o.wind) ? list(o.wind, 4) : obj(o.wind) ? [o.wind] : []).map(wo => ({
+    every: range(wo.every, 3, 3600, 20, 40),
+    speed: num(wo.speed, 50, 4000, 400),
+    dir: wo.dir === -1 ? -1 : 1,
+    fps: num(wo.fps, 1, 30, 8),
+    fx: fx(wo.fx),
+    when: when(wo.when),
+  }));
+  // the weather of the day: each calendar day one of these (whose days fit), by weight, the same all day
+  const weather = list(o.weather, 12)
+    .map(e => ({ name: typeof e.name === 'string' && NAME.test(e.name) ? e.name : '', w: num(e.w, 0, 100, 1), when: when(e.when) }))
+    .filter(e => e.name);
   return {
     file: typeof o.file === 'string' ? o.file : '',
     px: int(o.px, 1, 12, 4),
+    // minutes on Home without a key before only the world is shown (0: never)
+    watch: num(o.watch, 0, 120, 0),
     sprites,
     crew,
     spots,
@@ -707,6 +738,7 @@ function world(o) {
     events,
     shade,
     wind,
+    weather,
   };
 }
 

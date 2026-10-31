@@ -68,7 +68,7 @@ function skyAt(x, y, stops, sun) {
   return dith(x, y, t) ? c1 : c0;
 }
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) sky.set(x, y, skyAt(x, y));
-// ---- the night sky over it all: the stars and the moon, on a layer PAN art pixels wider than the picture that pans PAN to the left
+// ---- the night sky over it all: the stars, on a layer PAN art pixels wider than the picture that pans PAN to the left
 // and back (the prop "starfield"); where it starts, it lines up with the picture. The bright stars (BIG) twinkle as props that pan
 // with it; others flare now and then where they are (TWINKLES) ----
 const PAN = 48,
@@ -107,19 +107,7 @@ for (const [x, y] of BIG) {
   ])
     STARFIELD.set(x + dx, y + dy, '#9d8dc0');
 }
-// the moon, a crescent in a soft halo of three faint rings
-for (let y = G.moon[1] - 12; y <= G.moon[1] + 12; y++)
-  for (let x = G.moon[0] - 12; x <= G.moon[0] + 12; x++) {
-    const d = Math.hypot(x - G.moon[0], y - G.moon[1]),
-      n = (d <= 12) + (d <= 10) + (d <= 8);
-    if (n) raw(STARFIELD, x, y, [246, 233, 204, Math.round(255 * (1 - Math.pow(1 - 14 / 255, n)))]);
-  }
-STARFIELD.disc(G.moon[0], G.moon[1], 7, '#f6e9cc');
-STARFIELD.disc(G.moon[0] + 1, G.moon[1], 6, '#fff7e4');
-for (let y = G.moon[1] - 8; y <= G.moon[1] + 8; y++)
-  for (let x = G.moon[0] - 8; x <= G.moon[0] + 8; x++)
-    if (Math.hypot(x - G.moon[0] - 4, y - G.moon[1] + 2) <= 6.2 && Math.hypot(x - G.moon[0], y - G.moon[1]) <= 7.5)
-      raw(STARFIELD, x, y, [0, 0, 0, 0]);
+// (the moon is a prop of its own that wheels with the stars and shows its phase of the day: life.js)
 // stars that flare now and then, where they are (not where the moon passes, nor on a bright star)
 reseed(13);
 const TWINKLES = [];
@@ -274,6 +262,9 @@ for (let y = G.street; y < G.front; y++)
     if (y === G.front - 1) c = '#7c5c44';
     land.set(x, y, c);
   }
+// what the street left
+const STREET = new Pic(W, H);
+STREET.d.set(land.d);
 // the meadow in front: grass that darkens towards the bottom, tufts; in the colours of an hour [shade, base, the front edge, tufts]
 const TUFTS = [];
 for (let i = 0; i < 160; i++) TUFTS.push([ri(0, W - 1), ri(G.front + 2, H - 2)]);
@@ -1042,6 +1033,164 @@ function skyOf(h) {
 }
 const SKIES = { day: skyOf(DAY), night: skyOf(NIGHT), ground: 177 };
 
+// ---- the year and the weather over the land: snow on the ground and caps on the roofs in winter, the trees red in autumn and in
+// blossom in spring, a bank of fog, and a rainbow behind the village. Each is drawn only where it can be (snow on what is ground, the
+// trees and the rainbow where the backdrop shows them or the sky), and cut to the box it fills, as {pic, x, y} ----
+const scenic = (x, y) => {
+  const l = land.get(x, y);
+  return !!l && (!l[3] || same(l, SCENERY.get(x, y)));
+};
+function boxed(p) {
+  let x0 = p.w,
+    y0 = p.h,
+    x1 = -1,
+    y1 = -1;
+  for (let y = 0; y < p.h; y++)
+    for (let x = 0; x < p.w; x++)
+      if (p.get(x, y)[3]) {
+        x0 = Math.min(x0, x);
+        y0 = Math.min(y0, y);
+        x1 = Math.max(x1, x);
+        y1 = Math.max(y1, y);
+      }
+  const o = new Pic(x1 - x0 + 1, y1 - y0 + 1);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) raw(o, x - x0, y - y0, p.get(x, y));
+  return { pic: o, x: x0, y: y0 };
+}
+// which part of the scenery a pixel is: a tree, the bank, the hills, the near or the far mountains
+const TREEPX = new Set();
+for (const [x, h] of TREES)
+  for (let j = 0; j < h; j++) {
+    const w = Math.floor(((j + 1) * 3) / h);
+    for (let i = x - w; i <= x + w; i++) TREEPX.add(i + ',' + (HILL[x] - h + j + 1) + ',' + j);
+  }
+const treeRow = (x, y) => {
+  for (let j = 0; j < 8; j++) if (TREEPX.has(x + ',' + y + ',' + j)) return j;
+  return -1;
+};
+function snow() {
+  const ground = new Pic(W, H),
+    caps = new Pic(W, H);
+  reseed(71);
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const l = land.get(x, y);
+      if (y < G.street && l[3] && same(l, SCENERY.get(x, y))) {
+        const tr = treeRow(x, y);
+        if (tr >= 0) ground.set(x, y, tr === 0 ? '#f4f8fc' : dith(x, y, 0.3) ? '#e2eaf2' : '#3a5a48');
+        else if (y >= BANK[x] || y >= HILL[x]) ground.set(x, y, dith(x, y, (y - HILL[x]) / 60) ? '#d6e0eb' : '#eef3f8');
+        else if (y >= NEAR[x] && y < NEAR[x] + 2) ground.set(x, y, '#e6edf5');
+        else if (y >= FAR[x] && y < FAR[x] + 3 && y < NEAR[x]) ground.set(x, y, y === FAR[x] ? '#ffffff' : '#e6edf5');
+      } else if (y >= G.street && y < G.front && same(l, STREET.get(x, y))) ground.set(x, y, rand() < 0.22 ? '#b9a48c' : '#e7ecf2');
+      else if (y >= G.front && same(l, MEADOW.get(x, y)))
+        ground.set(x, y, dith(x, y, ((y - G.front) / (H - G.front)) * 0.7) ? '#d9e2ec' : '#f1f5f9');
+    }
+  for (const [x, y] of TUFTS) if (same(land.get(x, y), MEADOW.get(x, y))) ground.set(x, y, '#8aa070');
+  // caps on what stands: the top of every roof, chimney, wall and post the sky can see (and the stage's boards)
+  const solid = (x, y) => {
+    const l = land.get(x, y);
+    if (!l || !l[3]) return false;
+    if (y < G.street) return !same(l, SCENERY.get(x, y));
+    return x >= G.stage[0] && x <= G.stage[1] + 1 && y >= G.stage[2] - 22 && y < G.stage[2] + 2;
+  };
+  for (let y = 1; y < H; y++)
+    for (let x = 0; x < W; x++)
+      if (solid(x, y) && !solid(x, y - 1)) {
+        caps.set(x, y, '#ffffff');
+        if (solid(x, y + 1)) caps.set(x, y + 1, '#dfe8f2');
+      }
+  return { ground: boxed(ground), caps: boxed(caps) };
+}
+// the trees of the hills in the colours of a season, where they can be seen; some of their leaves on the bank
+function trees(cols, leaves) {
+  const p = new Pic(W, H);
+  reseed(73);
+  TREES.forEach(([x, h], k) => {
+    const c = cols[k % cols.length];
+    for (let j = 0; j < h; j++) {
+      const w = Math.floor(((j + 1) * 3) / h),
+        y = HILL[x] - h + j + 1;
+      for (let i = x - w; i <= x + w; i++) if (scenic(i, y)) p.set(i, y, j === 0 ? c[0] : dith(i, y, 0.35) ? c[1] : c[2]);
+    }
+  });
+  for (let i = 0; i < 90; i++) {
+    const x = ri(0, W - 1),
+      y = ri(BANK[x] + 1, G.street - 1);
+    if (scenic(x, y)) p.set(x, y, leaves[i % leaves.length]);
+  }
+  return boxed(p);
+}
+// a bank of fog over the land (a morning of fog), heavier the further away: the far mountains all but gone, the near ones faint, the
+// hills and their trees veiled, the bank behind the street a little, the sky pale; in soft bands, in steps of alpha
+function fog() {
+  const p = new Pic(W, H);
+  for (let y = 0; y < G.street; y++)
+    for (let x = 0; x < W; x++) {
+      if (!scenic(x, y)) continue;
+      const l = land.get(x, y);
+      let a;
+      if (!l[3]) a = 0.3 + 0.45 * Math.max(0, Math.min(1, (y - 30) / (FAR[x] - 30)));
+      else if (treeRow(x, y) >= 0) a = 0.5;
+      else if (y >= BANK[x]) a = 0.22 + 0.18 * (1 - (y - BANK[x]) / (G.street - BANK[x]));
+      else if (y >= HILL[x]) a = 0.56;
+      else if (y >= NEAR[x]) a = 0.7;
+      else a = 0.8;
+      a *= 0.88 + 0.12 * Math.sin(x * 0.045 + y * 0.5);
+      raw(p, x, y, [224, 229, 236, Math.min(255, Math.round(a * 16) * 16)]);
+    }
+  return boxed(p);
+}
+// a grey sky (a day of clouds, rain or snow): a veil over the sky only, thick where the sun is high, so it is a pale smudge
+function overcast() {
+  const p = new Pic(W, H),
+    [sx, sy] = DAY.sun;
+  for (let y = 0; y < G.street; y++)
+    for (let x = 0; x < W; x++) {
+      if (land.get(x, y)[3]) continue;
+      const near = Math.max(0, 1 - Math.hypot(x - sx, (y - sy) * 1.2) / 30),
+        a = Math.min(0.94, 0.5 - 0.12 * Math.min(1, y / 110) + 0.5 * near);
+      raw(p, x, y, [150, 160, 176, Math.min(255, Math.round(a * 16) * 16)]);
+    }
+  return boxed(p);
+}
+// a rainbow behind the village, where the sky and the hills show
+function rainbow() {
+  const p = new Pic(W, H),
+    BANDS = ['#e5484d', '#f08a24', '#f5c542', '#4cb363', '#4d8df6', '#5a4fcf', '#a98bf5'],
+    cx = 250,
+    cy = 146,
+    r = 72;
+  for (let y = cy - r; y < cy; y++)
+    for (let x = cx - r; x <= cx + r; x++) {
+      const k = Math.floor((r - Math.hypot(x - cx, y - cy)) / 2);
+      if (k < 0 || k >= BANDS.length || !scenic(x, y)) continue;
+      const c = parseInt(BANDS[k].slice(1), 16);
+      raw(p, x, y, [c >> 16, (c >> 8) & 255, c & 255, 140]);
+    }
+  return boxed(p);
+}
+const SEASONS = {
+  snow: snow(),
+  autumn: trees(
+    [
+      ['#f2a14a', '#d9682b', '#b8452a'],
+      ['#f5c542', '#e8a33a', '#c9772e'],
+      ['#e5484d', '#c8452e', '#93302a'],
+    ],
+    ['#e07b2e', '#e8b33a', '#c8452e']
+  ),
+  spring: trees(
+    [
+      ['#fbe4ec', '#f6b6c8', '#e58fae'],
+      ['#ffffff', '#f9d3df', '#eaa0b8'],
+    ],
+    ['#f9d3df', '#ffffff']
+  ),
+  fog: fog(),
+  overcast: overcast(),
+  rainbow: rainbow(),
+};
+
 // a part of the land as a sprite: the buildings in it (where the land is empty or only the scenery, it stays transparent, so the
 // clouds pass in front of the mountains and behind the roof, and the sky of each hour shows round it)
 function cut(x, y, w, h) {
@@ -1059,4 +1208,4 @@ function backdrop() {
   bg.draw(land, 0, 0);
   return bg;
 }
-module.exports = { G, W, H, PX, sky, land, cut, backdrop, STARFIELD, PAN, BIG, TWINKLES, SKIES };
+module.exports = { G, W, H, PX, sky, land, cut, backdrop, STARFIELD, PAN, BIG, TWINKLES, SKIES, SEASONS };

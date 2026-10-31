@@ -94,6 +94,7 @@ function perfMark(m) {
 }
 var perfReady = false;
 function launch(id, params) {
+  WORLD.bye();
   if (id === '__live') return LIVE.enter();
   api('/api/launch', { id: id, params: params }).then(function (x) {
     if (x && x.returnValue === false) toast(t('Could not open %s. Is it still installed?').replace('%s', title(id)), true);

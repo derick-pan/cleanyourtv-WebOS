@@ -70,6 +70,7 @@ function applyTheme(t) {
   MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
   SCENE.apply(t.cycles || null, +t.vars['--spd'] || 0);
   WORLD.apply(t.world || null, +t.vars['--spd'] || 0);
+  if (typeof watchLater === 'function') watchLater();
   $('wall').classList.toggle('drift', +t.vars['--drift'] > 0);
   /* a line above the clock (clock.prefix), like the command that printed the time */
   $('cpre').textContent = t.clockPrefix || '';

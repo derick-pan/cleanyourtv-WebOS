@@ -20,7 +20,7 @@ folder of the GitHub repository (the `main` branch):
   so it keeps working offline. Choosing it again downloads the latest version. If GitHub cannot be reached, the list shows the themes
   that are already on the TV and says why.
 - **Classic** is built into the service and always works.
-- A theme is data only (values, images): the service checks every value, limits the file sizes (theme 32 KB, wallpaper 1.5 MB,
+- A theme is data only (values, images): the service checks every value, limits the file sizes (theme 64 KB, wallpaper 1.5 MB,
   screenshot 600 KB, mascot and sprite sheet 256 KB) and checks that the images are images. There is no script or CSS in a theme.
 
 ## The themes
@@ -40,7 +40,7 @@ folder of the GitHub repository (the `main` branch):
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
 | The Grid | The world of the Grid, going on behind Home: light cycles racing the floor and turning, their walls of light fading when they derezz, Recognizers drifting across the sky, the portal beam pulsing up from the city and light raining down. Glass tiles edged in light stand on the floor. Down opens the apps. |
-| Claude | Clawd World: a pixel village at dusk under the dock, where eight little Clawds (Claude Code's mascot) in caps of their own go from spot to spot: in at the door and up the ladder of their house to read, code, debug and play pong, jump rope or the block tower in the game room upstairs; out to hammer at the Code Forge, mine tokens, cast spells from the wizard's tower, fish, conduct a choir, dance, roast marshmallows and burrow away. They chat in speech bubbles, little ones play in the meadow, and now and then something happens: volleyball, a picnic, a party with fireworks, a shower, a flying saucer. Day turns to dusk and night: a blue sky with the sun high by day, the sunset at dusk and dawn, a deep sky full of stars at night. Gusts of wind sway the flowers, the grass and the reeds, the stars twinkle and wheel slowly overhead, and Halloween and the seasons change things. A greeting and the clock in the sky, the app's name big over a row of six apps; Down opens all apps over the village. It is a world (see below). |
+| Claude | Clawd World: a pixel village at dusk under the dock, where eight little Clawds (Claude Code's mascot) in caps of their own go from spot to spot: in at the door and up the ladder of their house to read, code, debug and play pong, jump rope or the block tower in the game room upstairs; out to hammer at the Code Forge, mine tokens, cast spells from the wizard's tower, fish, conduct a choir, dance, roast marshmallows and burrow away. Each has a name (Byte, Pixel, Moss, Nova, Spark, Sunny, Mochi, Tink) and a favourite kind of spot, and says the other's name when two meet in the street; little ones play in the meadow, ducks paddle on the pond and a frog hops off its lily pad. They keep a routine (stretches at seven, a campfire at eight in the evening) and now and then something happens: volleyball, a picnic, a party with fireworks, a juggling show, a flying saucer, and rarely a dragon at dusk, a golden Clawd, a comet, the northern lights on a winter night or a balloon festival. Day turns to dusk and night: a blue sky with the sun high by day, the sunset at dusk and dawn, a deep sky full of stars at night with the moon in its real phase. Every day has its own weather, the same all day and mostly sunny: clouds, wind, rain with showers and a rainbow after, a morning of fog, snow in winter (and nearly always at Christmas). The year turns: blossom in spring, red trees in autumn, snow and a snowman in winter, witch hats at Halloween, Santa hats in December, party hats at New Year; a shed is built over the week and a sapling grows over the month. Gusts of wind sway the flowers, the grass and the reeds, and the stars twinkle and wheel slowly overhead. The coloured keys start a show (red: fireworks, green: a shower, yellow: a dance party, blue: a snow flurry), and after three minutes without a key the apps fade away and the world has the screen (watch mode). A greeting and the clock in the sky, the app's name big over a row of six apps; Down opens all apps over the village. It is a world (see below). |
 | Terminal | Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of `date`, the apps listed one per line under `ls`, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
@@ -104,7 +104,8 @@ checkout of the repository (or these files) and the rules below.
    `rest.png` (home), `grid.png` (the focus moved down into the apps) and `menu.png` (a menu). It needs Node.js 22 or newer and Chrome. Open
    the images, fix what looks wrong (overlapping parts, unreadable text, clipped tiles) and render again.
 3. When it looks right, `node tools/theme-preview.mjs <id> --write` also writes `themes/<id>/preview.jpg` (needs `ffmpeg`), the screenshot the TV shows.
-   A theme's world is shown still for it, at half past seven in the evening whatever the time.
+   A theme's world is shown still for it, at half past seven in the evening of a summer day (28 June 2026, a Sunday at full moon) whatever
+   the date.
 4. `node tools/theme-index.js` updates `themes/index.json`; `node tools/test.js theme` checks every theme folder, the screenshot and the index.
 5. Commit and open a pull request; say where the wallpaper comes from.
 
@@ -324,19 +325,23 @@ characters who walk from **spot** to spot and do what each spot says there (hamm
 to a room upstairs, or out of sight for a while (into a mine, under the sand). They say things in speech bubbles, meet in the street for
 a chat, and play games together: a game waits for its players and brings out its table, rope or ball when they are all there. Herds of
 little ones wander about a meadow. Now and then an **event** comes (a match, a picnic, a party with fireworks, a shower that sends
-everyone indoors, a visitor), and some things only happen at some hours or on some days (`when`): the night, lunch, Halloween. What
-comes and goes with the hours fades in and out (`fade`), so a theme can lay a sky of the day and another of the night over its
-backdrop and the day turns into night. Gusts of wind cross the scene and what grows sways as they pass, and a sky of stars can wheel
-slowly overhead (`pan`). Spots and props can give
-off particles that rise, float away, pop, fall or blow away (hearts, notes, smoke, sparks, rain, snow, petals). The theme gives the
-pictures and says where things are; the launcher does the rest (`app/src/js/world.js`).
+everyone indoors, a visitor), and some things only happen at some hours, on some days or in some weather (`when`): the night, lunch,
+Halloween, a day of rain. What comes and goes with the hours fades in and out (`fade`), so a theme can lay a sky of the day and another
+of the night over its backdrop and the day turns into night. Every day has its own **weather**, picked from the date (not the real
+weather outside): the same all day and on every TV. Gusts of wind cross the scene and what grows sways as they pass, and a sky of stars
+can wheel slowly overhead (`pan`). Spots and props can give off particles that rise, float away, pop, fall or blow away (hearts, notes,
+smoke, sparks, rain, snow, petals). The crew can have names and favourite kinds of spot, and wear a hat on holidays; a prop can show
+the moon's phase or the day of the week or the month (a moon, a shed built over the week). Rare events come only by their `chance`,
+one can follow another (a rainbow after a shower), and the coloured keys of the remote start the ones that have a `key`. The theme
+gives the pictures and says where things are; the launcher does the rest (`app/src/js/world.js`).
 
 Everything is drawn from one **sprite sheet**, a picture in the theme's folder that holds every frame of every sprite, scaled up `px`
 times without smoothing so pixel art stays crisp. Usually the static part of the place (the buildings, the ground) is the wallpaper,
 drawn at the same scale, and the world puts the moving parts on it. It moves with transforms and opacity only and in whole art pixels,
 and the frames are CSS animations, so the TV's GPU draws each piece as a small layer and the script only acts when a character starts
-something new. The crew hop when the focus moves and one or two of them wave when Home comes back. The world sits under the dock, the
-grid and the menus, stands still under the open grid, and with `effects.speed` 0 each character just stands at a spot. While Home is
+something new. The crew hop when the focus moves, and two of them wave when Home comes back or an app opens. With `watch`, the
+clock, the buttons and the apps fade away after that many minutes without a key and the world has the screen (watch mode, see
+[the launcher](launcher.md#keys)). The world sits under the dock, the grid and the menus, stands still under the open grid, and with `effects.speed` 0 each character just stands at a spot. While Home is
 hidden (an app is open) the world is taken out of the page, so it costs the TV nothing, not even memory on its GPU, and an event going
 on ends.
 
@@ -350,14 +355,18 @@ nothing flares. A TV that keeps up sheds nothing. The step is written to the ser
 "world": {
   "file": "clawd.png",
   "px": 5,
+  "watch": 3,
   "sprites": { "stand": [65, 182, 16, 10, 8, 8, 10, 6], "walk": [0, 182, 16, 11, 4, 8, 11, 6], "pong": [0, 120, 40, 12, 16, 20, 12], "fire": [65, 155, 14, 13, 4] },
   "crew": {
     "count": 8, "speed": 70, "stand": "stand", "walk": "walk", "climb": "climb", "wave": "wave", "wait": "wait", "looks": 6, "bubble": 70,
     "lane": [905, -150, 1570],
-    "chat": { "every": [12, 30], "say": ["say-dots", "say-heart"], "act": "clap" }
+    "chat": { "every": [12, 30], "say": ["say-dots", "say-heart"], "act": "clap" },
+    "hats": [{ "look": 6, "when": { "d": ["10-24", "10-31"] } }],
+    "members": [{ "name": "name-byte", "likes": ["code"] }, { "name": "name-moss", "likes": ["outdoors"] }],
+    "hello": ["say-heart", "say-sun"]
   },
   "spots": [
-    { "x": 1050, "y": 860, "act": "code", "fps": 8, "path": [[670, 880, 0], [720, 860, 0]], "say": { "s": ["say-code", "say-bug"], "every": 7 } },
+    { "x": 1050, "y": 860, "act": "code", "fps": 8, "tag": "code", "path": [[670, 880, 0], [720, 860, 0]], "say": { "s": ["say-code", "say-bug"], "every": 7 } },
     { "x": 910, "y": 735, "n": 2, "gap": 170, "acts": ["pongl", "pongr"], "fps": 8, "group": "games", "time": [14, 28],
       "path": [[670, 880, 0], [720, 860, 0], [1265, 860, 0], [1265, 735, 1]], "show": [{ "s": "pong", "x": 910, "y": 735 }] }
   ],
@@ -366,14 +375,21 @@ nothing flares. A TV that keeps up sheds nothing. The step is written to the ser
     { "s": "starfield", "x": 0, "y": 0, "under": true, "pan": [-240, 480], "when": { "h": [18, 7] }, "fade": 240 },
     { "s": "fire", "x": 1310, "y": 950, "fps": 8, "front": true },
     { "s": "reeds", "x": 1860, "y": 890, "fps": 1.5, "gust": "reeds-gust" },
-    { "s": "pumpkin", "x": 655, "y": 860, "when": { "d": ["10-15", "11-01"] } }
+    { "s": "pumpkin", "x": 655, "y": 860, "when": { "d": ["10-15", "11-01"] } },
+    { "s": "moon", "x": 840, "y": 110, "under": true, "phase": "moon", "when": { "h": [18, 7] } },
+    { "s": "frog", "x": 1650, "y": 1030, "play": { "s": "frog-hop", "every": 16, "fps": 8 } },
+    { "s": "puddle", "x": 460, "y": 930, "fps": 3, "when": { "w": ["rain"] }, "fade": 120 }
   ],
   "drift": [{ "s": "cloud-a", "y": 515, "speed": 9, "dir": -1 }],
   "herds": [{ "count": 5, "area": [620, 985, 1180, 1060], "stand": "mini", "walk": "mini-walk", "acts": ["mini-cheer"], "speed": 30 }],
   "events": [{ "every": [90, 240], "time": [40, 80], "call": 2, "when": { "h": [8, 22] },
-               "spot": { "x": 950, "y": 1025, "n": 2, "gap": 190, "acts": ["volleyl", "volleyr"], "fps": 8, "time": [600, 600], "show": [{ "s": "volley", "x": 950, "y": 1025 }] } }],
+               "spot": { "x": 950, "y": 1025, "n": 2, "gap": 190, "acts": ["volleyl", "volleyr"], "fps": 8, "time": [600, 600], "show": [{ "s": "volley", "x": 950, "y": 1025 }] } },
+             { "every": [1200, 3600], "chance": 0.25, "time": [40, 46], "when": { "h": [9, 17] }, "drift": [{ "s": "golden", "y": 905, "speed": 56, "fps": 8 }] },
+             { "chance": 0, "key": "red", "time": [40, 70], "props": [{ "s": "fw-a", "x": 450, "y": 590, "fps": 8, "rest": 3 }] }],
   "shade": [{ "color": "#0b0a26", "alpha": 0.38, "when": { "h": [21, 24] } }],
-  "wind": { "every": [14, 36], "speed": 460, "fps": 10, "fx": { "s": "blossom", "kind": "blow", "dy": -25 } }
+  "weather": [{ "name": "sun", "w": 64 }, { "name": "rain", "w": 9, "when": { "d": ["03-01", "11-30"] } }, { "name": "snow", "w": 30, "when": { "d": ["12-01", "02-29"] } }],
+  "wind": [{ "every": [4, 9], "speed": 560, "fps": 12, "when": { "w": ["wind"] } },
+           { "every": [14, 36], "speed": 460, "fps": 10, "fx": { "s": "blossom", "kind": "blow", "dy": -25 } }]
 }
 ```
 
@@ -381,15 +397,17 @@ nothing flares. A TV that keeps up sheds nothing. The step is written to the ser
 |---|---|---|
 | `file` | a file name | The sprite sheet: a `.png` (with transparency), `.webp` or `.jpg` in the theme's folder, at most 256 KB, downloaded with the theme. Without it, or when it is not an image, the theme has no world. |
 | `px` | 1 to 12 | How many screen pixels an art pixel of the sheet is (default 4). |
+| `watch` | 0 to 120 minutes | Watch mode: after that many minutes without a key on Home (no menu open, the grid closed, no Live TV) the clock, the buttons and the apps fade away and the world has the screen; a key or a move of the pointer brings them back. 0 (the default): never. |
 | `sprites` | name: `[x, y, w, h, frames, ax, ay, looks]` | A strip of `frames` frames, each `w` x `h`, side by side in the sheet from `x`, `y` (art pixels). `ax`, `ay` is the point of a frame that stands on a place (its feet); it defaults to the middle of the bottom edge and may be below the frame (someone sitting behind a desk). `looks` (1 to 16) strips of the same size may follow under it, one for each look of the crew (a cap of another colour). Names are lower-case letters, digits and `-`. Draw characters facing right. |
 | `crew` | below | The characters. |
 | `spots` | a list | The places where something happens, below. |
-| `props` | a list: `s`, `x`, `y`, `fps`, `pulse`, `bob`, `front`, `under`, `rest`, `fx`, `when`, `fade`, `pan`, `gust` | A sprite that stays at `x`, `y` (its anchor) and plays its frames at `fps`. `pulse` (seconds) lets it glow and fade, `bob` moves it up and down that many art pixels, `rest` (seconds) shows it only now and then (a fish jumping), `front` puts it in front of the crew (a fire they pass behind), `under` under everything else of the world (the drift and the tint too: a sky), `fx` gives off particles, `when` shows it only at some hours or on some days, fading in and out over `fade` seconds (default 20). `pan` `[px, seconds]` drifts it slowly that far and back, one px at a time, each way in that time (the stars wheeling); every prop with the same `pan` keeps with the others, by the clock. `gust` is a sprite it plays once when a gust of wind passes over it (`wind`), then it goes back to its own frames. |
+| `props` | a list: `s`, `x`, `y`, `fps`, `pulse`, `bob`, `front`, `under`, `rest`, `fx`, `when`, `fade`, `pan`, `gust` | A sprite that stays at `x`, `y` (its anchor) and plays its frames at `fps`. `pulse` (seconds) lets it glow and fade, `bob` moves it up and down that many art pixels, `rest` (seconds) shows it only now and then (a fish jumping), `front` puts it in front of the crew (a fire they pass behind), `under` under everything else of the world (the drift and the tint too: a sky), `fx` gives off particles, `when` shows it only at some hours or on some days, fading in and out over `fade` seconds (default 20). `pan` `[px, seconds]` drifts it slowly that far and back, one px at a time, each way in that time (the stars wheeling); every prop with the same `pan` keeps with the others, by the clock. `gust` is a sprite it plays once when a gust of wind passes over it (`wind`), then it goes back to its own frames. `play` `{s, every, fps}` plays sprite `s` once about every `every` seconds (a frog hopping off its lily pad), then its own frames again. `phase` shows one of its frames by the date instead of playing them: `moon` the moon's phase (the first frame the new moon, the middle one full), `month` the day of the month (a sapling growing), `week` the day of the week, Monday first (a shed being built). |
 | `drift` | a list: `s`, `y`, `speed`, `dir`, `fps`, `bob`, `when`, `fade` | A sprite that crosses the screen at `y` (its anchor), `speed` px/s, left to right (`dir` 1) or the other way (-1, mirrored), then stays out of sight for a while and comes again. |
-| `herds` | a list: `count`, `area`, `stand`, `walk`, `acts`, `speed`, `fx`, `when` | Up to 4 groups of little ones (1 to 12 each) that wander about `area` `[x0, y0, x1, y1]`, stand, hop, do one of `acts` now and then, and play in pairs with `fx` between them. A herd without a `stand` sprite is left out. |
+| `herds` | a list: `count`, `area`, `stand`, `walk`, `acts`, `speed`, `fx`, `when` | Up to 8 groups of little ones (1 to 12 each) that wander about `area` `[x0, y0, x1, y1]`, stand, hop, do one of `acts` now and then, and play in pairs with `fx` between them. A herd without a `stand` sprite is left out. |
 | `events` | a list, below | What comes now and then. |
-| `shade` | a list: `color`, `alpha`, `when` | A tint over the backdrop (the night): the first whose `when` fits, `alpha` 0 to 0.9 strong. It comes and goes slowly. |
-| `wind` | `every` `[min, max]` seconds, `speed` px/s, `dir`, `fps`, `fx` | Now and then a gust crosses the screen from the left (`dir` 1) or the right (-1, the `gust` sprites mirrored), and every prop with a `gust` plays it at `fps` as it passes, so what grows sways in a wave. `fx` comes off some of them (a petal, `kind` `blow`: carried away the way the wind goes). |
+| `shade` | a list: `color`, `alpha`, `when` | A tint over the backdrop (the night, a grey day): the first whose `when` fits, `alpha` 0 to 0.9 strong. It comes and goes slowly. |
+| `weather` | a list: `name`, `w`, `when` | The weathers a day can have (up to 12): each day one of those whose days (`when` `d`) fit, by weight `w` (0 to 100, default 1), picked from the date, so it is the same all day and on every TV, and not the weather outside. The same name can come twice, for more weight on some days (snow at Christmas). Props, drift, spots, events, the tint and the wind can then keep to some weathers (`when` `w`). |
+| `wind` | `every` `[min, max]` seconds, `speed` px/s, `dir`, `fps`, `fx`, `when` | Now and then a gust crosses the screen from the left (`dir` 1) or the right (-1, the `gust` sprites mirrored), and every prop with a `gust` plays it at `fps` as it passes, so what grows sways in a wave. `fx` comes off some of them (a petal, `kind` `blow`: carried away the way the wind goes). It can be a list of up to 4: the first whose `when` fits blows (a windy day's gusts first, the usual ones last). |
 
 The crew:
 
@@ -401,6 +419,9 @@ The crew:
 | `bubble` | px | How high over their feet a speech bubble shows. |
 | `lane` | `[y, from x, to x]` | A street they keep to between spots: out onto it, along it, then in to the next spot; without it they walk straight across. |
 | `chat` | `every` `[min, max]` seconds, `say` sprites, `act` | Now and then two of those at a spot meet in the street, face each other and talk in turn (bubbles picked from `say`), then do `act` together. |
+| `hats` | a list: `look`, `when` | Up to 6 looks everyone wears on some days instead of their own (a hat for a holiday): the first whose `when` fits. `look` (1 to 15) is which strip of each sprite they wear, counted like the looks from 0: with 6 everyday looks, the hats are 6 and on. |
+| `members` | a list: `name`, `likes` | Who they are, in order: `name` a sprite (a bubble with a name) each says first to the other when two meet, `likes` up to 6 tags of spots it goes to three times as often. |
+| `hello` | sprites | What the two who wave say when Home comes back or an app opens (a bubble picked from these). |
 
 A spot:
 
@@ -418,6 +439,7 @@ A spot:
 | `carry` | a sprite | What it walks with from there to its next spot (a cart from the mine). |
 | `say` | `s` sprites, `every` seconds | A speech bubble now and then while someone is there, picked from `s`. |
 | `w` | 0 to 10 | How often it is chosen (default 1; 0 never). |
+| `tag` | a name | The kind of spot (code, games, outdoors), for those who like it (`crew.members`). |
 | `when` | below | Only at some hours or on some days. |
 | `fx` | `s`, `kind`, `every`, `dx`, `dy` | Particles while someone is there: sprite `s`, `rise` (up, swaying), `float` (up and away, like smoke), `pop` (appears around and fades), `fall` (down, swaying: rain, snow, leaves) or `blow` (carried sideways and up, the way the wind or the character faces), one every `every` seconds, from `dx`, `dy` px off the anchor (`dx` mirrored with the character). |
 
@@ -425,12 +447,18 @@ An event: one at a time, each `every` `[min, max]` seconds (10 to 7200) after it
 `[min, max]` seconds (5 to 900) its `props` fade in and its `drift` crosses the sky, and its `spot` (a spot as above, with its own
 `show`) is open: `call` of the crew who are at a spot come to it, the nearest first, and more come as they are free; a spot whose
 `time` is longer than the event's keeps them there until it is over. Then everything fades and they go back about their business.
+Its drift comes in from the edge of the screen, and its props fade in and out over their `fade` (a rainbow slowly; under 1: at once).
+`chance` (0 to 1, default 1) is how likely it comes each time it is due: a rare sighting has a small one, and one with 0 never comes by
+itself. `then` is the index of the event that comes when it is over (when that one's `when` fits): a rainbow after a shower. `key`
+(`red`, `green`, `yellow` or `blue`) starts it at once with that coloured key of the remote on Home, whatever its `when`, ending one
+that is going on.
 
-`when` is `{"h": [from, to], "d": ["MM-DD", "MM-DD"]}`, either or both: from the hour `from` up to `to` (24 is midnight; `[22, 7]` is
-the night, across midnight) and from the first day to the last (`["12-20", "01-06"]` goes across New Year). It is checked every minute;
+`when` is `{"h": [from, to], "d": ["MM-DD", "MM-DD"], "w": [weathers]}`, any of them: from the hour `from` up to `to` (24 is midnight;
+`[22, 7]` is the night, across midnight), from the first day to the last (`["12-20", "01-06"]` goes across New Year) and on a day of one
+of those weathers (`weather`). It is checked every minute;
 a prop or a drift fades in or out over its `fade` seconds and is out of the page once it is gone, a little one of a herd over 8.
 
-At most 200 sprites, 40 spots, 128 props, 16 drifts, 4 herds and 16 events; numbers are clamped to their range, and a name that is not a
+At most 256 sprites, 40 spots, 160 props, 24 drifts, 8 herds and 32 events; numbers are clamped to their range, and a name that is not a
 sprite is left out (and so is a prop, a drift or a herd without one). A theme that extends another keeps its world unless it has its
 own `"world"` (`null` takes it away). `node tools/clawd-world` draws the Claude theme's backdrop and sprite sheet from code and writes
 its `"world"` from the same layout, so the spots always line up with the picture: a way to make one.

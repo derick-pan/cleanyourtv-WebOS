@@ -597,10 +597,15 @@ const SHOOT = [0, 1, 2, 3, 4, 5, 6].map(k => {
   return r;
 });
 // clouds lit from below by the sun that has just gone
-// clouds lit from below by the sun that has just gone, or white by day, lit from above
+// clouds lit from below by the sun that has just gone, or by day lit from above: white, or grey on a grey day
 const cloud = (w, h, bumps, day) => {
   const p = new Pic(w, h);
-  const cols = day ? ['#b8c8dd', '#cbd8e8', '#dde7f2', '#eef3f9', '#ffffff'] : ['#5a3d63', '#7e4c6c', '#a65d72', '#d97d74', '#f4a582'];
+  const cols =
+    day === 'grey'
+      ? ['#5f6672', '#6d7480', '#7d8592', '#8e96a3', '#a3aab5']
+      : day
+        ? ['#b8c8dd', '#cbd8e8', '#dde7f2', '#eef3f9', '#ffffff']
+        : ['#5a3d63', '#7e4c6c', '#a65d72', '#d97d74', '#f4a582'];
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       let inside = false;
@@ -656,7 +661,8 @@ const BUMPS = {
 const CLOUDA = cloud(...BUMPS.a),
   CLOUDB = cloud(...BUMPS.b),
   CLOUDC = cloud(...BUMPS.c);
-const DAYCLOUDS = ['a', 'b', 'c'].map(k => cloud(...BUMPS[k], true));
+const DAYCLOUDS = ['a', 'b', 'c'].map(k => cloud(...BUMPS[k], true)),
+  GREYCLOUDS = ['a', 'b', 'c'].map(k => cloud(...BUMPS[k], 'grey'));
 // prettier-ignore
 const BIRD = [['k.....k', '.k...k.', '..kkk..', '.......'], ['.......', '..kkk..', '.k...k.', 'k.....k']].map(f => f);
 // prettier-ignore
@@ -763,6 +769,7 @@ module.exports = {
   CLOUDB,
   CLOUDC,
   DAYCLOUDS,
+  GREYCLOUDS,
   BIRD,
   BALLOON,
   BUTTERFLY,

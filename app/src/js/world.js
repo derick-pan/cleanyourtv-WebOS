@@ -6,7 +6,10 @@
    that come now and then (a match, a party, a visitor) and a tint for the night. Some things only happen at some hours or on some days
    (when). Characters say things in bubbles, meet in the street for a chat, hop when the focus moves and wave when Home comes back.
    Now and then a gust of wind crosses the screen and what grows sways as it passes; the stars can wheel slowly (pan). What comes and
-   goes with the hours fades in and out (a sky by day, another by night). On a TV that cannot keep up, it sheds what is least seen.
+   goes with the hours fades in and out (a sky by day, another by night). Each day has its weather (mostly fair), picked from the date;
+   some things only come in some weathers. Rare events, events that follow another, events started by a coloured key; props that play
+   something now and then or show the moon's phase or the day; hats on holidays; names, and spots each likes best. On a TV that cannot
+   keep up, it sheds what is least seen.
    Everything moves with transforms and opacity only and in whole art pixels (steps), so pixel art stays crisp and the weak GPU draws
    each piece as a small layer; the frames are CSS animations, so the script only acts when someone starts something new. effects.speed
    0 leaves everyone standing at a spot. It stops while Home is hidden and stands still under the open grid. ---------- */
@@ -31,7 +34,10 @@ var WORLD = (function () {
     live = null /* the event going on */,
     stillAt = 0 /* the time the hours are at for a screenshot (still), or 0 for the clock's */,
     level = 0 /* how much a TV that cannot keep up sheds: 0 nothing, 1 some, 2 more */,
-    CAP = [36, 18, 8]; /* particles at a time, at each level */
+    CAP = [36, 18, 8] /* particles at a time, at each level */,
+    wxDay = -1 /* the day the weather was picked for */,
+    wx = '' /* the weather of that day */,
+    watchMin = 0; /* minutes on Home before only the world shows (world.watch) */
   function rnd(a, b) {
     return a + Math.random() * (b - a);
   }
@@ -54,14 +60,59 @@ var WORLD = (function () {
       if (t === token) fn();
     }, s * 1000);
   }
-  /* is it the hour and the day for it (when: {h: [from, to], d: [from, to]}, both across midnight or New Year when needed)? */
+  /* is it the hour, the day and the weather for it (when: {h: [from, to], d: [from, to], w: [weathers]}, across midnight or New Year
+     when needed)? */
   function active(w) {
     if (!w) return true;
     var t = new Date(stillAt || Date.now()),
-      h = t.getHours(),
-      d = (t.getMonth() + 1) * 100 + t.getDate();
+      h = t.getHours();
     if (w.h && !(w.h[0] <= w.h[1] ? h >= w.h[0] && h < w.h[1] : h >= w.h[0] || h < w.h[1])) return false;
-    return !w.d || (w.d[0] <= w.d[1] ? d >= w.d[0] && d <= w.d[1] : d >= w.d[0] || d <= w.d[1]);
+    if (!dayOk(w, t)) return false;
+    return !w.w || w.w.indexOf(weather()) >= 0;
+  }
+  function dayOk(w, t) {
+    var d = (t.getMonth() + 1) * 100 + t.getDate();
+    return !w || !w.d || (w.d[0] <= w.d[1] ? d >= w.d[0] && d <= w.d[1] : d >= w.d[0] || d <= w.d[1]);
+  }
+  /* a number from 0 to 1 for a whole number, always the same for it */
+  function hash(n) {
+    var x = n | 0;
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+  }
+  /* the weather of today: one of the world's weathers whose days fit, by weight, picked from the date, so it is the same all day (and
+     on every TV); for a screenshot, the first */
+  function weather() {
+    var L = (W && W.weather) || [];
+    if (!L.length) return '';
+    if (stillAt) return L[0].name;
+    var t = new Date(Date.now()),
+      day = t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+    if (day === wxDay) return wx;
+    var c = L.filter(function (x) {
+        return dayOk(x.when, t);
+      }),
+      tot = 0,
+      i;
+    for (i = 0; i < c.length; i++) tot += c[i].w;
+    var r = hash(day) * tot;
+    wxDay = day;
+    wx = c.length ? c[c.length - 1].name : '';
+    for (i = 0; i < c.length; i++)
+      if ((r -= c[i].w) < 0) {
+        wx = c[i].name;
+        break;
+      }
+    return wx;
+  }
+  /* which of n frames a prop that keeps the date shows: the moon's phase (0 new, n/2 full), the day of the month, the day of the week */
+  function phaseOf(kind, n) {
+    var t = new Date(stillAt || Date.now());
+    if (kind === 'moon') return Math.round((((((t.getTime() - 947182440000) / 86400000 / 29.530588853) % 1) + 1) % 1) * n) % n;
+    if (kind === 'month')
+      return Math.min(n - 1, Math.floor(((t.getDate() - 1) * n) / new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate()));
+    return Math.min(n - 1, Math.floor((((t.getDay() + 6) % 7) * n) / 7));
   }
   /* a clip the size of one frame, holding the strip of a sprite's frames side by side */
   function piece(parent) {
@@ -238,11 +289,13 @@ var WORLD = (function () {
     var a = div('wo', box),
       b = div('wo-b', a),
       o = piece(b);
+    /* one under everything that comes later (an event's sky) still goes under the drift */
+    if (p.under && drifts.length && drifts[0].a.parentNode === box) box.insertBefore(a, drifts[0].a);
     a.style.left = p.x + 'px';
     a.style.top = p.y + 'px';
     a.style.zIndex = p.front ? 900 : p.under ? 0 : 10;
-    paint(o, p.s, p.rest ? 0 : p.fps, false, 1, 0, true);
     var q = { p: p, a: a, b: b, o: o, on: true };
+    own(q);
     panning(q, false);
     var an = [];
     if (rate > 0 && p.bob) an.push(bob(p.bob));
@@ -272,11 +325,35 @@ var WORLD = (function () {
     /* a TV that cannot keep up: the sky holds where it is */
     if (level >= 2) q.a.style.animationPlayState = 'paused';
   }
-  /* a prop's timers: one that plays now and then is out of sight between plays; particles while it is shown */
+  /* a prop's own frames: playing, or the one its date says (phase) */
+  function own(q) {
+    var p = q.p,
+      s = W.sprites[p.s];
+    if (!p.phase) return paint(q.o, p.s, p.rest ? 0 : p.fps, false, 1, 0, true);
+    paint(q.o, p.s, 0, false, 1, 0);
+    q.o.strip.style.transform = 'translateX(' + -phaseOf(p.phase, s[4]) * s[2] * P + 'px)';
+  }
+  /* a prop's timers: one that plays now and then is out of sight between plays; one that plays something else now and then goes back
+     to its own frames after; particles while it is shown */
   function startProp(q) {
     var p = q.p;
     if (!(rate > 0)) return;
-    if (p.gust && q.o.name !== p.s) paint(q.o, p.s, p.fps, false, 1, 0, true);
+    if ((p.gust || p.play) && q.o.name !== p.s) own(q);
+    if (p.play)
+      every(
+        p.play.every,
+        function () {
+          if (!q.on || level >= 2) return;
+          q.o.strip.style.transform = '';
+          var t = paint(q.o, p.play.s, p.play.fps, true, 1, 0);
+          later(function () {
+            if (q.o.name === p.play.s) own(q);
+          }, t + 0.05);
+        },
+        function () {
+          return !!q.a.parentNode;
+        }
+      );
     if (p.rest) {
       q.a.style.opacity = '0';
       var play = function () {
@@ -306,34 +383,40 @@ var WORLD = (function () {
   /* ---- wind: now and then a gust crosses the screen (from the left, or the right: wind.dir); every prop with a gust sprite plays it
      once as the gust passes over it, mirrored when it blows from the right, then goes back to its own frames, and some of them give
      off the wind's particles (a petal carried away) ---- */
+  function blowing() {
+    for (var i = 0; i < W.wind.length; i++) if (active(W.wind[i].when)) return W.wind[i];
+    return null;
+  }
   function wind() {
-    var w = W.wind;
-    if (!w || !(rate > 0)) return;
+    if (!W.wind.length || !(rate > 0)) return;
+    var w0 = blowing();
     later(
       function () {
-        props.concat(live ? live.props : []).forEach(function (q) {
-          var p = q.p;
-          if (!p.gust || p.rest || !q.on) return;
-          later(
-            function () {
-              if (!q.on || !q.a.parentNode) return;
-              var t = paint(q.o, p.gust, w.fps, true, w.dir, 0);
-              later(function () {
-                if (q.on) paint(q.o, p.s, p.fps, false, 1, 0, true);
-              }, t + 0.05);
-              if (w.fx && level < 1 && Math.random() < 0.35) emit(w.fx, p.x, p.y, w.dir);
-            },
-            ((w.dir > 0 ? p.x : 1920 - p.x) + 400) / w.speed / rate
-          );
-        });
+        var w = blowing();
+        if (w)
+          props.concat(live ? live.props : []).forEach(function (q) {
+            var p = q.p;
+            if (!p.gust || p.rest || !q.on) return;
+            later(
+              function () {
+                if (!q.on || !q.a.parentNode) return;
+                var t = paint(q.o, p.gust, w.fps, true, w.dir, 0);
+                later(function () {
+                  if (q.on && q.o.name === p.gust) own(q);
+                }, t + 0.05);
+                if (w.fx && level < 1 && Math.random() < 0.35) emit(w.fx, p.x, p.y, w.dir);
+              },
+              ((w.dir > 0 ? p.x : 1920 - p.x) + 400) / w.speed / rate
+            );
+          });
         wind();
       },
-      rnd(w.every[0], w.every[1]) / rate
+      (w0 ? rnd(w0.every[0], w0.every[1]) : 60) / rate
     );
   }
 
   /* ---- drift: crossing the screen, then a while out of sight, over and over ---- */
-  function drifter(d, i, n) {
+  function drifter(d, i, n, fresh) {
     var s = W.sprites[d.s],
       fw = s[2] * P,
       a = div('wo-d', box),
@@ -357,7 +440,7 @@ var WORLD = (function () {
       's steps(' +
       Math.max(1, Math.round(span / P)) +
       ') ' +
-      (-rnd(0, dur)).toFixed(1) +
+      (fresh ? 0 : -rnd(0, dur)).toFixed(1) +
       's infinite';
     if (d.bob) b.style.animation = bob(d.bob);
     return { d: d, a: a, o: o };
@@ -405,7 +488,7 @@ var WORLD = (function () {
     return t;
   };
   Body.prototype.show = function (name, fps, once, sync) {
-    return paint(this.o, name, fps, once, this.face, this.look, sync);
+    return paint(this.o, name, fps, once, this.face, this.hat ? this.hat() : this.look, sync);
   };
   Body.prototype.hop = function () {
     var now = Date.now();
@@ -435,7 +518,11 @@ var WORLD = (function () {
   }
   function Member(i) {
     Body.call(this, '');
+    var ms = W.crew.members,
+      me = ms.length ? ms[i % ms.length] : null;
     this.look = i % W.crew.looks;
+    this.name = me ? me.name : '';
+    this.likes = me ? me.likes : [];
     this.spot = null;
     this.slot = 0;
     this.last = null;
@@ -443,13 +530,19 @@ var WORLD = (function () {
     this.busy = false /* at its spot, doing what the spot says */;
   }
   Member.prototype = Object.create(Body.prototype);
+  /* its look now: everyone wears the hat of a holiday (crew.hats) */
+  Member.prototype.hat = function () {
+    var H = W.crew.hats;
+    for (var i = 0; i < H.length; i++) if (active(H[i].when)) return H[i].look;
+    return this.look;
+  };
   /* which way it faces at a spot: the spot's way, or towards the others in a spot for several */
   Member.prototype.facing = function (s, k) {
     var mid = (s.n - 1) / 2;
     return s.face || (s.n > 1 && k !== mid ? (k < mid ? 1 : -1) : this.face);
   };
-  /* a free place in another spot open at this hour, by weight; a spot where someone already waits for company counts three times, and
-     the spot of an event going on five times; first, an event that still wants some */
+  /* a free place in another spot open at this hour, by weight; a spot where someone already waits for company counts three times, one
+     of the kind it likes (tag) three times, and the spot of an event going on five times; first, an event that still wants some */
   Member.prototype.pick = function () {
     var c = [],
       tot = 0,
@@ -470,7 +563,7 @@ var WORLD = (function () {
       s = spots[i];
       k = s.who.indexOf(null);
       if (s === this.spot || s === this.last || !(s.w > 0) || k < 0 || !active(s.when) || taken(s)) continue;
-      wt = s.w * (s.n > 1 && k > 0 ? 3 : 1) * (s.event ? 5 : 1);
+      wt = s.w * (s.n > 1 && k > 0 ? 3 : 1) * (s.event ? 5 : 1) * (s.tag && this.likes.indexOf(s.tag) >= 0 ? 3 : 1);
       c.push([s, k, wt]);
       tot += wt;
     }
@@ -661,11 +754,12 @@ var WORLD = (function () {
   Member.prototype.poke = function () {
     if (!this.busy) this.hop();
   };
-  /* Home is back: a wave, then back to what it was doing */
+  /* Home is back, or an app opens: a wave and a hello (crew.hello), then back to what it was doing */
   Member.prototype.wave = function () {
     var s = this.spot;
     if (!W.crew.wave || !s || s.inside || s.meet) return;
     this.show(W.crew.wave, 6);
+    if (W.crew.hello.length) this.say(pick(W.crew.hello));
     this.after(2.4 / rate, function () {
       doing(this, s);
       this.after(stay(s), this.next);
@@ -695,15 +789,16 @@ var WORLD = (function () {
       who.go({ x: x, y: y, path: [], n: 1, gap: 0, time: [3, 3], meet: m, who: [null] }, 0);
     });
   }
+  /* each says the other's name first (crew.members), then what the chat says */
   function talk(m) {
     var c = W.crew.chat,
       t = 0.3;
     for (var i = 0; i < 4; i++)
-      (function (who, at) {
+      (function (who, other, k, at) {
         later(function () {
-          if (who.spot && who.spot.meet === m) who.say(pick(c.say));
+          if (who.spot && who.spot.meet === m) who.say(k < 2 && other.name ? other.name : pick(c.say));
         }, at / rate);
-      })(i % 2 ? m.b : m.a, (t += i ? 1.3 : 0));
+      })(i % 2 ? m.b : m.a, i % 2 ? m.a : m.b, i, (t += i ? 1.3 : 0));
     var end = 5.6;
     if (c.act) {
       later(function () {
@@ -793,14 +888,18 @@ var WORLD = (function () {
   }
 
   /* ---- events: now and then something happens for a while: its props and drift appear, its spot opens, some are called to it;
-     one at a time, each a while (every) after it was last over ---- */
+     one at a time, each a while (every) after it was last over, when its chance says so. One can follow another (then), and a
+     coloured key starts one at once (key) ---- */
   function events() {
-    if (rate > 0) W.events.forEach(wait);
+    if (rate > 0)
+      W.events.forEach(function (e) {
+        if (e.chance > 0) wait(e);
+      });
   }
   function wait(e) {
     later(
       function () {
-        if (!live && active(e.when)) start(e);
+        if (!live && active(e.when) && Math.random() < e.chance) start(e);
         else wait(e);
       },
       rnd(e.every[0], e.every[1]) / rate
@@ -811,12 +910,15 @@ var WORLD = (function () {
     live = ev;
     e.props.forEach(function (p) {
       var q = prop(p);
-      q.a.classList.add('wo-in');
+      /* it fades in over its fade (a rainbow slowly), a short one at once */
+      if (p.fade >= 1) q.o.clip.style.animation = 'wo-fin ' + (p.fade / rate).toFixed(1) + 's linear';
+      else q.a.classList.add('wo-in');
       ev.props.push(q);
       startProp(q);
     });
+    /* its drift come in from the edge, so they cross the screen while it lasts */
     e.drift.forEach(function (d, i) {
-      ev.drift.push(drifter(d, i, e.drift.length).a);
+      ev.drift.push(drifter(d, i, e.drift.length, true).a);
     });
     if (e.spot) {
       var s = clone(e.spot);
@@ -851,13 +953,29 @@ var WORLD = (function () {
       rnd(e.time[0], e.time[1]) / rate
     );
   }
-  function end(ev) {
+  /* over: its props fade out over their fade (its drift and its spot's props at once), the ones at its spot go back to their business,
+     and the one that follows it comes (not when the world stops or a key started another: alone) */
+  function end(ev, alone) {
     if (live === ev) live = null;
-    wait(ev.e);
-    /* its props, its drift and its spot's props fade */
+    if (ev.e.chance > 0) wait(ev.e);
     var s = ev.spot,
-      gone = ev.drift.slice();
-    ev.props.concat((s && s.on) || []).forEach(function (q) {
+      gone = ev.drift.slice(),
+      slow = 0.9;
+    ev.props.forEach(function (q) {
+      var t = q.p.fade >= 1 && rate > 0 ? q.p.fade / rate : 0;
+      q.on = false;
+      if (t) {
+        q.o.clip.style.animation = 'wo-fout ' + t.toFixed(1) + 's linear forwards';
+        slow = Math.max(slow, t);
+        setTimeout(
+          function () {
+            drop(q.a);
+          },
+          t * 1000 + 60
+        );
+      } else gone.push(q.a);
+    });
+    ((s && s.on) || []).forEach(function (q) {
       q.on = false;
       gone.push(q.a);
     });
@@ -867,12 +985,15 @@ var WORLD = (function () {
     setTimeout(function () {
       gone.forEach(drop);
     }, 900);
-    if (!s) return;
-    s.on = null;
-    spots.splice(spots.indexOf(s), 1);
-    s.who.forEach(function (m) {
-      if (m && m.spot === s) m.after(rnd(0, 1.5) / rate, m.next);
-    });
+    if (s) {
+      s.on = null;
+      spots.splice(spots.indexOf(s), 1);
+      s.who.forEach(function (m) {
+        if (m && m.spot === s) m.after(rnd(0, 1.5) / rate, m.next);
+      });
+    }
+    var nx = !alone && ev.e.then >= 0 ? W.events[ev.e.then] : null;
+    if (nx && nx !== ev.e && !live && active(nx.when)) start(nx);
   }
 
   /* ---- what depends on the hour and the day: props and drift shown or not, herds out or in, the tint of the night ---- */
@@ -902,6 +1023,7 @@ var WORLD = (function () {
     props.forEach(function (q) {
       q.on = active(q.p.when);
       showAt(q, q.on, q.p.fade, instant);
+      if (q.p.phase && q.o.name === q.p.s) own(q);
     });
     drifts.forEach(function (x) {
       showAt(x, active(x.d.when), x.d.fade, instant);
@@ -1070,7 +1192,7 @@ var WORLD = (function () {
   }
   /* (re)start the timers: the props', the crew at their spots, the herds, the chats, the events, the wind and the clock */
   function go(still) {
-    if (live) end(live);
+    if (live) end(live, true);
     live = null;
     token++;
     parts.forEach(drop);
@@ -1111,6 +1233,8 @@ var WORLD = (function () {
       W = null;
       level = 0;
       stillAt = 0;
+      wxDay = -1;
+      watchMin = (ww && ww.watch) || 0;
       clear();
       if (!s) return;
       rate = typeof spd === 'number' ? spd : 1;
@@ -1126,6 +1250,37 @@ var WORLD = (function () {
       };
       im.src = u;
     },
+    /* a coloured key on Home (red, green, yellow, blue): the event that has it starts now; false when there is none */
+    key: function (name) {
+      if (!box || !W || !(rate > 0) || box.style.display === 'none') return false;
+      for (var i = 0; i < W.events.length; i++)
+        if (W.events[i].key === name) {
+          if (live) end(live, true);
+          start(W.events[i]);
+          return true;
+        }
+      return false;
+    },
+    /* an app opens: two of them wave goodbye */
+    bye: function () {
+      if (!box || !(rate > 0)) return;
+      crew
+        .filter(function (m) {
+          return m.busy;
+        })
+        .slice(0, 2)
+        .forEach(function (m) {
+          m.wave();
+        });
+    },
+    /* the weather of today (world.weather), '' without one */
+    weather: function () {
+      return W ? weather() : '';
+    },
+    /* minutes on Home without a key before only the world shows (watch mode in the launcher), 0 for never */
+    watch: function () {
+      return watchMin;
+    },
     /* the focus moved */
     poke: function () {
       if (!box || !(rate > 0)) return;
@@ -1133,10 +1288,10 @@ var WORLD = (function () {
       for (i = 0; i < minis.length; i++) if (Math.random() < 0.5) minis[i].hop();
     },
     /* for a screenshot (tools/theme-preview.mjs): everyone at the first spots, in order, and staying there, at half past seven in the
-       evening (dusk, the lamps lit) whatever the clock says */
-    still: function () {
+       evening (dusk, the lamps lit) whatever the clock says; on the day `at` (ms) when given, so a screenshot is the same any day */
+    still: function (at) {
       if (!box) return;
-      var d = new Date(Date.now());
+      var d = new Date(at || Date.now());
       stillAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 19, 30).getTime();
       go(true);
     },
@@ -1151,7 +1306,7 @@ var WORLD = (function () {
     },
     /* Home hidden: the timers stop and the world is out of the page, so it costs nothing (not even GPU memory) while an app plays */
     hidden: function () {
-      if (live) end(live);
+      if (live) end(live, true);
       token++;
       parts.forEach(drop);
       parts = [];

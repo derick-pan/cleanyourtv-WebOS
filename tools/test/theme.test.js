@@ -176,7 +176,7 @@ run(async () => {
   const tWrong = {
     kid: JSON.stringify({ name: 'Kid', extends: 'bloom', bar: { style: 'flat' } }),
     notjson: '{ this is not json',
-    huge: JSON.stringify({ name: 'x'.repeat(40000) }),
+    huge: JSON.stringify({ name: 'x'.repeat(70000) }),
     badwall: JSON.stringify({ name: 'Bad wallpaper', effects: { wallpaper: 'w.jpg' } }),
     orphan: JSON.stringify({ name: 'Orphan', extends: 'missing-base' }),
     pixkid: JSON.stringify({ name: 'Pixel kid', extends: 'pixel', dock: { count: 4 } }),
@@ -489,14 +489,18 @@ run(async () => {
           bubble: -5,
           lane: [905, 1570, -999],
           chat: { every: [1, 99999], say: ['nope', 'cap'], act: 'nope' },
+          hats: [{ look: 99, when: { d: ['10-31', '10-31'] } }],
+          members: [{ name: 'cap', likes: ['games', 'Bad', 'code'] }, { name: 'nope' }],
+          hello: ['cap', 'nope'],
         },
         spots: [
           { x: 9999, y: 860, act: 'walk', time: [30, 2], via: [940, 860], fx: { s: 'stand', kind: 'boom', every: 0 } },
-          { act: 'nope', n: 9, acts: ['cap', 'nope', 'walk'], group: 'Bad Group', say: { s: ['nope'] } },
+          { act: 'nope', n: 9, acts: ['cap', 'nope', 'walk'], group: 'Bad Group', tag: 'Bad Tag', say: { s: ['nope'] } },
           {
             act: 'cap',
             path: [[1, 2, 'up'], [3], [5000, -5000, 0], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8]],
             group: 'games',
+            tag: 'games',
             show: [{ s: 'cap', x: 10, y: 20 }, { s: 'nope' }, { s: 'stand' }, { s: 'stand' }, { s: 'stand' }, { s: 'stand' }],
             say: { s: ['nope', 'cap'], every: 9999 },
             when: { h: [22, 6], d: ['13-01', '01-01'] },
@@ -507,8 +511,8 @@ run(async () => {
         props: [
           { s: 'nope' },
           { s: 'stand', front: true, bob: 99, rest: -1, when: { d: ['10-15', '11-01'] }, pan: [-5000, 1], gust: 'cap', fade: 99999 },
-          { s: 'stand', pan: [0, 600], gust: 'nope' },
-        ].concat(many(140)),
+          { s: 'stand', pan: [0, 600], gust: 'nope', play: { s: 'cap', every: 0, fps: 99 }, phase: 'moon' },
+        ].concat(many(170)),
         drift: [{ s: 'walk', dir: -1, speed: 0, when: { h: [7, 99] }, fade: -5 }, { y: 5 }],
         herds: [
           { count: 99, area: [10, 20, 30, 40], stand: 'cap', acts: ['nope', 'walk'], speed: 0, when: {} },
@@ -523,15 +527,20 @@ run(async () => {
             every: [1, 1e9],
             time: [0, 9999],
             call: 99,
-            spot: { x: 100, y: 200, n: 3, act: 'cap' },
+            spot: { x: 100, y: 200, n: 3, act: 'cap', when: { w: ['rain', 'Bad', 'snow'] } },
             props: [{ s: 'cap' }, { s: 'nope' }],
             drift: [{ s: 'walk' }, { s: 'nope' }],
             when: { h: [12, 14] },
+            chance: 5,
+            then: 99,
+            key: 'red',
           },
-          {},
+          { chance: -1, then: -9, key: 'purple' },
         ],
         shade: [{ color: '#06051a', alpha: 2, when: { h: [0, 5] } }, { color: 'nope', alpha: 0.5 }, { color: '#FFFFFF' }],
-        wind: { every: [1, 99999], speed: 1, dir: 7, fps: 99, fx: { s: 'cap', kind: 'blow' } },
+        wind: [{ every: [1, 99999], speed: 1, dir: 7, fps: 99, fx: { s: 'cap', kind: 'blow' } }, { when: { w: ['wind'] } }],
+        weather: [{ name: 'sun', w: 999 }, { name: 'Bad Name' }, { name: 'snow', w: 5, when: { d: ['12-01', '02-28'] } }],
+        watch: 999,
       },
     },
     'claude',
@@ -582,12 +591,12 @@ run(async () => {
       s2.show[0].s === 'cap' &&
       s2.show[0].x === 10 &&
       JSON.stringify(s2.say) === '{"s":["cap"],"every":600}' &&
-      JSON.stringify(s2.when) === '{"h":[22,6],"d":null}' &&
+      JSON.stringify(s2.when) === '{"h":[22,6],"d":null,"w":null}' &&
       s2.w === 10,
     'spots (at most 40): a way in (path, or via as a ladder), what each place does, a group, props to show, bubbles and hours, clamped and cut'
   );
   ok(
-    wr.props.length === 127 &&
+    wr.props.length === 159 &&
       wr.props[0].bob === 8 &&
       wr.props[0].pan.join() === '-1920,10' &&
       wr.props[0].gust === 'cap' &&
@@ -598,25 +607,25 @@ run(async () => {
       wr.drift[0].fade === 0 &&
       wr.props[0].rest === 0 &&
       wr.props[0].front === true &&
-      JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101]}' &&
+      JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101],"w":null}' &&
       wr.drift.length === 1 &&
       wr.drift[0].speed === 1 &&
       wr.drift[0].dir === -1 &&
-      JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null}',
-    'props (at most 128) and drift are checked and clamped, with their hours (when, fade), pan and gust, and what names no sprite is left out'
+      JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null,"w":null}',
+    'props (at most 160) and drift are checked and clamped, with their hours (when, fade), pan and gust, and what names no sprite is left out'
   );
   const h0 = wr.herds[0],
     e0 = wr.events[0],
     e1 = wr.events[1];
   ok(
-    wr.herds.length === 2 &&
+    wr.herds.length === 4 &&
       h0.count === 12 &&
       h0.area.join() === '10,20,30,40' &&
       h0.walk === 'cap' &&
       h0.acts.join() === 'walk' &&
       h0.speed === 5 &&
       h0.when === null,
-    'herds: at most 4, those without a sprite to stand with left out, clamped'
+    'herds: at most 8, those without a sprite to stand with left out, clamped'
   );
   ok(
     e0.every.join() === '10,7200' &&
@@ -626,7 +635,7 @@ run(async () => {
       e0.spot.act === 'cap' &&
       e0.props.length === 1 &&
       e0.drift.length === 1 &&
-      JSON.stringify(e0.when) === '{"h":[12,14],"d":null}' &&
+      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null}' &&
       e1.spot === null &&
       e1.every.join() === '120,300' &&
       e1.call === 0,
@@ -634,14 +643,44 @@ run(async () => {
   );
   ok(
     wr.shade.length === 2 &&
-      JSON.stringify(wr.shade[0]) === '{"color":"#06051a","alpha":0.9,"when":{"h":[0,5],"d":null}}' &&
+      JSON.stringify(wr.shade[0]) === '{"color":"#06051a","alpha":0.9,"when":{"h":[0,5],"d":null,"w":null}}' &&
       wr.shade[1].color === '#ffffff',
     'the tint of the night: a colour (one that is not is left out) and how strong, clamped'
   );
   ok(
-    JSON.stringify(wr.wind) === '{"every":[3,3600],"speed":50,"dir":1,"fps":30,"fx":{"s":"cap","kind":"blow","every":2,"dx":0,"dy":0}}' &&
-      themeMod.resolve(themeMod.normalize({ world: { file: 'clawd.png' } }, 'claude', null, path.join(tdir, 'claude'))).world.wind === null,
-    'the wind: how often, how fast, from which side, its frames a second and what it carries off, clamped; none unless the theme has it'
+    JSON.stringify(wr.wind) ===
+      '[{"every":[3,3600],"speed":50,"dir":1,"fps":30,"fx":{"s":"cap","kind":"blow","every":2,"dx":0,"dy":0},"when":null},' +
+        '{"every":[20,40],"speed":400,"dir":1,"fps":8,"fx":null,"when":{"h":null,"d":null,"w":["wind"]}}]' &&
+      themeMod.resolve(themeMod.normalize({ world: { file: 'clawd.png' } }, 'claude', null, path.join(tdir, 'claude'))).world.wind
+        .length === 0,
+    'the wind (one, or a list: the first whose when fits blows): how often, how fast, from which side, its frames a second, what it carries off, clamped'
+  );
+  // what this world keeps besides: the weather of the days, watch mode, holidays' hats, who the crew are, their hellos; a spot's
+  // tag; a prop that plays something now and then, or keeps the date; an event's chance, the one that follows it and its key
+  const sp9 = wr.spots[2],
+    p2 = wr.props[1];
+  ok(
+    JSON.stringify(wr.weather) === '[{"name":"sun","w":100,"when":null},{"name":"snow","w":5,"when":{"h":null,"d":[1201,228],"w":null}}]' &&
+      wr.watch === 120 &&
+      JSON.stringify(wr.crew.hats) === '[{"look":15,"when":{"h":null,"d":[1031,1031],"w":null}}]' &&
+      JSON.stringify(wr.crew.members) === '[{"name":"cap","likes":["games","code"]},{"name":"","likes":[]}]' &&
+      wr.crew.hello.join() === 'cap' &&
+      sp9.tag === 'games' &&
+      wr.spots[1].tag === '' &&
+      JSON.stringify(p2.play) === '{"s":"cap","every":2,"fps":30}' &&
+      p2.phase === 'moon' &&
+      wr.props[0].phase === '' &&
+      JSON.stringify(wr.props[0].when.w) === 'null' &&
+      JSON.stringify(wr.drift[0].when.w) === 'null' &&
+      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null}' &&
+      e0.chance === 1 &&
+      e0.then === 31 &&
+      e0.key === 'red' &&
+      e1.chance === 0 &&
+      e1.then === -1 &&
+      e1.key === '' &&
+      JSON.stringify(wr.events[0].spot.when) === '{"h":null,"d":null,"w":["rain","snow"]}',
+    'the weather of the days, watch mode, hats, names and likes, hellos, tags, play and phase, the chance, then and key of an event: clamped'
   );
   ok(
     !('world' in plain) &&
@@ -701,7 +740,7 @@ run(async () => {
   r = await tcall('set', { id: 'notjson' });
   ok(r.code === 502 && !fs.existsSync(path.join(tlocal, 'notjson')), 'a theme file that is not JSON is refused and nothing is kept');
   r = await tcall('set', { id: 'huge' });
-  ok(r.code === 502 && /too large/.test(r.j.error) && !fs.existsSync(path.join(tlocal, 'huge')), 'a theme file over 32 KB is refused');
+  ok(r.code === 502 && /too large/.test(r.j.error) && !fs.existsSync(path.join(tlocal, 'huge')), 'a theme file over 64 KB is refused');
   r = await tcall('set', { id: 'badwall' });
   ok(
     r.code === 502 && /not an image/.test(r.j.error) && !fs.existsSync(path.join(tlocal, 'badwall')),
