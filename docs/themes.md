@@ -20,8 +20,8 @@ folder of the GitHub repository (the `main` branch):
   so it keeps working offline. Choosing it again downloads the latest version. If GitHub cannot be reached, the list shows the themes
   that are already on the TV and says why.
 - **Classic** is built into the service and always works.
-- A theme is data only (values, an image): the service checks every value, limits the file sizes (theme 32 KB, wallpaper 1.5 MB,
-  screenshot 600 KB) and checks that the images are images. There is no script or CSS in a theme.
+- A theme is data only (values, images): the service checks every value, limits the file sizes (theme 32 KB, wallpaper 1.5 MB,
+  screenshot 600 KB, mascot and sprite sheet 256 KB) and checks that the images are images. There is no script or CSS in a theme.
 
 ## The themes
 
@@ -40,7 +40,7 @@ folder of the GitHub repository (the `main` branch):
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
 | The Grid | The world of the Grid, going on behind Home: light cycles racing the floor and turning, their walls of light fading when they derezz, Recognizers drifting across the sky, the portal beam pulsing up from the city and light raining down. Glass tiles edged in light stand on the floor. Down opens the apps. |
-| Claude | A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting, the app's name big in the middle, a round dock low on the screen, and three little pixel Claudes (mascots, see below) who walk the floor, nap, wave, think, dance, hop when you move and get up to tricks. |
+| Claude | Clawd World: a pixel village at dusk under the dock, where eight little Clawds (Claude Code's mascot) go from spot to spot: they hammer at the Code Forge, mine tokens, type, read, nap, game, cast spells from the wizard's tower, brew, fish, conduct a choir, dance, roast marshmallows and burrow away. A greeting and the clock in the sky, the app's name big over a row of six apps; Down opens all apps over the village. It is a world (see below). |
 | Terminal | Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of `date`, the apps listed one per line under `ls`, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
@@ -140,7 +140,8 @@ the **clock** (which can also be huge, thin, translucent and outlined like glass
 the top **buttons** (`bar`), the large app **name**, the **dock** (on a white or a dark glass panel) and the **grid**. Each can be anchored to the top
 or bottom edge and aligned left, centre or right, with an offset. A dock at the bottom turns the grid into an overlay that opens
 when the focus moves down into it (Back or Up closes it); a dock at the top leaves the grid below it, scrolling. A theme can also
-bring a **mascot**: a small picture that walks along the bottom of the screen (see [A mascot](#a-mascot) below).
+bring a **mascot**: a small picture that walks along the bottom of the screen (see [A mascot](#a-mascot) below), or a whole **world**: a
+little place with characters going about their business behind Home, drawn from a sprite sheet (see [A world](#a-world) below).
 
 <!-- schema:start -->
 | Key | Values | Default | |
@@ -314,6 +315,67 @@ while Home is not on screen.
 - `mascot.size` is its height on screen and `mascot.y` the distance of its feet from the bottom edge. `mascot.speed` scales how fast they
   walk and how often they do something; 0 keeps them standing, and so does `effects.speed` 0.
 
+### A world
+
+A theme can bring a little world that goes on behind Home, like Clawd World in the Claude theme: props that stay in place and play
+their frames (a campfire, a glint on the water, a choir), things that cross the sky (clouds, birds, a balloon), and a **crew** of
+characters who walk from **spot** to spot and do what each spot says there (hammer at an anvil, read, fish), climbing a ladder to a spot
+upstairs or going out of sight for a while (into a mine, under the sand). Spots and props can give off particles that rise, float away
+or pop (hearts, notes, smoke, sparks). The theme gives the pictures and says where things are; the launcher does the rest
+(`app/src/js/world.js`).
+
+Everything is drawn from one **sprite sheet**, a picture in the theme's folder that holds every frame of every sprite, scaled up `px`
+times without smoothing so pixel art stays crisp. Usually the static part of the place (the buildings, the ground) is the wallpaper,
+drawn at the same scale, and the world puts the moving parts on it. It moves with transforms and opacity only and in whole art pixels,
+and the frames are CSS animations, so the TV's GPU draws each piece as a small layer and the script only acts when a character starts
+something new. The crew hop when the focus moves and one or two of them wave when Home comes back. The world sits under the dock, the
+grid and the menus, stands still under the open grid and while Home is hidden, and with `effects.speed` 0 each character just stands at
+a spot.
+
+```json
+"world": {
+  "file": "clawd.png",
+  "px": 5,
+  "sprites": { "stand": [65, 182, 16, 10, 8, 8, 10], "walk": [0, 182, 16, 11, 4, 8, 11], "read": [113, 194, 16, 9, 6, 8, 9], "fire": [65, 155, 14, 13, 4] },
+  "crew": { "count": 8, "speed": 70, "stand": "stand", "walk": "walk", "lane": [905, -150, 1570] },
+  "spots": [
+    { "x": 840, "y": 740, "act": "read", "fps": 2, "via": [940, 860], "time": [10, 22] },
+    { "x": 810, "y": 1015, "n": 2, "gap": 90, "act": "dance", "fx": { "s": "heart", "kind": "rise", "every": 1.4, "dy": -75 } }
+  ],
+  "props": [{ "s": "fire", "x": 1310, "y": 950, "fps": 8, "front": true }],
+  "drift": [{ "s": "cloud-a", "y": 515, "speed": 9, "dir": -1 }]
+}
+```
+
+| Key | Values | What it does |
+|---|---|---|
+| `file` | a file name | The sprite sheet: a `.png` (with transparency), `.webp` or `.jpg` in the theme's folder, at most 256 KB, downloaded with the theme. Without it, or when it is not an image, the theme has no world. |
+| `px` | 1 to 12 | How many screen pixels an art pixel of the sheet is (default 4). |
+| `sprites` | name: `[x, y, w, h, frames, ax, ay]` | A strip of `frames` frames, each `w` x `h`, side by side in the sheet from `x`, `y` (art pixels). `ax`, `ay` is the point of a frame that stands on a place (its feet); it defaults to the middle of the bottom edge and may be below the frame (someone sitting behind a desk). Names are lower-case letters, digits and `-`. Draw characters facing right. |
+| `crew` | `count` 0 to 12, `speed` px/s, `stand`, `walk`, `climb`, `wave`, `lane` | The characters: how many, how fast they walk, and their sprites for standing (a few frames with a blink), walking, climbing a ladder and waving. `lane` `[y, from x, to x]` is a street they keep to between spots: out onto it, along it, then to the next spot; without it they walk straight across. |
+| `spots` | a list | The places where something happens, below. |
+| `props` | a list: `s`, `x`, `y`, `fps`, `pulse`, `bob`, `front`, `rest`, `fx` | A sprite that stays at `x`, `y` (its anchor) and plays its frames at `fps`. `pulse` (seconds) lets it glow and fade, `bob` moves it up and down that many art pixels, `rest` (seconds) shows it only now and then (a fish jumping), `front` puts it in front of the crew (a fire they pass behind), `fx` gives off particles. |
+| `drift` | a list: `s`, `y`, `speed`, `dir`, `fps`, `bob` | A sprite that crosses the screen at `y` (its anchor), `speed` px/s, left to right (`dir` 1) or the other way (-1, mirrored), then stays out of sight for a while and comes again. |
+
+A spot:
+
+| Key | Values | What it does |
+|---|---|---|
+| `x`, `y` | px | Where a character stands there (the anchor of its sprite). |
+| `act`, `fps` | a sprite, frames a second | What it does there; without `act` it stands. |
+| `face` | `1`, `-1` or `0` | Facing right or left (mirrored); `0`: the way it came, or towards the others in a spot for several. |
+| `time` | `[min, max]` seconds | How long it stays. |
+| `n`, `gap` | 1 to 4, px | Places for several side by side, `gap` apart (two dancing, two by the fire). A spot where one already waits draws company. |
+| `via` | `[x, y]` | The foot of a ladder: the spot is upstairs; the character walks to it, climbs to the spot's height and walks on. Two spots with the same ladder and height are a walk apart. |
+| `inside`, `back` | `true`, a sprite | It goes out of sight there for `time` (a door, a mine): `act` plays once before, `back` once after (dig in, pop out). A spot off the edge of the screen with `inside` is a way out of the world and back. |
+| `w` | 0 to 10 | How often it is chosen (default 1; 0 never). |
+| `fx` | `s`, `kind`, `every`, `dx`, `dy` | Particles while someone is there: sprite `s`, `rise` (up, swaying), `float` (up and away, like smoke) or `pop` (appears around and fades), one every `every` seconds, from `dx`, `dy` px off the anchor (`dx` mirrored with the character). |
+
+At most 96 sprites, 32 spots, 64 props and 16 drifts; numbers are clamped to their range, and a name that is not a sprite is left out
+(and so is a prop or a drift without one). A theme that extends another keeps its world unless it has its own `"world"` (`null` takes it
+away). `tools/clawd-world.js` draws the Claude theme's backdrop and sprite sheet from code and writes its `"world"` from the same layout,
+so the spots always line up with the picture: a way to make one.
+
 ### A terminal, or any screen of text
 
 Tiles can be lines of text instead of icons: `tile.style` `text` shows only each app's name, with no background, the focused line in
@@ -335,13 +397,14 @@ Beyond the focus animations, a theme can set the screen in motion, always with t
   derezz and their walls fade.
 - `effects.scene` `lightcity` adds the rest of a world of light: Recognizers (the big ships) drifting across the sky, the portal beam
   at `effects.beamX` pulsing up from the horizon, light raining down and pulses of light sweeping the floor to the horizon.
-- A mascot (above) walks about; `shelf.cursor` blinks after the app's name.
+- A mascot (above) walks about, and a world (above) goes on behind Home; `shelf.cursor` blinks after the app's name.
 
 `effects.speed` 0 stops all of it.
 
 A theme file holds values only. The service checks every value against the table and clamps numbers to their range; there is no CSS
-and no script, and a wallpaper or a mascot is accepted only as a plain file name from the theme's folder that is also a real image of the
-right type. Anything else is ignored. The launcher draws the wallpaper once and nothing blurs or filters it, because the TV's GPU is weak.
+and no script, and a wallpaper, a mascot or a world's sprite sheet is accepted only as a plain file name from the theme's folder that is
+also a real image of the right type. Anything else is ignored. The launcher draws the wallpaper once and nothing blurs or filters it,
+because the TV's GPU is weak.
 
 From a shell on the TV:
 

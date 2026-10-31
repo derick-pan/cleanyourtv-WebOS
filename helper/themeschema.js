@@ -10,6 +10,7 @@ const DEFAULT_ID = 'classic',
   MAX_WALLPAPER = 1.5 * 1024 * 1024,
   MAX_FONT = 400 * 1024,
   MAX_MASCOT = 256 * 1024,
+  MAX_WORLD = 256 * 1024,
   MAX_PREVIEW = 600 * 1024,
   MAX_THEME = 32 * 1024,
   MAX_INDEX = 128 * 1024;
@@ -418,6 +419,21 @@ function normalize(raw, id, base, wallDir) {
   } else if (m === '') v['mascot.file'] = '';
   // slots for cards: a list in the theme (not in SCHEMA, which holds single values); a theme without "slots" keeps its base's
   if (raw.slots !== undefined) v.slots = slots(raw.slots);
+  // a world: its sprite sheet is kept with the id of the theme whose folder holds it, like a mascot; a theme without "world" keeps its
+  // base's, and one whose sheet is missing or not an image has none
+  if (raw.world !== undefined) {
+    const wo = world(raw.world);
+    v.world = null;
+    v.worldTheme = '';
+    if (wo && FILE.test(wo.file)) {
+      try {
+        if (imageOk(fs.readFileSync(path.join(wallDir || path.join(dir(), id), wo.file)), wo.file, MAX_WORLD)) {
+          v.world = wo;
+          v.worldTheme = id;
+        }
+      } catch (_) {}
+    }
+  }
   return {
     id,
     name: String(raw.name || id).slice(0, 40),
@@ -454,6 +470,119 @@ function slots(list) {
     });
   }
   return out;
+}
+
+// A world: a little place going on behind Home (app/src/js/world.js), drawn from a sprite sheet in the theme's folder. "world" is an
+// object in the theme (not in SCHEMA, which holds single values):
+//   {file, px, sprites: {name: [x, y, w, h, frames, ax, ay]}, crew: {count, speed, stand, walk, climb, wave, lane: [y, x0, x1]},
+//    spots: [{x, y, act, fps, face, time: [min, max], n, gap, via: [x, y], inside, back, w, fx}],
+//    props: [{s, x, y, fps, pulse, bob, front, rest, fx}], drift: [{s, y, speed, dir, fps, bob}]}
+// with fx {s, kind: rise|float|pop, every, dx, dy}. A sprite is a strip of `frames` frames of w x h art pixels side by side in the sheet,
+// (ax, ay) the point of a frame that stands on a place, in it or below it (default: the middle of its bottom edge); px is how many screen
+// pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers are clamped, a name that is not a sprite is dropped (a prop or a drift without
+// one is left out) and the lists are cut to their limits, so a world can only arrange its own pictures.
+const SPRITE = /^[a-z][a-z0-9-]{0,23}$/,
+  MAX_SPRITES = 96,
+  MAX_SPOTS = 32,
+  MAX_PROPS = 64,
+  MAX_DRIFT = 16,
+  FX_KINDS = ['rise', 'float', 'pop'];
+function world(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const int = (n, lo, hi, d) => (typeof n === 'number' && isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n))) : d);
+  const num = (n, lo, hi, d) => (typeof n === 'number' && isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d);
+  const obj = x => (x && typeof x === 'object' && !Array.isArray(x) ? x : null);
+  const list = (l, max) => (Array.isArray(l) ? l.slice(0, max).filter(obj) : []);
+  const sprites = {};
+  const so = obj(o.sprites) || {};
+  for (const k of Object.keys(so).slice(0, MAX_SPRITES)) {
+    const r = so[k];
+    if (!SPRITE.test(k) || !Array.isArray(r) || r.length < 4) continue;
+    const w = int(r[2], 1, 512, 1),
+      h = int(r[3], 1, 512, 1);
+    sprites[k] = [
+      int(r[0], 0, 4096, 0),
+      int(r[1], 0, 4096, 0),
+      w,
+      h,
+      int(r[4], 1, 32, 1),
+      int(r[5], 0, w, Math.floor(w / 2)),
+      int(r[6], 0, 512, h),
+    ];
+  }
+  const sp = n => (typeof n === 'string' && Object.prototype.hasOwnProperty.call(sprites, n) ? n : '');
+  const X = n => int(n, -400, 2320, 960),
+    Y = n => int(n, -200, 1280, 900);
+  const fx = f => {
+    const s = f && obj(f) ? sp(f.s) : '';
+    if (!s) return null;
+    return {
+      s,
+      kind: FX_KINDS.indexOf(f.kind) >= 0 ? f.kind : 'rise',
+      every: num(f.every, 0.2, 60, 2),
+      dx: int(f.dx, -400, 400, 0),
+      dy: int(f.dy, -400, 400, 0),
+    };
+  };
+  const c = obj(o.crew) || {},
+    stand = sp(c.stand);
+  const crew = {
+    count: stand ? int(c.count, 0, 12, 0) : 0,
+    speed: num(c.speed, 10, 400, 60),
+    stand,
+    walk: sp(c.walk) || stand,
+    climb: sp(c.climb),
+    wave: sp(c.wave),
+    // a street they keep to between spots: [y, from x, to x]; without one they walk straight across
+    lane:
+      Array.isArray(c.lane) && c.lane.length === 3
+        ? [Y(c.lane[0]), Math.min(X(c.lane[1]), X(c.lane[2])), Math.max(X(c.lane[1]), X(c.lane[2]))]
+        : null,
+  };
+  const spots = list(o.spots, MAX_SPOTS).map(e => {
+    const t = Array.isArray(e.time) ? e.time : [],
+      a = num(t[0], 1, 600, 6),
+      b = num(t[1], 1, 600, Math.max(a, 14));
+    return {
+      x: X(e.x),
+      y: Y(e.y),
+      act: sp(e.act),
+      fps: num(e.fps, 0.2, 30, 6),
+      face: e.face === -1 || e.face === 1 ? e.face : 0,
+      time: [Math.min(a, b), Math.max(a, b)],
+      n: int(e.n, 1, 4, 1),
+      gap: int(e.gap, 0, 600, 0),
+      via: Array.isArray(e.via) && e.via.length === 2 ? [X(e.via[0]), Y(e.via[1])] : null,
+      inside: e.inside === true,
+      back: sp(e.back),
+      w: num(e.w, 0, 10, 1),
+      fx: fx(e.fx),
+    };
+  });
+  const props = list(o.props, MAX_PROPS)
+    .map(e => ({
+      s: sp(e.s),
+      x: X(e.x),
+      y: Y(e.y),
+      fps: num(e.fps, 0.2, 30, 6),
+      pulse: num(e.pulse, 0, 60, 0),
+      bob: int(e.bob, 0, 8, 0),
+      front: e.front === true,
+      rest: num(e.rest, 0, 600, 0),
+      fx: fx(e.fx),
+    }))
+    .filter(p => p.s);
+  const drift = list(o.drift, MAX_DRIFT)
+    .map(e => ({
+      s: sp(e.s),
+      y: Y(e.y),
+      speed: num(e.speed, 1, 600, 20),
+      dir: e.dir === -1 ? -1 : 1,
+      fps: num(e.fps, 0.2, 30, 6),
+      bob: int(e.bob, 0, 8, 0),
+    }))
+    .filter(d => d.s);
+  return { file: typeof o.file === 'string' ? o.file : '', px: int(o.px, 1, 12, 4), sprites, crew, spots, props, drift };
 }
 
 // What the launcher applies: CSS variables, attributes for the few layouts that need more than a variable, and the numbers its scrolling needs.
@@ -662,6 +791,8 @@ function resolve(t, accent) {
       flip: v['mascot.flip'],
       pixel: v['mascot.pixel'],
     };
+  // only a theme with a world has this key (the same reason); the launcher runs it (app/src/js/world.js)
+  if (v.world && v.world.file) out.world = Object.assign({ id: v.worldTheme || t.id }, v.world);
   return out;
 }
 
@@ -679,6 +810,7 @@ module.exports = {
   MAX_PREVIEW,
   MAX_THEME,
   MAX_WALLPAPER,
+  MAX_WORLD,
   POS,
   PREVIEW_PATH,
   SCHEMA,
@@ -702,4 +834,5 @@ module.exports = {
   slots,
   sniff,
   toHex,
+  world,
 };

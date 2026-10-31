@@ -15,6 +15,7 @@ without a release.
 | `<id>/<wallpaper>` | The wallpaper, if the theme uses one. |
 | `<id>/<typeface>` | A typeface (`type.fontFile`), if the theme uses one, with its licence file. |
 | `<id>/<mascot>` | The mascot's picture (`mascot.file`), if the theme has one: a strip of frames that the launcher walks along the bottom. |
+| `<id>/<sprite sheet>` | A world's sprite sheet (`world.file`), if the theme has a world: every frame of its characters, props and particles. |
 
 Every setting, with its range and default, is in the [Themes page of the documentation](https://lasharor.github.io/cleanyourtv-WebOS/themes/).
 
@@ -161,13 +162,26 @@ Folder: [`the-grid/`](the-grid/)
 
 ### Claude
 
-A warm, playful home: cream text and a terracotta accent on dark cocoa, a greeting over the clock, the focused app's name big in the
-middle of the screen, a round dock low on the screen and the app grid as an overlay on Down. Three little pixel Claudes, the theme's
-mascots (`mascot.*` in `theme.json`), walk the floor at the bottom, each a little smaller than the last: they rest, nap (with z's),
-wave, think (a slow sway and a breath, like the thinking spinner), hop, spin until dizzy, dash, dance, wiggle, peek in from the edges
-and hop whenever the focus moves. The character is an original pixel figure in the manner of the little crab in Claude Code's terminal,
-drawn pixel by pixel for this theme (`claude-pixel.png`, 24 x 24 pixels a frame, scaled without smoothing: standing, a four-step walk,
-then waving, happy, sleepy, surprised, dizzy and thinking); the wallpaper was drawn for it too.
+Clawd World: a pixel village at dusk where the little Clawds of Claude Code live, going on under the apps (a world, `world` in
+`theme.json`; see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting, the clock and the
+buttons sit in a night sky with a crescent moon, the focused app's name is big above a row of six apps, and the sun is going down
+behind the hills. Eight Clawds walk the village street from spot to spot and get on with things: hammering at the anvil of the Code
+Forge (`</>` over its door), swinging a pickaxe at the Token Mine or going into it past a cart heaped with glowing tokens, typing at a
+laptop and reading in their cutaway house, playing a game in front of the TV two at a time, napping upstairs (with z's), casting spells
+from the wizard's tower in a pointed hat, brewing potions in goggles at the lab door, fishing off the pier, conducting a choir of little
+ones on the stage, dancing in the meadow with hearts between them, roasting marshmallows by the campfire, watering the flowers, and
+burrowing into the sand to pop up again later (after Clawd Tank), or wandering off the edge of the world and back. They climb the
+ladders to the rooms upstairs and to the tower's balcony, hop when you move the focus and wave when you come back to Home. Around them
+the fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, fireflies blink, stars
+twinkle, clouds, birds and a balloon drift past behind the roofs, and now and then a star shoots across the sky. Down opens all the apps
+over the village, which stands still under them.
+
+It is inspired by the Clawd projects people have made (Clawd Tank's aquarium, the house of clawd-sidekick, the meadow of claude-clawd,
+ClaudeVille's Code Forge, Token Mine and Research Lab, the states that Clawd Tank shows: reading, typing, building, the wizard and the
+conductor) but takes no code or art from them. Everything was drawn for this theme pixel by pixel by `tools/clawd-world.js`, which
+writes `world.png` (the backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet) and the `"world"` of `theme.json`
+from the same layout. The character is Clawd, the mascot in Claude Code's terminal (a block with two eyes, little arms and four legs;
+Anthropic's character), redrawn in pixels for this theme.
 
 [![Claude](claude/preview.jpg)](claude/preview.jpg)
 

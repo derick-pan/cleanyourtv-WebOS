@@ -10,8 +10,9 @@
 # CleanYourTV for LG webOS
 
 > This is derick-pan's fork of [lasharor/cleanyourtv-WebOS](https://github.com/lasharor/cleanyourtv-WebOS) with four more themes
-> (Cupertino, The Grid, Claude and Terminal) and the launcher features they need: walking mascots, a drifting wallpaper, light
-> cycles, a glass clock and text-mode tiles. Its releases and themes come from this repository; everything else is the original.
+> (Cupertino, The Grid, Claude and Terminal) and the launcher features they need: walking mascots, a living pixel world (Clawd World),
+> a drifting wallpaper, light cycles, a glass clock and text-mode tiles. Its releases and themes come from this repository; everything
+> else is the original.
 
 A fast home screen for rooted LG webOS TVs, with Live TV from your own playlist, an Inputs list on the Input key,
 picture notifications, optional on-device voice recognition and an optional debloat of LG's ads and telemetry.

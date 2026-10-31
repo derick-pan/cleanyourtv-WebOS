@@ -245,6 +245,95 @@ body {
     opacity: 0;
   }
 }
+/* the world (world in a theme; app/src/js/world.js): pieces of a sprite sheet scaled up without smoothing, each a clip of one frame
+   holding the strip of its frames; moved and stepped with transforms only, the crew fade with opacity. Under the dock and the grid. */
+#world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wo,
+.wo-d,
+.wo-b,
+.wo-c,
+.wo-s {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.wo-m,
+.wo-d {
+  will-change: transform;
+}
+.wo-b {
+  transition: opacity calc(0.4s * var(--spd)) steps(4);
+}
+.wo-b.wo-g {
+  opacity: 0;
+}
+.wo-c {
+  overflow: hidden;
+}
+.wo-s {
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.wo-f {
+  z-index: 950;
+}
+/* under the open grid the world stands still: nothing to draw while the dark layer covers it */
+.grid-open #world * {
+  animation-play-state: paused;
+}
+@keyframes wo-run {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes wo-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes wo-pop {
+  0% {
+    opacity: 0;
+  }
+  15%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* across the screen in the first 60 % of the time, out of sight for the rest */
+@keyframes wo-dr {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(1920px);
+  }
+}
+@keyframes wo-dl {
+  0% {
+    transform: translateX(1920px);
+  }
+  60%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
 ::selection {
   background: rgba(255, 255, 255, 0.25);
 }

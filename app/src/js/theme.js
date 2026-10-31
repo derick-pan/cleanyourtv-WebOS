@@ -30,6 +30,7 @@ function applyTheme(t) {
     TH = TH0;
     MASCOT.apply(null, 1);
     SCENE.apply(null, 1);
+    WORLD.apply(null, 1);
     $('wall').classList.remove('drift');
     return;
   }
@@ -64,10 +65,11 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
-  /* a theme's mascot (mascot.js) and light cycles (scene.js): still when the theme's animations are off; the wallpaper drifts
-     (effects.drift) on its own layer */
+  /* a theme's mascot (mascot.js), light cycles (scene.js) and world (world.js): still when the theme's animations are off; the
+     wallpaper drifts (effects.drift) on its own layer */
   MASCOT.apply(t.mascot || null, +t.vars['--spd'] || 0);
   SCENE.apply(t.cycles || null, +t.vars['--spd'] || 0);
+  WORLD.apply(t.world || null, +t.vars['--spd'] || 0);
   $('wall').classList.toggle('drift', +t.vars['--drift'] > 0);
   /* a line above the clock (clock.prefix), like the command that printed the time */
   $('cpre').textContent = t.clockPrefix || '';
@@ -105,6 +107,7 @@ function setFocus(nr, nc, first) {
   else {
     glowSoon(e);
     MASCOT.poke();
+    WORLD.poke();
   }
   var sh = 0;
   if (TH.push) {
