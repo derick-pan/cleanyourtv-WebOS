@@ -78,6 +78,30 @@ const HATS = {
   },
   builder: { top: -3, rows: ['.....hhhhhh.....', '....hhhhhhhh....', '..dddddddddddd..'], key: { h: C.hat, d: C.hatDark } },
   explorer: { top: -3, rows: ['.....bbbbbb.....', '.....nnnnnn.....', '..bbbbbbbbbbbb..'], key: { b: C.beige, n: C.wood } },
+  // the holidays': a pilgrim's hat (Thanksgiving), a red cap trimmed in gold (the Lunar New Year), bunny ears (Easter)
+  pilgrim: {
+    top: -6,
+    rows: ['.....kkkkkk.....', '.....kkkkkk.....', '.....kkkkkk.....', '.....nyyyyn.....', '.....kkkkkk.....', '..kkkkkkkkkkkk..'],
+    key: { k: '#24232b', n: '#3a3f47', y: C.gold },
+  },
+  lunar: {
+    top: -5,
+    rows: ['.......rr.......', '......yyyy......', '....rrrrrrrr....', '...rrryyyyrrr...', '...yyyyyyyyyy...'],
+    key: { r: '#d8312f', y: C.gold },
+  },
+  bunny: {
+    top: -7,
+    rows: [
+      '....www..www....',
+      '....wpw..wpw....',
+      '....wpw..wpw....',
+      '....wpw..wpw....',
+      '....www..www....',
+      '.....w....w.....',
+      '...wwwwwwwwww...',
+    ],
+    key: { w: '#f6f1ea', p: '#f4a7bb' },
+  },
   headphones: {
     top: -2,
     rows: ['...dddddddddd...', '..d..........d..', '................', '.rr..........rr.', '.rr..........rr.'],

@@ -18,7 +18,7 @@ const G = {
   lane: 181 /* where the crew walk along the street */,
   upper: 147 /* the house's upper floor */,
   sun: [344, 121],
-  moon: [168, 22],
+  moon: [132, 22],
   mine: 17,
   forge: [76, 126],
   anvil: 117 /* the left end of the anvil's top */,

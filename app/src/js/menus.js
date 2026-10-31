@@ -824,6 +824,20 @@ function accentMenu() {
     openBuilt(t('Accent colour'), build, at);
   });
 }
+/* the shows of the theme's world (the Shows button): one starts at once and has the screen while it lasts, as with its coloured key */
+function showsMenu() {
+  openMenu(
+    t('Shows'),
+    WORLD.shows().map(function (x) {
+      return {
+        label: x.title,
+        fn: function () {
+          showFor(WORLD.play(x.i));
+        },
+      };
+    })
+  );
+}
 function addButtonMenu() {
   var add = function (b) {
     cfg.topbar = topbar().concat([b]);

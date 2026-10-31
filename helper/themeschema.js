@@ -476,16 +476,17 @@ function slots(list) {
 // object in the theme (not in SCHEMA, which holds single values):
 //   {file, px, watch, sprites: {name: [x, y, w, h, frames, ax, ay, looks]},
 //    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act},
-//           hats: [{look, when}], members: [{name, likes: [tags]}], hello: [names]},
+//           hats: [{look or looks: [looks], when}], members: [{name, likes: [tags]}], hello: [names]},
 //    spots: [{x, y, act, acts: [names], fps, face, time: [min, max], n, gap, path: [[x, y, climb]], via: [x, y], inside, back, carry,
 //             w, fx, say, show: [props], group, tag, when}],
 //    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, fade, pan: [px, seconds], gust, play: {s, every, fps}, phase}],
-//    drift: [{s, y, speed, dir, fps, bob, when, fade}],
+//    drift: [{s, y, speed, dir, fps, bob, when, fade, perch: {x, y, s, fps, time: [min, max], fx}}],
 //    herds: [{count, area: [x0, y0, x1, y1], stand, walk, acts: [names], speed, fx, when}],
-//    events: [{every: [min, max], time: [min, max], chance, call, spot, props, drift, when, then, key}], shade: [{color, alpha, when}],
+//    events: [{every: [min, max], time: [min, max], chance, call, spot, props, drift, when, then, key, title}],
+//    shade: [{color, alpha, when}],
 //    weather: [{name, w, when}], wind: [{every: [min, max], speed, dir, fps, fx, when}] (or one)}
 // with fx {s, kind: rise|float|pop|fall|blow, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD'],
-// w: [weathers]}. A sprite
+// w: [weathers], near: [feast, from, to]}. A sprite
 // is a strip of `frames` frames of w x h art pixels side by side in the sheet, (ax, ay) the point of a frame that stands on a place, in
 // it or below it (default: the middle of its bottom edge); `looks` strips of the same size may follow under it, one per look of the
 // crew (a cap of another colour). px is how many screen pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers
@@ -501,6 +502,8 @@ const SPRITE = /^[a-z][a-z0-9-]{0,23}$/,
   NAME = /^[a-z][a-z0-9-]{0,15}$/,
   KEYS = ['red', 'green', 'yellow', 'blue'],
   PHASES = ['moon', 'month', 'week'],
+  // the feasts that move from year to year, for when.near
+  FEASTS = ['lunar', 'easter', 'midautumn', 'thanksgiving'],
   FX_KINDS = ['rise', 'float', 'pop', 'fall', 'blow'];
 function world(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
@@ -556,14 +559,20 @@ function world(o) {
   const md = v => (typeof v === 'string' && /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v) ? +v.slice(0, 2) * 100 + +v.slice(3) : 0);
   // names (of a weather, a group, a tag): lower-case letters, digits and -
   const names = (l, max) => (Array.isArray(l) ? l.slice(0, max).filter(x => typeof x === 'string' && NAME.test(x)) : []);
-  // ... and/or in some weathers of the day (w: names from `weather`)
+  // ... and/or in some weathers of the day (w: names from `weather`), and/or some days from a feast that moves from year to year (near:
+  // [feast, from, to], days before it negative: the Lunar New Year, Easter, the Mid-Autumn Festival, Thanksgiving)
   const when = v => {
     const w = obj(v);
     if (!w) return null;
     const h = Array.isArray(w.h) && w.h.length === 2 ? [int(w.h[0], 0, 24, 0), int(w.h[1], 0, 24, 24)] : null,
       d = Array.isArray(w.d) && w.d.length === 2 && md(w.d[0]) && md(w.d[1]) ? [md(w.d[0]), md(w.d[1])] : null,
-      ws = names(w.w, 8);
-    return h || d || ws.length ? { h, d, w: ws.length ? ws : null } : null;
+      ws = names(w.w, 8),
+      n = w.near,
+      near =
+        Array.isArray(n) && n.length === 3 && FEASTS.indexOf(n[0]) >= 0
+          ? [n[0], int(n[1], -60, 60, 0), Math.max(int(n[1], -60, 60, 0), int(n[2], -60, 60, 0))]
+          : null;
+    return h || d || ws.length || near ? { h, d, w: ws.length ? ws : null, near } : null;
   };
   const c = obj(o.crew) || {},
     stand = sp(c.stand),
@@ -588,7 +597,10 @@ function world(o) {
     // now and then two of them meet on the street and talk (bubbles in turn), then do `act` together
     chat: ch && sps(ch.say, 12).length ? { every: range(ch.every, 3, 3600, 20, 60), say: sps(ch.say, 12), act: sp(ch.act) } : null,
     // looks worn by everyone on some days (a hat for a holiday: a strip of each sprite, like a look), the first that fits
-    hats: list(c.hats, 6).map(e => ({ look: int(e.look, 1, 15, 1), when: when(e.when) })),
+    hats: list(c.hats, 12).map(e => ({
+      looks: (Array.isArray(e.looks) && e.looks.length ? e.looks.slice(0, 4) : [e.look]).map(x => int(x, 1, 15, 1)),
+      when: when(e.when),
+    })),
     // who they are, one after the other: a name (a sprite, said when two meet) and the tags of the spots they like best
     members: list(c.members, 16).map(e => ({ name: sp(e.name), likes: names(e.likes, 6) })),
     // what they say when they wave hello or goodbye
@@ -662,6 +674,17 @@ function world(o) {
     bob: int(e.bob, 0, 8, 0),
     when: when(e.when),
     fade: num(e.fade, 0, 1800, 20),
+    // an event's visitor can land on its way (a dragon on the rock): at x, y it shows sprite s for time seconds, then flies on
+    perch: obj(e.perch)
+      ? {
+          x: X(e.perch.x),
+          y: Y(e.perch.y),
+          s: sp(e.perch.s) || sp(e.s),
+          fps: num(e.perch.fps, 0.2, 30, 6),
+          time: range(e.perch.time, 1, 120, 6, 10),
+          fx: fx(e.perch.fx),
+        }
+      : null,
   });
   const spots = list(o.spots, MAX_SPOTS).map(spot);
   const props = list(o.props, MAX_PROPS)
@@ -703,8 +726,15 @@ function world(o) {
     chance: num(e.chance, 0, 1, 1),
     // the event (by its place in the list) that follows it when it is over, if that one's hours fit (a rainbow after the rain)
     then: int(e.then, -1, MAX_EVENTS - 1, -1),
-    // a coloured key of the remote that starts it on Home
+    // a coloured key of the remote that starts it on Home, and its name in the Shows menu (a show without a name is only on its key)
     key: KEYS.indexOf(e.key) >= 0 ? e.key : '',
+    title:
+      typeof e.title === 'string'
+        ? e.title
+            .replace(/[\u0000-\u001f\u007f]/g, '')
+            .trim()
+            .slice(0, 24)
+        : '',
   }));
   // a tint over the backdrop at some hours (night): a colour and how strong
   const shade = list(o.shade, 4)
@@ -728,8 +758,8 @@ function world(o) {
   return {
     file: typeof o.file === 'string' ? o.file : '',
     px: int(o.px, 1, 12, 4),
-    // whole minutes on Home without a key before only the world is shown (0: never; at least 1, or Home could not be used)
-    watch: o.watch > 0 ? int(o.watch, 1, 120, 0) : 0,
+    // minutes on Home without a key before only the world is shown (0: never; at least 1, or Home could not be used)
+    watch: o.watch > 0 ? num(o.watch, 1, 120, 0) : 0,
     sprites,
     crew,
     spots,

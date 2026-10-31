@@ -13,6 +13,7 @@ const T = require('./things');
 const WD = require('./wind');
 const L = require('./life');
 const P = require('./place');
+const HO = require('./holidays');
 const OUT = path.join(__dirname, '..', '..', 'themes', 'claude');
 
 // ---- the sheet: every sprite a strip of its frames side by side; a crew sprite has a strip for every look under it ----
@@ -41,7 +42,7 @@ function add(name, frames, o) {
 // a Clawd sprite: every look, frames every `step` ticks, cut to the box all of them use; its anchor is the middle of the feet
 const LOOKS = K.CAPS.slice(0, 6),
   // after the everyday looks, the hats of the holidays (crew.hats): Halloween's, Christmas's, New Year's
-  HATS = ['witch', 'santa', 'party'],
+  HATS = ['witch', 'santa', 'party', 'pilgrim', 'lunar', 'bunny'],
   ALL = LOOKS.concat(HATS);
 function crew(name, step, looks) {
   const all = (looks === false ? [null] : ALL).map(lk => K.strip(name, lk, step));
@@ -186,6 +187,28 @@ add('golden', L.GOLDEN);
 add('comet', L.COMET);
 add('aurora', L.AURORA, { ax: 0, ay: 0 });
 L.MIST.forEach((m, i) => add('mist-' + 'abc'[i], [m]));
+// the holidays (holidays.js), and the dragon on its perch
+add('dragon-perch', HO.DRAGON_PERCH, { ax: 16, ay: 23 });
+add('xlights', HO.XLIGHTS, { ax: 0, ay: 0 });
+add('wreath', HO.WREATH, { ax: 7, ay: 7 });
+add('presents', HO.PRESENTS);
+add('sleigh', HO.SLEIGH);
+add('sleigh-park', HO.SLEIGH_PARK);
+add('ghost', HO.GHOST);
+add('cobweb', HO.COBWEB, { ax: 0, ay: 0 });
+add('cobweb-r', HO.COBWEB_R, { ax: 10, ay: 0 });
+add('turkey', HO.TURKEY);
+add('turkey-walk', HO.TURKEY_WALK);
+add('harvest', HO.HARVEST);
+add('feast', HO.FEAST);
+add('lanterns', HO.LANTERNS, { ax: 0, ay: 0 });
+add('lion', HO.LION);
+add('cracker', HO.CRACKER);
+add('shamrock', HO.SHAMROCK);
+add('gold', HO.GOLD);
+HO.EGGS.forEach((e, i) => add('egg-' + 'abcd'[i], e));
+add('fw-d', T.burst('#E5484D', '#F6EFE4'));
+add('fw-e', T.burst('#4D8DF6', '#F6EFE4'));
 L.ROCKETS.forEach((r, i) => add('rocket-' + 'abc'[i], r));
 // the year and the weather over the land (place.js): snow, the trees of autumn and spring, fog, a rainbow
 const SE = P.SEASONS;
@@ -288,6 +311,20 @@ const WINTER = { d: ['12-01', '02-29'] },
 const DAYTIME = { h: [7, 18] },
   NIGHTTIME = { h: [21, 5] },
   STARRY = { h: [18, 7] };
+// the holidays: Halloween all October; November Thanksgiving and Christmas both; Christmas all December (its lights, fir and wreath
+// from November to Twelfth Night); New Year's Eve and Day; the Lunar New Year (two days before it to the Lantern Festival), Valentine's
+// week, St Patrick's, Easter week, the Fourth of July, the Mid-Autumn Festival
+const HALLOWEEN = { d: ['10-01', '10-31'] },
+  NOVEMBER = { d: ['11-01', '11-30'] },
+  XMAS = { d: ['12-01', '12-31'] },
+  XMAS_DECO = { d: ['11-01', '01-06'] },
+  NEWYEAR = { d: ['12-31', '01-01'] },
+  LUNAR = { near: ['lunar', -2, 15] },
+  VALENTINE = { d: ['02-07', '02-14'] },
+  PATRICK = { d: ['03-14', '03-17'] },
+  EASTER = { near: ['easter', -6, 1] },
+  JULY4 = { d: ['07-01', '07-04'] },
+  MIDAUTUMN = { near: ['midautumn', -2, 1] };
 // a grey day (clouds, rain, snow: the sky veiled, grey clouds) and a fair one (white clouds by day)
 const GREY = ['cloud', 'rain', 'snow'],
   FAIR = { h: [7, 18], w: ['sun', 'cloud', 'wind'] },
@@ -515,13 +552,41 @@ const props = [
   prop('emitter', 85.5, 111, { fx: { s: 'smoke', kind: 'float', every: 1.7, dx: 0, dy: 0 } }),
   prop('emitter', 233.5, 98, { fx: { s: 'smoke', kind: 'float', every: 2.3, dx: 0, dy: 0 } }),
   prop('emitter', 38, 163, { fx: { s: 'sparkle', kind: 'pop', every: 1.8, dx: 0, dy: 0 } }),
-  // the year: Halloween's pumpkins and bats, Christmas's fir and snow, the lanterns of the new year, leaves in autumn, petals in spring
-  prop('pumpkin', G.door - 10, GF, { fps: 3, when: { d: ['10-15', '11-01'] } }),
-  prop('pumpkin', 66, G.stage[2], { fps: 2, when: { d: ['10-15', '11-01'] } }),
-  prop('pumpkin', 300, 205, { fps: 2.5, when: { d: ['10-15', '11-01'] } }),
-  prop('fir', G.door - 12, GF, { fps: 1.5, when: { d: ['12-01', '12-31'] } }),
-  prop('lantern', 150, UF - 25, { fps: 1, bob: 1, when: { d: ['01-20', '02-20'] } }),
-  prop('lantern', 248, UF - 25, { fps: 1, bob: 1, when: { d: ['01-20', '02-20'] } }),
+  // the year: Halloween's pumpkins and cobwebs; Thanksgiving's harvest; Christmas's lights along the eaves, a wreath round the round
+  // window, the fir and presents under it; red lanterns along the eaves at the Lunar New Year and the Mid-Autumn Festival, and
+  // firecrackers; hearts on Valentine's; shamrocks on St Patrick's; painted eggs at Easter; leaves in autumn, petals in spring
+  prop('pumpkin', G.door - 10, GF, { fps: 3, when: HALLOWEEN }),
+  prop('pumpkin', 66, G.stage[2], { fps: 2, when: HALLOWEEN }),
+  prop('pumpkin', 300, 205, { fps: 2.5, when: HALLOWEEN }),
+  prop('cobweb', 141, UF - 22, { when: HALLOWEEN }),
+  prop('cobweb-r', 259, UF - 22, { when: HALLOWEEN }),
+  prop('cobweb', 77, 134, { when: HALLOWEEN }),
+  prop('harvest', 138, 206, { when: NOVEMBER }),
+  prop('xlights', 133, 123, { fps: 1.2, when: XMAS_DECO }),
+  prop('wreath', 200, 112, { when: XMAS_DECO }),
+  prop('fir', G.door - 12, GF, { fps: 1.5, when: XMAS_DECO }),
+  prop('presents', G.door - 12, GF, { when: XMAS }),
+  prop('lanterns', 133, 123, { fps: 0.8, when: LUNAR }),
+  prop('lanterns', 133, 123, { fps: 0.8, when: MIDAUTUMN }),
+  ...[150, 250].map(x => prop('emitter', x, 166, { fx: { s: 'cracker', kind: 'pop', every: 2.2, dx: 0, dy: 0 }, when: LUNAR })),
+  ...[170, 232, 300].map(x => prop('emitter', x, 150, { fx: { s: 'heart', kind: 'rise', every: 2.5, dx: 0, dy: 0 }, when: VALENTINE })),
+  ...[
+    [104, 210],
+    [160, 202],
+    [226, 211],
+    [262, 204],
+    [318, 210],
+  ].map(([x, y]) => prop('shamrock', x, y, { when: PATRICK })),
+  ...[
+    [96, 209, 'a'],
+    [128, 203, 'b'],
+    [168, 212, 'c'],
+    [205, 201, 'd'],
+    [236, 210, 'a'],
+    [276, 203, 'c'],
+    [300, 212, 'b'],
+    [320, 202, 'd'],
+  ].map(([x, y, k]) => prop('egg-' + k, x, y, { when: EASTER })),
   ...[30, 110, 190, 270, 350].map(x =>
     prop('emitter', x, 112, { fx: { s: 'flake', kind: 'fall', every: 1.6, dx: 0, dy: 0 }, when: { w: ['snow'] } })
   ),
@@ -551,8 +616,11 @@ const drift = [
   { s: 'cloud-gc', y: S(92), speed: 4, dir: 1, when: { h: [6, 20], w: GREY }, fade: 300 },
   { s: 'bird', y: S(99), speed: 38, dir: -1, fps: 5, bob: 1, when: DAY },
   { s: 'bird', y: S(104), speed: 33, dir: 1, fps: 6, bob: 1, when: DAY },
-  { s: 'bat', y: S(100), speed: 40, dir: 1, fps: 6, bob: 2, when: { h: [18, 6], d: ['10-15', '11-01'] } },
-  { s: 'bat', y: S(106), speed: 34, dir: -1, fps: 7, bob: 2, when: { h: [18, 6], d: ['10-15', '11-01'] } },
+  { s: 'bat', y: S(100), speed: 40, dir: 1, fps: 6, bob: 2, when: { h: [18, 6], d: HALLOWEEN.d } },
+  { s: 'bat', y: S(106), speed: 34, dir: -1, fps: 7, bob: 2, when: { h: [18, 6], d: HALLOWEEN.d } },
+  // Halloween's ghosts, floating by at night
+  { s: 'ghost', y: S(140), speed: 14, dir: 1, fps: 3, bob: 3, when: { h: [19, 6], d: HALLOWEEN.d } },
+  { s: 'ghost', y: S(160), speed: 11, dir: -1, fps: 3, bob: 3, when: { h: [19, 6], d: HALLOWEEN.d } },
 ];
 // the meadow's little ones (claude-clawd's subagents) and the pals (clawd-sidekick's), wandering about
 const herds = [
@@ -570,6 +638,8 @@ const herds = [
   { count: 1, area: [S(96), S(178), S(306), S(185)], stand: 'owl', walk: 'owl-walk', speed: 18, when: NIGHT },
   // two ducks paddling about the pond, diving now and then
   { count: 2, area: [S(336), S(192), S(378), S(212)], stand: 'duck', walk: 'duck-swim', acts: ['duck-dive'], speed: 10 },
+  // a turkey strutting about the meadow in November
+  { count: 1, area: [S(150), S(200), S(230), S(212)], stand: 'turkey', walk: 'turkey-walk', speed: 16, when: NOVEMBER },
 ];
 // what happens now and then
 const MEADOW = [190, 205];
@@ -606,20 +676,20 @@ const events = [
       show: [prop('volley', MEADOW[0], MEADOW[1])],
     }),
   },
-  // lunch on a picnic cloth at noon, tea at three (clawd-sidekick's crew keeps those hours)
+  // lunch on a picnic cloth, tea for two (any time of the day: a world of its own keeps its own hours)
   {
-    every: [30, 90],
+    every: [1200, 3600],
     time: [90, 180],
     call: 3,
-    when: { h: [12, 14] },
+    when: { h: [9, 20] },
     props: [prop('picnic', 182, 210)],
     spot: spot(182, 209, { n: 3, gap: S(21), act: 'eat', fps: 4, time: [600, 600] }),
   },
   {
-    every: [30, 90],
+    every: [1200, 3600],
     time: [60, 120],
     call: 2,
-    when: { h: [15, 17] },
+    when: { h: [9, 22] },
     props: [prop('tea', 182, 207)],
     spot: spot(182, 207, { n: 2, gap: S(22), act: 'sip', fps: 4, time: [600, 600] }),
   },
@@ -647,13 +717,14 @@ const events = [
   },
   // a shower: rain clouds, rain, and everyone runs inside (often on a day of rain, and on any day by the green key); after it, by
   // day, a rainbow
-  SHOWER({ every: [90, 300], when: { w: ['rain'] }, key: 'green' }),
+  SHOWER({ every: [90, 300], when: { w: ['rain'] }, key: 'green', title: 'Rain shower' }),
   // a flying saucer at night, and a crowd pointing at it
   {
     every: [900, 2400],
     time: [24, 36],
     call: 3,
     when: { h: [21, 5] },
+    title: 'Flying saucer',
     drift: [{ s: 'ufo', y: S(100), speed: 70, dir: 1, fps: 2 }],
     spot: spot(200, 205, { n: 3, gap: S(20), acts: ['wait', 'panic', 'ask'], fps: 8, time: [600, 600] }),
   },
@@ -676,12 +747,12 @@ const events = [
     props: [prop('emitter', 246, GF - 18, { fx: { s: 'smoke', kind: 'float', every: 0.6, dx: 0, dy: 0 } })],
     spot: spot(238, GF, { n: 2, gap: S(14), acts: ['panic', 'debug'], fps: 8, path: DOOR, time: [600, 600] }),
   },
-  // ---- the day's routine: stretches and coffee in the meadow at seven, the campfire at eight in the evening, songs and stories ----
+  // ---- their routine, at any hour: stretches and coffee in the meadow, marshmallows round the campfire, songs and stories ----
   {
-    every: [60, 600],
-    time: [300, 600],
+    every: [1200, 3600],
+    time: [120, 240],
     call: 6,
-    when: { h: [7, 8] },
+    when: { h: [6, 23] },
     spot: spot(MEADOW[0], MEADOW[1], {
       n: 6,
       gap: S(16),
@@ -692,10 +763,9 @@ const events = [
     }),
   },
   {
-    every: [60, 600],
-    time: [600, 900],
+    every: [1200, 3600],
+    time: [240, 420],
     call: 6,
-    when: { h: [20, 21] },
     spot: spot(G.fire[0], G.fire[1] - 1, {
       n: 6,
       gap: S(12),
@@ -709,18 +779,38 @@ const events = [
   {
     every: [900, 2400],
     chance: 0.15,
-    time: [44, 50],
+    time: [46, 54],
     call: 3,
-    when: { h: [18, 21] },
-    drift: [{ s: 'dragon', y: S(109), speed: 60, dir: -1, fps: 6, bob: 2 }],
-    spot: spot(200, 205, { n: 3, gap: S(20), acts: ['wait', 'panic', 'love'], fps: 8, time: [600, 600] }),
+    title: 'Dragon',
+    when: { h: [7, 23] },
+    drift: [
+      {
+        s: 'dragon',
+        y: S(106),
+        speed: 80,
+        dir: -1,
+        fps: 6,
+        bob: 2,
+        // it lands on top of the mine's rock, sits, looks about, roars a jet of flame, stretches, and flies off
+        perch: {
+          x: S(24),
+          y: S(111),
+          s: 'dragon-perch',
+          fps: 5,
+          time: [9, 12],
+          fx: { s: 'ember', kind: 'rise', every: 1.4, dx: S(20), dy: -S(19) },
+        },
+      },
+    ],
+    spot: spot(95, 208, { n: 3, gap: S(16), acts: ['wait', 'panic', 'love'], fps: 8, time: [600, 600] }),
   },
   {
     every: [1200, 3600],
     chance: 0.25,
     time: [40, 46],
     call: 4,
-    when: { h: [9, 17] },
+    when: { h: [7, 21] },
+    title: 'Golden Clawd',
     drift: [{ s: 'golden', y: S(G.lane), speed: 150, dir: 1, fps: 10 }],
     spot: spot(160, 191, { n: 4, gap: S(16), acts: ['cheer', 'love', 'clap', 'cheer'], fps: 8, time: [600, 600] }),
   },
@@ -743,6 +833,7 @@ const events = [
     chance: 0.3,
     time: [110, 120],
     when: { h: [9, 17], w: ['sun'] },
+    title: 'Balloon festival',
     drift: [
       { s: 'balloon', y: S(100), speed: 22, dir: 1, bob: 2 },
       { s: 'balloon-b', y: S(108), speed: 26, dir: 1, bob: 2 },
@@ -750,12 +841,120 @@ const events = [
       { s: 'balloon-b', y: S(104), speed: 30, dir: 1, bob: 1 },
     ],
   },
+  // ---- the holidays' ----
+  // Christmas nights: Santa's sleigh comes by, lands on the roof a moment (Santa waves) and flies on
+  {
+    every: [1200, 3600],
+    time: [36, 46],
+    call: 4,
+    when: { h: [18, 6], d: XMAS.d },
+    drift: [
+      {
+        s: 'sleigh',
+        y: S(104),
+        speed: 110,
+        dir: 1,
+        fps: 6,
+        bob: 1,
+        perch: { x: S(240), y: S(115), s: 'sleigh-park', fps: 2, time: [7, 10] },
+      },
+    ],
+    spot: spot(MEADOW[0], MEADOW[1], { n: 4, gap: S(18), acts: ['love', 'cheer', 'love', 'clap'], fps: 8, time: [600, 600] }),
+  },
+  // Thanksgiving: the feast at the long table in the meadow, everyone round it (November)
+  {
+    every: [1200, 3600],
+    time: [120, 200],
+    call: 6,
+    when: { h: [9, 22], d: NOVEMBER.d },
+    props: [prop('feast', 190, 214, { fps: 1.5, front: true })],
+    spot: spot(190, 206, { n: 6, gap: S(9), act: 'eat', fps: 4, time: [600, 600], say: say(['heart', 'star'], 6) }),
+  },
+  // New Year's Eve: rockets at midnight and the crowd counting down
+  {
+    every: [120, 300],
+    time: [60, 90],
+    call: 6,
+    when: { h: [22, 2], d: NEWYEAR.d },
+    props: [
+      [60, 106, 'a', 2.2],
+      [150, 112, 'b', 2.6],
+      [250, 108, 'c', 2.4],
+      [350, 118, 'a', 2.8],
+    ].map(([x, y, k, rest]) => prop('rocket-' + k, x, y, { fps: 12, rest, fade: 0 })),
+    spot: spot(MEADOW[0], MEADOW[1], {
+      n: 6,
+      gap: S(16),
+      acts: ['cheer', 'love', 'clap', 'cheer', 'love', 'clap'],
+      fps: 8,
+      time: [600, 600],
+    }),
+  },
+  // the Lunar New Year: a lion dances down the street to drums, firecrackers pop
+  {
+    every: [900, 2400],
+    time: [70, 90],
+    call: 5,
+    when: { h: [8, 22], near: LUNAR.near },
+    drift: [{ s: 'lion', y: S(185), speed: 26, dir: 1, fps: 6 }],
+    props: [120, 170, 220, 270].map(x => prop('emitter', x, 168, { fx: { s: 'cracker', kind: 'pop', every: 0.5, dx: 0, dy: 0 } })),
+    spot: spot(170, 207, { n: 5, gap: S(14), acts: ['cheer', 'clap', 'cheer', 'clap', 'cheer'], fps: 8, time: [600, 600] }),
+  },
+  // St Patrick's Day: a rainbow with a pot of gold at its end
+  {
+    every: [900, 2400],
+    time: [60, 90],
+    call: 3,
+    when: { h: [8, 18], d: PATRICK.d },
+    props: [prop('rainbow', SE.rainbow.x, SE.rainbow.y, { under: true, fade: 6 }), prop('gold', 323, 152, { fps: 1.5 })],
+    spot: spot(300, 207, { n: 3, gap: S(16), acts: ['cheer', 'love', 'cheer'], fps: 8, time: [600, 600] }),
+  },
+  // Easter: an egg hunt in the meadow
+  {
+    every: [900, 2400],
+    time: [60, 120],
+    call: 4,
+    when: { h: [8, 19], near: EASTER.near },
+    spot: spot(MEADOW[0], 208, {
+      n: 4,
+      gap: S(34),
+      acts: ['cheer', 'love', 'clap', 'cheer'],
+      fps: 8,
+      time: [600, 600],
+      say: say(['heart', 'star'], 5),
+    }),
+  },
+  // the Fourth of July: red, white and blue fireworks at night
+  {
+    every: [180, 420],
+    time: [60, 90],
+    call: 5,
+    when: { h: [21, 24], d: JULY4.d },
+    props: [
+      prop('fw-d', 70, 116, { fps: 8, rest: 2.2 }),
+      prop('fw-e', 150, 108, { fps: 8, rest: 2.6 }),
+      prop('fw-d', 250, 112, { fps: 8, rest: 2.4 }),
+      prop('fw-e', 330, 118, { fps: 8, rest: 2.9 }),
+      prop('fw-a', 200, 104, { fps: 8, rest: 3.3 }),
+    ],
+    spot: spot(MEADOW[0], MEADOW[1], { n: 5, gap: S(18), acts: ['love', 'cheer', 'clap', 'cheer', 'love'], fps: 8, time: [600, 600] }),
+  },
+  // the Mid-Autumn Festival: tea under the full moon in the meadow, the lanterns lit
+  {
+    every: [900, 2400],
+    time: [120, 240],
+    call: 4,
+    when: { h: [19, 24], near: MIDAUTUMN.near },
+    props: [prop('tea', 190, 207)],
+    spot: spot(190, 207, { n: 4, gap: S(22), acts: ['sip', 'love', 'sip', 'love'], fps: 4, time: [600, 600] }),
+  },
   // ---- the coloured keys of the remote: red, fireworks with everyone watching from the meadow; yellow, a dance party on the stage;
   // blue, a flurry of snow (green is the shower, above) ----
   {
     every: [600, 600],
     chance: 0,
     key: 'red',
+    title: 'Fireworks',
     time: [40, 60],
     call: 6,
     // rockets rise from just over the rooftops and burst high in the sky (the apps are out of the way while it lasts)
@@ -782,6 +981,7 @@ const events = [
     every: [600, 600],
     chance: 0,
     key: 'yellow',
+    title: 'Dance party',
     time: [40, 60],
     call: 6,
     props: [70, 100, 130].map(x => prop('emitter', x, 165, { fx: { s: 'confetti', kind: 'fall', every: 0.45, dx: 0, dy: 0 } })),
@@ -798,6 +998,7 @@ const events = [
     every: [600, 600],
     chance: 0,
     key: 'blue',
+    title: 'Snow flurry',
     time: [40, 60],
     call: 5,
     props: [30, 90, 150, 210, 270, 330].map(x => prop('emitter', x, 112, { fx: { s: 'flake', kind: 'fall', every: 0.5, dx: 0, dy: 0 } })),
@@ -822,8 +1023,8 @@ events.forEach(e => {
 const world = {
   file: 'clawd.png',
   px: P.PX,
-  // after three minutes on Home without a key, only the village
-  watch: 3,
+  // after a minute and a half on Home without a key, only the village
+  watch: 1.5,
   sprites,
   crew: {
     count: 8,
@@ -842,10 +1043,19 @@ const world = {
       act: 'clap',
     },
     // the holidays' hats (looks after the six caps): a witch's for Halloween week, Santa's in December, a party hat at New Year
+    // the holidays' hats (the looks after the six everyday ones: witch, Santa, party, pilgrim, the Lunar New Year's, bunny ears), the
+    // first that fits: Santa's all December, party hats on New Year's Day, pilgrims' and Santa's in turn in November, the witch's all
+    // October; on Valentine's week red caps, on St Patrick's green ones, on the Fourth of July red and blue in turn
     hats: [
-      { look: LOOKS.length, when: { d: ['10-24', '10-31'] } },
-      { look: LOOKS.length + 1, when: { d: ['12-01', '12-26'] } },
-      { look: LOOKS.length + 2, when: { d: ['12-31', '01-01'] } },
+      { look: LOOKS.length + 1, when: XMAS },
+      { look: LOOKS.length + 2, when: { d: ['01-01', '01-01'] } },
+      { looks: [LOOKS.length + 3, LOOKS.length + 1], when: NOVEMBER },
+      { look: LOOKS.length, when: HALLOWEEN },
+      { look: LOOKS.length + 4, when: LUNAR },
+      { look: LOOKS.length + 5, when: EASTER },
+      { look: 4, when: VALENTINE },
+      { look: 2, when: PATRICK },
+      { looks: [4, 1], when: JULY4 },
     ],
     // the eight and what each likes best: Byte codes, Pixel games, Moss is outdoors, Nova at magic, Spark makes things, Sunny shows
     // off, Mochi is cosy, Tink tinkers

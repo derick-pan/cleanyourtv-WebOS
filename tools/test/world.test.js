@@ -120,6 +120,7 @@ function page(seed, start, frame) {
     return a.length > 1 ? new Date(...a) : new Date(a.length ? a[0] : now);
   }
   D.now = () => now;
+  D.UTC = Date.UTC;
   const marks = [];
   let frames = 0;
   const sandbox = {
@@ -202,7 +203,7 @@ const places = s => {
   return out;
 };
 const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1];
-const crewOf = b => b.children.filter(c => c.classList.contains('wo-m') && !c.classList.contains('wo-h'));
+const crewOf = b => b.children.filter(c => c.classList.contains('wo-m') && !c.classList.contains('wo-h') && !c.classList.contains('wo-v'));
 const minisOf = b => b.children.filter(c => c.classList.contains('wo-h'));
 const propsOf = b => b.children.filter(c => c.classList.contains('wo') && !c.classList.contains('wo-m') && !c.classList.contains('wo-f'));
 const shown = el => el.style.display !== 'none';
@@ -228,6 +229,7 @@ function made(o) {
     week: [100, 90, 16, 16, 7, 8, 16],
     'name-a': [100, 110, 12, 9, 1, 3, 9],
     'name-b': [100, 120, 12, 9, 1, 3, 9],
+    perched: [100, 130, 16, 16, 4, 8, 16],
   };
   const crew = Object.assign(
       { count: 2, speed: 80, stand: 'stand', walk: 'walk', climb: 'climb', wave: 'wave', wait: 'wait', lane: [820, 0, 1920] },
@@ -247,7 +249,7 @@ run(async () => {
     "the Claude theme's world resolves: a crew of 8 in 6 caps, a street, chats, its spots and props"
   );
   ok(
-    w.herds.length >= 5 && w.events.length >= 20 && w.shade.length === 4 && w.weather.length >= 5 && w.wind.length === 2 && w.watch === 3,
+    w.herds.length >= 5 && w.events.length >= 20 && w.shade.length === 4 && w.weather.length >= 5 && w.wind.length === 2 && w.watch === 1.5,
     'and its herds, events, the tints, the weathers of the days, the wind and watch mode'
   );
   const name = namer(w);
@@ -279,15 +281,26 @@ run(async () => {
     }),
     "on Halloween each Clawd wears the witch's hat in what it does"
   );
+  const may = page(7, new Date(2026, 4, 4, 10, 0, 0).getTime());
+  may.WORLD.apply(w, 1);
+  may.advance(1);
+  ok(
+    crewOf(may.box()).every((m, i) => {
+      const n = name(m);
+      return n.name && (w.sprites[n.name][7] > 1 ? n.look === i % 6 : n.look === 0);
+    }) && may.WORLD.weather() === 'sun',
+    'on another day (a sunny one, no holiday) each Clawd shows its own look (cap)'
+  );
+  // November: Thanksgiving and Christmas both, the pilgrims' hats and Santa's in turn
   const nov = page(7, new Date(2026, 10, 2, 10, 0, 0).getTime());
   nov.WORLD.apply(w, 1);
   nov.advance(1);
   ok(
     crewOf(nov.box()).every((m, i) => {
       const n = name(m);
-      return n.name && (w.sprites[n.name][7] > 1 ? n.look === i % 6 : n.look === 0);
-    }) && nov.WORLD.weather() === 'sun',
-    'on another day (a sunny one) each Clawd shows its own look (cap)'
+      return n.name && (w.sprites[n.name][7] > 9 ? n.look === (i % 2 ? 7 : 9) : n.look === 0);
+    }),
+    "in November the pilgrims' hats and Santa's in turn"
   );
   // everyone starts at a place of its own in a spot that is open at ten in the morning: not inside, not the dormitory (22 to 7)
   const open = w.spots.filter(s => !s.inside && !(s.when && s.when.h && 10 < s.when.h[0] && 10 >= s.when.h[1])),
@@ -1189,5 +1202,106 @@ run(async () => {
     const awake = fxOf(herd(null)),
       asleep = fxOf(herd({ h: [0, 1] }));
     ok(awake > 0 && asleep === 0, 'a herd out of its hours gives off nothing (' + awake + ' in its hours)');
+  }
+  // feasts that move from year to year (when.near): Easter, the Lunar New Year, the Mid-Autumn Festival and Thanksgiving, on their days
+  // of each year and not on others
+  {
+    const fw = made({
+      crew: { count: 0 },
+      spots: [],
+      props: [
+        ['easter', -1, 1],
+        ['lunar', 0, 0],
+        ['midautumn', -1, 0],
+        ['thanksgiving', 0, 0],
+      ].map((n, i) => ({ s: 'table', x: 100 + i * 100, y: 100, when: { near: n } })),
+    });
+    const on = (y, m, d) => {
+      const g = page(71, new Date(y, m - 1, d, 12, 0).getTime());
+      g.WORLD.apply(fw, 1);
+      g.advance(1);
+      return propsOf(g.box())
+        .map(e => (shown(e) ? 1 : 0))
+        .join('');
+    };
+    const seen = [
+      on(2027, 3, 28) /* Easter Sunday 2027 */,
+      on(2027, 3, 30),
+      on(2028, 1, 26) /* the Lunar New Year 2028 */,
+      on(2028, 1, 27),
+      on(2026, 9, 24) /* the eve of the Mid-Autumn Festival 2026 */,
+      on(2026, 9, 26),
+      on(2026, 11, 26) /* Thanksgiving 2026 */,
+      on(2027, 11, 26),
+    ];
+    ok(
+      seen.join(' ') === '1000 0000 0100 0000 0010 0000 0001 0000',
+      'feasts that move: Easter, the Lunar New Year, the Mid-Autumn Festival, Thanksgiving, on their days only (' + seen.join(' ') + ')'
+    );
+  }
+  // a holiday's hats in turn: one each, round the crew
+  {
+    const tw = made({
+      crew: { count: 4, looks: 2, hats: [{ looks: [3, 5], when: { d: ['10-30', '11-02'] } }] },
+      spots: [300, 700, 1100, 1500].map(x => ({ x: x, y: 800, act: 'work', time: [60, 60] })),
+    });
+    tw.sprites.work = [0, 160, 16, 16, 4, 8, 16, 6];
+    const nm = namer(tw),
+      g = page(73, HALLOWEEN);
+    g.WORLD.apply(tw, 1);
+    g.advance(1);
+    g.advance(3000);
+    const looks = crewOf(g.box()).map(m => nm(m).look);
+    ok(looks.join() === '3,5,3,5', "a holiday's hats in turn: one each, round the crew (" + looks.join() + ')');
+  }
+  // an event's visitor that perches: it flies in from its edge, lands on its perch and does what the perch says (its sprite, its
+  // particles) for a while, then flies on and out at the other side
+  {
+    const pw = made({
+      crew: { count: 0 },
+      spots: [],
+      events: [
+        {
+          chance: 0,
+          key: 'red',
+          title: 'A visitor',
+          time: [60, 60],
+          drift: [
+            {
+              s: 'mini',
+              y: 500,
+              speed: 200,
+              dir: -1,
+              fps: 6,
+              perch: { x: 400, y: 600, s: 'perched', fps: 4, time: [10, 10], fx: { s: 'say-hi', kind: 'rise', every: 1 } },
+            },
+          ],
+        },
+      ],
+    });
+    const nm = namer(pw),
+      g = page(79, HALLOWEEN);
+    g.WORLD.apply(pw, 1);
+    g.advance(1);
+    ok(JSON.stringify(g.WORLD.shows()) === '[{"i":0,"title":"A visitor","key":"red"}]', 'the shows with a name, for the Shows menu');
+    ok(g.WORLD.play(0) === 60, 'a show from the menu starts at once and says how long it lasts');
+    const v = () => g.box().children.filter(c => c.classList.contains('wo-v'))[0];
+    const track = [xy(v().style.transform)[0] > 1920 ? 'right' : 'elsewhere'];
+    let fx = 0;
+    /* where it is headed (a move is a transition to its end) and what it shows */
+    g.advance(40000, 250, () => {
+      const e = v(),
+        p = e && xy(e.style.transform),
+        at = !e ? 'gone' : p[0] > 1920 ? 'right' : p[0] < 0 ? 'left' : same(p, [400, 600]) ? 'perch' : 'elsewhere',
+        now = at + (e ? ':' + nm(e).name : '');
+      if (track[track.length - 1] !== now) track.push(now);
+      if (now === 'perch:perched')
+        fx = Math.max(fx, g.box().children.filter(c => c.classList.contains('wo-f') && nm(c).name === 'say-hi').length);
+    });
+    ok(
+      track.join(' ') === 'right perch:mini perch:perched left:mini gone',
+      'a visitor flies in from its edge, perches doing its own thing, then flies on and out (' + track.join(' ') + ')'
+    );
+    ok(fx > 0, 'and gives off its particles while it perches');
   }
 });

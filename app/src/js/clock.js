@@ -17,9 +17,11 @@ function barLabel(o) {
       ? t('Settings')
       : o.action === 'customize'
         ? t('Customise')
-        : o.action === 'live'
-          ? t('Live TV')
-          : o.label || '';
+        : o.action === 'shows'
+          ? t('Shows')
+          : o.action === 'live'
+            ? t('Live TV')
+            : o.label || '';
 }
 function clockOpts() {
   var c = cfg.clock,
