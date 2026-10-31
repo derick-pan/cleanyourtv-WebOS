@@ -38,7 +38,19 @@ var WORLD = (function () {
     CAP = [36, 18, 8] /* particles at a time, at each level */,
     wxDay = -1 /* the day the weather was picked for */,
     wx = '' /* the weather of that day */,
-    watchMin = 0; /* minutes on Home before only the world shows (world.watch) */
+    watchMin = 0 /* minutes on Home before only the world shows (world.watch) */,
+    named = []; /* the shows of the world, for the Shows menu */
+  /* the events with a name, the ones on a coloured key first, in the keys' order */
+  function titled(evs) {
+    var K = ['red', 'green', 'yellow', 'blue'],
+      l = [];
+    evs.forEach(function (e, i) {
+      if (e.title) l.push({ i: i, title: e.title, key: e.key });
+    });
+    return l.sort(function (a, b) {
+      return (a.key ? K.indexOf(a.key) : 9) - (b.key ? K.indexOf(b.key) : 9) || a.i - b.i;
+    });
+  }
   function rnd(a, b) {
     return a + Math.random() * (b - a);
   }
@@ -73,7 +85,67 @@ var WORLD = (function () {
   }
   function dayOk(w, t) {
     var d = (t.getMonth() + 1) * 100 + t.getDate();
-    return !w || !w.d || (w.d[0] <= w.d[1] ? d >= w.d[0] && d <= w.d[1] : d >= w.d[0] || d <= w.d[1]);
+    if (w && w.d && !(w.d[0] <= w.d[1] ? d >= w.d[0] && d <= w.d[1] : d >= w.d[0] || d <= w.d[1])) return false;
+    return !w || !w.near || near(w.near, t);
+  }
+  /* days from a feast that moves from year to year (when.near: [feast, from, to]), this year's, last year's or next year's */
+  function near(n, t) {
+    var day = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+    for (var y = t.getFullYear() - 1; y <= t.getFullYear() + 1; y++) {
+      var k = Math.round((day - feast(n[0], y)) / 864e5);
+      if (k >= n[1] && k <= n[2]) return true;
+    }
+    return false;
+  }
+  /* the day of a feast in year y (local midnight, ms): Easter (the Western one), Thanksgiving (the fourth Thursday of November), the
+     Lunar New Year (the day of the new moon from 21 January to 19 February in China) and the Mid-Autumn Festival (the 15th day of the
+     moon that begins from 25 August to 23 September) */
+  var feasts = {};
+  /* new moon number k after 6 January 2000 (ms): its mean course and the main terms of the sun's and the moon's pull (after Meeus),
+     right to within minutes */
+  function newMoon(k) {
+    var r = Math.PI / 180,
+      M = (2.5534 + 29.1053567 * k) * r,
+      N = (201.5643 + 385.81693528 * k) * r,
+      F = (160.7108 + 390.67050284 * k) * r;
+    return (
+      (2451550.09766 +
+        29.530588861 * k -
+        0.4072 * Math.sin(N) +
+        0.17241 * Math.sin(M) +
+        0.01608 * Math.sin(2 * N) +
+        0.01039 * Math.sin(2 * F) +
+        0.00739 * Math.sin(N - M) -
+        0.00514 * Math.sin(N + M) +
+        0.00208 * Math.sin(2 * M) -
+        2440587.5) *
+      864e5
+    );
+  }
+  function feast(name, y) {
+    var key = name + y;
+    if (feasts[key]) return feasts[key];
+    var at;
+    if (name === 'easter') {
+      var a = y % 19,
+        b = Math.floor(y / 100),
+        c = y % 100,
+        f = Math.floor((b + 8) / 25),
+        g = Math.floor((b - f + 1) / 3),
+        h = (19 * a + b - Math.floor(b / 4) - g + 15) % 30,
+        l = (32 + 2 * (b % 4) + 2 * Math.floor(c / 4) - h - (c % 4)) % 7,
+        n = h + l - 7 * Math.floor((a + 11 * h + 22 * l) / 451) + 114;
+      at = new Date(y, Math.floor(n / 31) - 1, (n % 31) + 1);
+    } else if (name === 'thanksgiving') at = new Date(y, 10, 22 + ((11 - new Date(y, 10, 1).getDay()) % 7));
+    else {
+      /* the first new moon from that day on, by China's clock (UTC+8) */
+      var from = Date.UTC(y, name === 'lunar' ? 0 : 7, name === 'lunar' ? 21 : 25) - 288e5,
+        k = Math.floor((from - 947182440000) / (29.530588861 * 864e5));
+      while (newMoon(k) < from) k++;
+      var m = new Date(newMoon(k) + 288e5);
+      at = new Date(y, m.getUTCMonth(), m.getUTCDate() + (name === 'lunar' ? 0 : 14));
+    }
+    return (feasts[key] = at.getTime());
   }
   /* a number from 0 to 1 for a whole number, always the same for it */
   function hash(n) {
@@ -521,6 +593,7 @@ var WORLD = (function () {
     Body.call(this, '');
     var ms = W.crew.members,
       me = ms.length ? ms[i % ms.length] : null;
+    this.i = i;
     this.look = i % W.crew.looks;
     this.name = me ? me.name : '';
     this.likes = me ? me.likes : [];
@@ -531,10 +604,10 @@ var WORLD = (function () {
     this.busy = false /* at its spot, doing what the spot says */;
   }
   Member.prototype = Object.create(Body.prototype);
-  /* its look now: everyone wears the hat of a holiday (crew.hats) */
+  /* its look now: the hat of a holiday (crew.hats), or the holiday's hats in turn (one each, round the crew) */
   Member.prototype.hat = function () {
     var H = W.crew.hats;
-    for (var i = 0; i < H.length; i++) if (active(H[i].when)) return H[i].look;
+    for (var i = 0; i < H.length; i++) if (active(H[i].when)) return H[i].looks[this.i % H[i].looks.length];
     return this.look;
   };
   /* which way it faces at a spot: the spot's way, or towards the others in a spot for several */
@@ -888,6 +961,51 @@ var WORLD = (function () {
     });
   }
 
+  /* ---- a visitor of an event that lands on its way (a drift with a perch): it flies in from its edge to the perch, stays a while doing
+     what the perch says (its sprite, its particles), then flies on and out at the other side ---- */
+  function Visitor(d) {
+    Body.call(this, 'wo-v');
+    var s = W.sprites[d.s],
+      p = d.perch,
+      off = (s[2] - s[5]) * P + 4 * P,
+      dir = d.dir < 0 ? -1 : 1,
+      out = dir > 0 ? 1920 + off : -off;
+    this.d = d;
+    this.face = dir;
+    this.put(dir > 0 ? -off : 1920 + off, d.y, 0, 0);
+    /* a moment after it is in place, so its flight starts from there */
+    this.after(0.1, function () {
+      if (d.bob) this.b.style.animation = bob(d.bob);
+      this.after(this.walk(p.x, p.y, d.speed, d.s, d.fps), function () {
+        this.b.style.animation = '';
+        /* perched, it turns to the middle of the screen (towards the village) */
+        this.face = p.x < 960 ? 1 : -1;
+        this.show(p.s, p.fps);
+        var self = this,
+          on = true;
+        if (p.fx)
+          every(
+            p.fx.every,
+            function () {
+              if (on) emit(p.fx, self.x, self.y, self.face);
+            },
+            function () {
+              return on && !!self.a.parentNode;
+            }
+          );
+        this.after(rnd(p.time[0], p.time[1]) / rate, function () {
+          on = false;
+          if (d.bob) this.b.style.animation = bob(d.bob);
+          this.face = dir;
+          this.after(this.walk(out, d.y, d.speed, d.s, d.fps), function () {
+            drop(this.a);
+          });
+        });
+      });
+    });
+  }
+  Visitor.prototype = Object.create(Body.prototype);
+
   /* ---- events: now and then something happens for a while: its props and drift appear, its spot opens, some are called to it;
      one at a time, each a while (every) after it was last over, when its chance says so. One can follow another (then), and a
      coloured key starts one at once (key) ---- */
@@ -925,7 +1043,7 @@ var WORLD = (function () {
     });
     /* its drift come in from the edge, so they cross the screen while it lasts */
     e.drift.forEach(function (d, i) {
-      ev.drift.push(drifter(d, i, e.drift.length, true).a);
+      ev.drift.push(d.perch ? new Visitor(d).a : drifter(d, i, e.drift.length, true).a);
     });
     if (e.spot) {
       var s = clone(e.spot);
@@ -1263,6 +1381,8 @@ var WORLD = (function () {
       stillAt = 0;
       wxDay = -1;
       watchMin = (ww && ww.watch) || 0;
+      /* its shows are known at once (the Shows button), before its picture has loaded; none when it stands still */
+      named = s && !(spd <= 0) ? titled(ww.events || []) : [];
       clear();
       if (!s) return;
       rate = typeof spd === 'number' ? spd : 1;
@@ -1306,6 +1426,16 @@ var WORLD = (function () {
       return W ? weather() : '';
     },
     /* minutes on Home without a key before only the world shows (watch mode in the launcher), 0 for never */
+    /* the events with a name (title), for the Shows menu: [{i, title, key}] */
+    shows: function () {
+      return named.slice();
+    },
+    /* a show from the menu (an event by its place in the list) starts now, whatever its hours; how many seconds it lasts, or 0 */
+    play: function (i) {
+      if (!box || !W || !(rate > 0) || box.style.display === 'none' || !W.events[i]) return 0;
+      if (live) end(live, true);
+      return start(W.events[i]);
+    },
     watch: function () {
       return watchMin;
     },

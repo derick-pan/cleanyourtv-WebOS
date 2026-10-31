@@ -34,7 +34,9 @@ function rebuild() {
     fit(t, false);
     return t;
   });
+  /* a theme whose world has shows (a dragon, fireworks) gets a button for them, for remotes without the coloured keys */
   var tb = shownBar()
+    .concat(WORLD.shows().length ? [{ label: 'Shows', icon: 'shows', action: 'shows', fixed: true }] : [])
     .concat([{ label: 'Customise', icon: 'edit', action: 'customize', fixed: true }])
     .map(function (o) {
       var p = document.createElement('div');

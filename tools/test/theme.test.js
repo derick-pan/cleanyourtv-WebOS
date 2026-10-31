@@ -46,9 +46,10 @@ run(async () => {
   }
   ok(allOk, 'every theme folder has a valid theme.json, its wallpaper and a screenshot' + (tbad.length ? ': ' + tbad.join('; ') : ''));
   ok(unknownKeys.length === 0, 'theme files use only keys of the schema' + (unknownKeys.length ? ': ' + unknownKeys.join(', ') : ''));
-  // a theme here may be up to 64 KB, but the services before that took 32 KB and read the themes from GitHub too: keep each under it
-  const over32 = folders.filter(id => fs.statSync(path.join(tdir, id, 'theme.json')).size > 32 * 1024);
-  ok(!over32.length, 'every theme.json is under 32 KB, so older services still take it' + (over32.length ? ': ' + over32.join(', ') : ''));
+  // what the service downloads at most (MAX_THEME)
+  const MAX_THEME = require(path.join(root, 'helper', 'themeschema.js')).MAX_THEME,
+    tooBig = folders.filter(id => !(fs.statSync(path.join(tdir, id, 'theme.json')).size <= MAX_THEME));
+  ok(!tooBig.length, 'every theme.json is within what the service downloads' + (tooBig.length ? ': ' + tooBig.join(', ') : ''));
   ok(
     fs.readFileSync(path.join(tdir, 'index.json'), 'utf8') === require(path.join(root, 'tools', 'theme-index.js')).build(),
     'themes/index.json is up to date (run: node tools/theme-index.js)'
@@ -492,7 +493,11 @@ run(async () => {
           bubble: -5,
           lane: [905, 1570, -999],
           chat: { every: [1, 99999], say: ['nope', 'cap'], act: 'nope' },
-          hats: [{ look: 99, when: { d: ['10-31', '10-31'] } }],
+          hats: [
+            { look: 99, when: { d: ['10-31', '10-31'] } },
+            { looks: [7, 0, 'x', 9, 11, 12], when: { near: ['easter', -90, -99] } },
+            { look: 6, when: { near: ['diwali', 0, 1] } },
+          ],
           members: [{ name: 'cap', likes: ['games', 'Bad', 'code'] }, { name: 'nope' }],
           hello: ['cap', 'nope'],
         },
@@ -532,13 +537,17 @@ run(async () => {
             call: 99,
             spot: { x: 100, y: 200, n: 3, act: 'cap', when: { w: ['rain', 'Bad', 'snow'] } },
             props: [{ s: 'cap' }, { s: 'nope' }],
-            drift: [{ s: 'walk' }, { s: 'nope' }],
+            drift: [
+              { s: 'walk', perch: { x: -50, y: 9999, s: 'nope', fps: 0, time: [500, 0], fx: { s: 'cap', kind: 'pop' } } },
+              { s: 'nope' },
+            ],
             when: { h: [12, 14] },
             chance: 5,
             then: 99,
             key: 'red',
+            title: '  Fire\nworks and a very long name too  ',
           },
-          { chance: -1, then: -9, key: 'purple' },
+          { chance: -1, then: -9, key: 'purple', title: 7 },
         ],
         shade: [{ color: '#06051a', alpha: 2, when: { h: [0, 5] } }, { color: 'nope', alpha: 0.5 }, { color: '#FFFFFF' }],
         wind: [{ every: [1, 99999], speed: 1, dir: 7, fps: 99, fx: { s: 'cap', kind: 'blow' } }, { when: { w: ['wind'] } }],
@@ -594,7 +603,7 @@ run(async () => {
       s2.show[0].s === 'cap' &&
       s2.show[0].x === 10 &&
       JSON.stringify(s2.say) === '{"s":["cap"],"every":600}' &&
-      JSON.stringify(s2.when) === '{"h":[22,6],"d":null,"w":null}' &&
+      JSON.stringify(s2.when) === '{"h":[22,6],"d":null,"w":null,"near":null}' &&
       s2.w === 10,
     'spots (at most 40): a way in (path, or via as a ladder), what each place does, a group, props to show, bubbles and hours, clamped and cut'
   );
@@ -610,11 +619,11 @@ run(async () => {
       wr.drift[0].fade === 0 &&
       wr.props[0].rest === 0 &&
       wr.props[0].front === true &&
-      JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101],"w":null}' &&
+      JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101],"w":null,"near":null}' &&
       wr.drift.length === 1 &&
       wr.drift[0].speed === 1 &&
       wr.drift[0].dir === -1 &&
-      JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null,"w":null}',
+      JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null,"w":null,"near":null}',
     'props (at most 160) and drift are checked and clamped, with their hours (when, fade), pan and gust, and what names no sprite is left out'
   );
   const h0 = wr.herds[0],
@@ -638,7 +647,7 @@ run(async () => {
       e0.spot.act === 'cap' &&
       e0.props.length === 1 &&
       e0.drift.length === 1 &&
-      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null}' &&
+      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null,"near":null}' &&
       e1.spot === null &&
       e1.every.join() === '120,300' &&
       e1.call === 0,
@@ -646,14 +655,14 @@ run(async () => {
   );
   ok(
     wr.shade.length === 2 &&
-      JSON.stringify(wr.shade[0]) === '{"color":"#06051a","alpha":0.9,"when":{"h":[0,5],"d":null,"w":null}}' &&
+      JSON.stringify(wr.shade[0]) === '{"color":"#06051a","alpha":0.9,"when":{"h":[0,5],"d":null,"w":null,"near":null}}' &&
       wr.shade[1].color === '#ffffff',
     'the tint of the night: a colour (one that is not is left out) and how strong, clamped'
   );
   ok(
     JSON.stringify(wr.wind) ===
       '[{"every":[3,3600],"speed":50,"dir":1,"fps":30,"fx":{"s":"cap","kind":"blow","every":2,"dx":0,"dy":0},"when":null},' +
-        '{"every":[20,40],"speed":400,"dir":1,"fps":8,"fx":null,"when":{"h":null,"d":null,"w":["wind"]}}]' &&
+        '{"every":[20,40],"speed":400,"dir":1,"fps":8,"fx":null,"when":{"h":null,"d":null,"w":["wind"],"near":null}}]' &&
       themeMod.resolve(themeMod.normalize({ world: { file: 'clawd.png' } }, 'claude', null, path.join(tdir, 'claude'))).world.wind
         .length === 0,
     'the wind (one, or a list: the first whose when fits blows): how often, how fast, from which side, its frames a second, what it carries off, clamped'
@@ -664,9 +673,11 @@ run(async () => {
     p2 = wr.props[1];
   ok(
     JSON.stringify(wr.weather) ===
-      '[{"name":"sun","w":1000,"when":null},{"name":"snow","w":5,"when":{"h":null,"d":[1201,228],"w":null}}]' &&
+      '[{"name":"sun","w":1000,"when":null},{"name":"snow","w":5,"when":{"h":null,"d":[1201,228],"w":null,"near":null}}]' &&
       wr.watch === 120 &&
-      JSON.stringify(wr.crew.hats) === '[{"look":15,"when":{"h":null,"d":[1031,1031],"w":null}}]' &&
+      JSON.stringify(wr.crew.hats) ===
+        '[{"looks":[15],"when":{"h":null,"d":[1031,1031],"w":null,"near":null}},' +
+          '{"looks":[7,1,1,9],"when":{"h":null,"d":null,"w":null,"near":["easter",-60,-60]}},{"looks":[6],"when":null}]' &&
       JSON.stringify(wr.crew.members) === '[{"name":"cap","likes":["games","code"]},{"name":"","likes":[]}]' &&
       wr.crew.hello.join() === 'cap' &&
       sp9.tag === 'games' &&
@@ -676,22 +687,32 @@ run(async () => {
       wr.props[0].phase === '' &&
       JSON.stringify(wr.props[0].when.w) === 'null' &&
       JSON.stringify(wr.drift[0].when.w) === 'null' &&
-      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null}' &&
+      JSON.stringify(e0.when) === '{"h":[12,14],"d":null,"w":null,"near":null}' &&
       e0.chance === 1 &&
       e0.then === 31 &&
       e0.key === 'red' &&
       e1.chance === 0 &&
       e1.then === -1 &&
       e1.key === '' &&
-      JSON.stringify(wr.events[0].spot.when) === '{"h":null,"d":null,"w":["rain","snow"]}',
+      JSON.stringify(wr.events[0].spot.when) === '{"h":null,"d":null,"w":["rain","snow"],"near":null}',
     'the weather of the days, watch mode, hats, names and likes, hellos, tags, play and phase, the chance, then and key of an event: clamped'
   );
   // watch mode in whole minutes, at least one (a fraction of a minute would leave Home no time between keys); none, or not a number: off
   const watchOf = v =>
     themeMod.resolve(themeMod.normalize({ world: { file: 'clawd.png', watch: v } }, 'claude', null, path.join(tdir, 'claude'))).world.watch;
   ok(
-    [0.001, 2.6, 0, -5, 'x', 3].map(watchOf).join() === '1,3,0,0,0,3',
-    'watch mode: whole minutes, at least one; 0, below or not a number is off'
+    [0.001, 1.5, 0, -5, 'x', 999].map(watchOf).join() === '1,1.5,0,0,0,120',
+    'watch mode: minutes, at least one (a minute and a half is fine); 0, below or not a number is off'
+  );
+  // an event's visitor that perches, and a show's name for the menu: clamped, no line breaks, at most 24 letters
+  const ev0 = wr.events[0];
+  ok(
+    JSON.stringify(ev0.drift[0].perch) ===
+      '{"x":-50,"y":1280,"s":"walk","fps":0.2,"time":[1,120],"fx":{"s":"cap","kind":"pop","every":2,"dx":0,"dy":0}}' &&
+      ev0.drift[0].when === null &&
+      wr.events[0].title === 'Fireworks and a very lon' &&
+      wr.events[1].title === '',
+    "a visitor's perch and a show's name: clamped"
   );
   ok(
     !('world' in plain) &&

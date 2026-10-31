@@ -83,9 +83,11 @@ function unwatch() {
 /* a coloured key (403 to 406): the world's show for it starts (world events with a key) and the clock, the buttons and the apps fade
    away until it is over (or a key brings them back); in watch mode they stay away. False when the world has no show for that key */
 function show(k) {
-  if (r >= GR) return false; /* the grid is open: the world stands under it */
-  var t = WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403]),
-    b = document.body.classList;
+  return r < GR && showFor(WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])); /* with the grid open the world stands under it */
+}
+/* a show that lasts t seconds (0: none started) has the screen */
+function showFor(t) {
+  var b = document.body.classList;
   if (!t) return false;
   if (b.contains('watch') && !showT) return true;
   clearTimeout(watchT);

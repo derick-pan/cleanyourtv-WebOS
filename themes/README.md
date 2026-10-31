@@ -188,27 +188,36 @@ pier, conduct the choir on the stage, juggle, sweep, build, water the garden, ha
 in the meadow with hearts between them, burrow into the sand to pop up again, or wander off the edge of the world and back. They say
 what they are up to in little speech bubbles (code, a bug, an idea, a heart), and now and then two of them meet in the street, say each
 other's name, chat and clap. They hop when you move the focus, and two of them wave hello when you come back to Home and goodbye when
-you open an app. They keep a routine: stretches and coffee together at seven in the morning, marshmallows round the campfire at eight
-in the evening. Five little Clawds play in the meadow, a crab scuttles on the sand, a cat strolls the street by day and an owl by
-night, two ducks paddle about the pond and dive, and a frog hops off its lily pad now and then.
+you open an app. They keep a routine at their own hours, not the clock's: stretches and coffee together, marshmallows round the
+campfire, a picnic, tea for two. Five little Clawds play in the meadow, a crab scuttles on the sand, a cat strolls the street by day
+and an owl by night, two ducks paddle about the pond and dive, and a frog hops off its lily pad now and then.
 
-Now and then something happens: a game of volleyball in the meadow, lunch on a picnic cloth at noon, tea at three, a party on the stage
-in the evening with fireworks and confetti, a juggling show, a flying saucer or a meteor shower at night (with a crowd pointing at it),
-a deer looking out of the bushes, or the server room overheating. Some things are rare: a dragon flying over at dusk, a golden Clawd
-running along the street, a comet crossing the night sky, the northern lights on a winter night, a balloon festival on a sunny day. The
-hours change things too: the night darkens the sky, the lamps glow, fireflies come out in summer, a sparrow sits on the sill by day;
-and so does the year: blossom on the trees in spring, the trees red and gold in autumn, snow on the ground and the roofs and a snowman
-in winter; pumpkins, bats and witch hats at Halloween, a fir and Santa hats in December, lanterns and party hats at the new year. By
-the house a shed goes up over the week (begun on Monday, done on Sunday) and a sapling grows over the month. Around them the fire
-crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and clouds, birds and a balloon
-drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the flowers of the garden and the
-meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams out, the lily pads drift and a
-few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly across the sky and back, the bright
-stars twinkle, others flare now and then, and a star shoots across.
+Now and then something happens: a game of volleyball in the meadow, a party on the stage in the evening with fireworks and confetti, a
+juggling show, a flying saucer or a meteor shower at night (with a crowd pointing at it), a deer looking out of the bushes, or the
+server room overheating. Some things are rare: a dragon that flies over, lands on the mine's rock, looks about, roars a jet of flame
+and flies off, a golden Clawd running along the street, a comet crossing the night sky, the northern lights on a winter night, a
+balloon festival on a sunny day. The hours change things too: the night darkens the sky, the lamps glow, fireflies come out in summer,
+a sparrow sits on the sill by day; and so does the year: blossom on the trees in spring, the trees red and gold in autumn, snow on the
+ground and the roofs and a snowman in winter. The holidays come round: Halloween all October (witch hats, pumpkins, cobwebs, bats and
+ghosts at night); Thanksgiving and Christmas both in November (pilgrims' and Santa hats in turn, a turkey strutting about, the harvest
+by the stage, a feast at a long table, the Christmas lights going up); Christmas all December (Santa hats, lights along the eaves, a
+wreath round the round window, presents under the fir, and Santa's sleigh landing on the roof at night); rockets at midnight on New
+Year's Eve and party hats on New Year's Day; the Lunar New Year (red lanterns along the eaves, red and gold caps, a lion dancing down
+the street, firecrackers), Valentine's week (red caps, hearts), St Patrick's Day (green caps, shamrocks, a rainbow with a pot of gold),
+Easter (bunny ears, painted eggs, an egg hunt), the Fourth of July (red and blue caps, fireworks at night) and the Mid-Autumn Festival
+(lanterns, tea under the full moon). The feasts that move from year to year (the Lunar New Year, Easter, the Mid-Autumn Festival) come
+on their own days each year. By the house a shed goes up over the week (begun on Monday, done on Sunday) and a sapling grows over the
+month. Around them the fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and
+clouds, birds and a balloon drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the
+flowers of the garden and the meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams
+out, the lily pads drift and a few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly
+across the sky and back, the bright stars twinkle, others flare now and then, and a star shoots across.
 
-The coloured keys of the remote start a show on Home: red, rockets bursting all over the sky; green, a shower; yellow, a dance party;
-blue, a snow flurry. The clock, the buttons and the apps fade away while it lasts, and come back when it is over or at any key. After
-three minutes without a key they fade away too and the village has the screen (watch mode); any key brings them back.
+The **Shows** button in the top row of Home starts a show and gives it the screen: fireworks (rockets bursting all over the sky), a
+rain shower, a dance party, a snow flurry, a flying saucer, the dragon, the golden Clawd, a balloon festival. On a remote with the four
+coloured buttons, red, green, yellow and blue start the first four. The clock, the buttons and the apps fade away while a show lasts
+and come back when it is over or at any key. After a minute and a half without a key they fade away too and the village has the screen
+(watch mode); any key brings them back.
 
 Everything was drawn for this theme pixel by pixel by `tools/clawd-world/` (`node tools/clawd-world`), which writes `world.png` (the
 backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet: every Clawd in every cap) and the `"world"` of
