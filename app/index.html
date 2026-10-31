@@ -4245,6 +4245,7 @@ var WORLD = (function () {
     parts = [] /* particles on screen */,
     live = null /* the event going on */,
     stillAt = 0 /* the time the hours are at for a screenshot (still), or 0 for the clock's */,
+    waiting = [] /* the events waiting for their turn, by index */,
     level = 0 /* how much a TV that cannot keep up sheds: 0 nothing, 1 some, 2 more */,
     CAP = [36, 18, 8] /* particles at a time, at each level */,
     wxDay = -1 /* the day the weather was picked for */,
@@ -5077,7 +5078,7 @@ var WORLD = (function () {
       this.after(this.walk(x, o.y, h.speed, h.walk, 8), function () {
         this.face = o.x > this.x ? 1 : -1;
         this.show(h.acts[0] || h.stand, 6);
-        if (h.fx) emit(h.fx, Math.round((this.x + o.x) / 2), this.y, 1);
+        if (h.fx && this.shown !== false) emit(h.fx, Math.round((this.x + o.x) / 2), this.y, 1);
         this.after(rnd(1.5, 3) / rate, this.next);
       });
     }
@@ -5103,20 +5104,26 @@ var WORLD = (function () {
      one at a time, each a while (every) after it was last over, when its chance says so. One can follow another (then), and a
      coloured key starts one at once (key) ---- */
   function events() {
+    waiting = [];
     if (rate > 0)
       W.events.forEach(function (e) {
         if (e.chance > 0) wait(e);
       });
   }
+  /* each event waits for its turn in one chain (waiting, by its index) */
   function wait(e) {
+    var i = W.events.indexOf(e);
+    waiting[i] = true;
     later(
       function () {
+        waiting[i] = false;
         if (!live && active(e.when) && Math.random() < e.chance) start(e);
         else wait(e);
       },
       rnd(e.every[0], e.every[1]) / rate
     );
   }
+  /* it begins; returns how many seconds it lasts */
   function start(e) {
     var ev = { e: e, props: [], drift: [], spot: null };
     live = ev;
@@ -5158,18 +5165,21 @@ var WORLD = (function () {
         });
       ev.want = Math.min(e.call, s.n) - called.length;
     }
-    later(
-      function () {
-        end(ev);
-      },
-      rnd(e.time[0], e.time[1]) / rate
-    );
+    var t = rnd(e.time[0], e.time[1]) / rate;
+    later(function () {
+      end(ev);
+    }, t);
+    return t;
   }
   /* over: its props fade out over their fade (its drift and its spot's props at once), the ones at its spot go back to their business,
      and the one that follows it comes (not when the world stops or a key started another: alone) */
   function end(ev, alone) {
+    /* once: a key that cut it short already ended it, and its own end comes later */
+    if (ev.over) return;
+    ev.over = true;
     if (live === ev) live = null;
-    if (ev.e.chance > 0) wait(ev.e);
+    /* it waits for its next turn again, unless it is waiting already (a key or another event started it, not its turn) */
+    if (ev.e.chance > 0 && !waiting[W.events.indexOf(ev.e)]) wait(ev.e);
     var s = ev.spot,
       gone = ev.drift.slice(),
       slow = 0.9;
@@ -5199,7 +5209,7 @@ var WORLD = (function () {
     }, 900);
     if (s) {
       s.on = null;
-      spots.splice(spots.indexOf(s), 1);
+      if (spots.indexOf(s) >= 0) spots.splice(spots.indexOf(s), 1);
       s.who.forEach(function (m) {
         if (m && m.spot === s) m.after(rnd(0, 1.5) / rate, m.next);
       });
@@ -5211,7 +5221,15 @@ var WORLD = (function () {
   /* ---- what depends on the hour and the day: props and drift shown or not, herds out or in, the tint of the night ---- */
   /* shown or not: it fades in or out over fade seconds (at once the first time, or for a screenshot), out of the way once it is out */
   function showAt(x, on, fade, instant) {
-    if (x.shown === on) return;
+    if (x.shown === on) {
+      /* at once (Home is back): a fade still going is over */
+      if (instant && x.o.clip.style.animation) {
+        x.fk = (x.fk || 0) + 1;
+        x.o.clip.style.animation = '';
+        if (!on) x.a.style.display = 'none';
+      }
+      return;
+    }
     var first = x.shown === undefined,
       a = x.a,
       c = x.o.clip.style,
@@ -5221,6 +5239,14 @@ var WORLD = (function () {
     if (on) {
       a.style.display = '';
       c.animation = t ? 'wo-fin ' + t.toFixed(1) + 's linear' : '';
+      /* done fading in: no animation left, or it would play again each time the world is back in the page */
+      if (t)
+        setTimeout(
+          function () {
+            if (x.fk === k) c.animation = '';
+          },
+          t * 1000 + 100
+        );
     } else if (!t) {
       a.style.display = 'none';
       c.animation = '';
@@ -5281,16 +5307,17 @@ var WORLD = (function () {
       requestAnimationFrame(tick);
     }, 6);
   }
-  /* late: more than twice the usual time between frames (and over 50 ms); too slow: frames over 40 ms apart, or one in ten late */
+  /* late: more than twice the usual time between frames (and over 50 ms); too slow: frames over 40 ms apart, one in ten late, or so
+     few frames in the three seconds (under 20) that the TV can hardly draw at all */
   function judge(gaps) {
-    if (gaps.length < 20) return;
+    if (!gaps.length) return;
     var med = gaps.slice().sort(function (a, b) {
         return a - b;
       })[Math.floor(gaps.length / 2)],
       late = gaps.filter(function (g) {
         return g > Math.max(2.2 * med, 50);
       }).length;
-    if (med <= 40 && late * 10 <= gaps.length) return;
+    if (gaps.length >= 20 && med <= 40 && late * 10 <= gaps.length) return;
     level++;
     if (level >= 2)
       props.forEach(function (q) {
@@ -5409,7 +5436,8 @@ var WORLD = (function () {
     token++;
     parts.forEach(drop);
     parts = [];
-    hours(still);
+    /* what came or went with the hours while Home was hidden is there at once */
+    hours(true);
     props.forEach(function (q) {
       panning(q, still);
       startProp(q);
@@ -5462,16 +5490,16 @@ var WORLD = (function () {
       };
       im.src = u;
     },
-    /* a coloured key on Home (red, green, yellow, blue): the event that has it starts now; false when there is none */
+    /* a coloured key on Home (red, green, yellow, blue): the event that has it starts now; how many seconds it lasts, 0 when there is
+       none */
     key: function (name) {
-      if (!box || !W || !(rate > 0) || box.style.display === 'none') return false;
+      if (!box || !W || !(rate > 0) || box.style.display === 'none') return 0;
       for (var i = 0; i < W.events.length; i++)
         if (W.events[i].key === name) {
           if (live) end(live, true);
-          start(W.events[i]);
-          return true;
+          return start(W.events[i]);
         }
-      return false;
+      return 0;
     },
     /* an app opens: two of them wave goodbye */
     bye: function () {
@@ -6685,9 +6713,13 @@ document.addEventListener('mousemove', function (ev) {
 
 /* watch mode (world.watch in a theme): after that many minutes without a key on Home, with no menu open, the grid closed and no Live
    TV, the clock, the buttons and the apps fade away and the world has the screen; a key or a real pointer move brings them back, and
-   that key does nothing else. A coloured key that starts a show in the world starts it and leaves the world the screen */
+   that key does nothing else. A coloured key that starts a show in the world (show) gives it the screen the same way while it lasts */
 var watchT = 0,
-  watchXY = null;
+  watchXY = null,
+  showT = 0,
+  woke = 0 /* the key that ended watch mode: it does nothing else while it is held (webOS repeats it) */,
+  wokeAt = 0,
+  wokeClick = false;
 function watchLater() {
   clearTimeout(watchT);
   var m = WORLD.watch();
@@ -6698,26 +6730,84 @@ function watchLater() {
     }, m * 60000);
 }
 function unwatch() {
+  clearTimeout(showT);
+  showT = 0;
   watchLater();
   watchXY = null;
   if (!document.body.classList.contains('watch')) return false;
   document.body.classList.remove('watch');
   return true;
 }
+/* a coloured key (403 to 406): the world's show for it starts (world events with a key) and the clock, the buttons and the apps fade
+   away until it is over (or a key brings them back); in watch mode they stay away. False when the world has no show for that key */
+function show(k) {
+  if (r >= GR) return false; /* the grid is open: the world stands under it */
+  var t = WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403]),
+    b = document.body.classList;
+  if (!t) return false;
+  if (b.contains('watch') && !showT) return true;
+  clearTimeout(watchT);
+  clearTimeout(showT);
+  b.add('watch');
+  showT = setTimeout(function () {
+    showT = 0;
+    unwatch();
+  }, t * 1000);
+  return true;
+}
+/* a press of the pointer in watch mode only brings the apps back: the tile under it is not opened (nor its options) */
+document.addEventListener(
+  'mousedown',
+  function (ev) {
+    wokeClick = document.body.classList.contains('watch');
+    if (!wokeClick) return;
+    unwatch();
+    ev.stopPropagation();
+    ev.preventDefault();
+  },
+  true
+);
+document.addEventListener(
+  'click',
+  function (ev) {
+    if (!wokeClick) return;
+    wokeClick = false;
+    ev.stopPropagation();
+    ev.preventDefault();
+  },
+  true
+);
+/* a real move of the pointer (24 px or more) counts as a key: it keeps watch mode away, or ends it */
 document.addEventListener('mousemove', function (ev) {
-  if (!document.body.classList.contains('watch')) return;
-  if (!watchXY) watchXY = [ev.clientX, ev.clientY];
-  else if (Math.abs(ev.clientX - watchXY[0]) + Math.abs(ev.clientY - watchXY[1]) >= 24) unwatch();
+  var p = [ev.clientX, ev.clientY],
+    far = !watchXY || Math.abs(p[0] - watchXY[0]) + Math.abs(p[1] - watchXY[1]) >= 24;
+  if (!document.body.classList.contains('watch')) {
+    if (far) {
+      watchXY = p;
+      watchLater();
+    }
+    return;
+  }
+  if (!watchXY) watchXY = p;
+  else if (far) unwatch();
 });
 
 document.addEventListener('keydown', function (e) {
   var k = e.keyCode;
-  if (k >= 403 && k <= 406 && document.body.classList.contains('watch') && WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) {
+  if (k === woke && Date.now() - wokeAt < 1500) {
+    wokeAt = Date.now();
+    e.preventDefault();
+    return;
+  }
+  woke = 0;
+  if (k >= 403 && k <= 406 && document.body.classList.contains('watch') && show(k)) {
     e.preventDefault();
     return;
   }
   if (unwatch()) {
     lastKey = Date.now();
+    woke = k;
+    wokeAt = lastKey;
     e.preventDefault();
     return;
   }
@@ -6768,7 +6858,7 @@ document.addEventListener('keydown', function (e) {
   } /* Back on the home screen: the running apps */
   /* the coloured keys start the world's shows (world events with a key: red, green, yellow, blue) */
   if (k >= 403 && k <= 406) {
-    if (WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) e.preventDefault();
+    if (show(k)) e.preventDefault();
     return;
   }
   var len = rows[r].length;
@@ -6806,6 +6896,10 @@ document.addEventListener('keydown', function (e) {
   e.preventDefault();
 });
 document.addEventListener('keyup', function (e) {
+  if (e.keyCode === woke) {
+    woke = 0;
+    return;
+  }
   if (e.keyCode !== 13) return;
   lastKey = Date.now();
   clearTimeout(downT);
@@ -6859,6 +6953,8 @@ document.addEventListener('webOSRelaunch', function () {
     p = JSON.parse(webOSSystem.launchParams || '{}');
   } catch (e) {}
   logLine('launcher relaunch ' + JSON.stringify(p).slice(0, 120) + (LIVE.on ? ' (live on)' : ''));
+  /* out of watch mode first: the Inputs list or Live TV that the launch opens takes the next key */
+  unwatch();
   if (LIVE.on && p && p.guide && liveOn()) {
     LIVE.toggleGuide();
     return;
@@ -6884,6 +6980,8 @@ document.addEventListener('visibilitychange', function () {
     SCENE.hidden();
     WORLD.hidden();
     clearTimeout(watchT);
+    clearTimeout(showT);
+    showT = 0;
     document.body.classList.remove('watch');
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();
@@ -7928,6 +8026,8 @@ var LIVE = (function () {
   var guideNext = false;
   o.enter = function (guide) {
     o.on = true;
+    /* a theme's world stops behind it and is out of the page while Live TV plays, so it costs the TV nothing */
+    if (typeof WORLD !== 'undefined') WORLD.hidden();
     guideNext = !!guide;
     $('lv').classList.add('on');
     if (loaded && byNum[cur]) {
@@ -7975,6 +8075,7 @@ var LIVE = (function () {
     layer('lv-tune', false);
     layer('lv-toast', false);
     $('lv').classList.remove('on');
+    if (typeof WORLD !== 'undefined' && !document.hidden) WORLD.shown();
   };
   o.key = function (e) {
     var k = e.keyCode;

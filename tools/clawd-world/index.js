@@ -186,6 +186,7 @@ add('golden', L.GOLDEN);
 add('comet', L.COMET);
 add('aurora', L.AURORA, { ax: 0, ay: 0 });
 L.MIST.forEach((m, i) => add('mist-' + 'abc'[i], [m]));
+L.ROCKETS.forEach((r, i) => add('rocket-' + 'abc'[i], r));
 // the year and the weather over the land (place.js): snow, the trees of autumn and spring, fog, a rainbow
 const SE = P.SEASONS;
 add('snow-ground', [SE.snow.ground.pic], { ax: 0, ay: 0 });
@@ -457,7 +458,7 @@ const props = [
     [196, 186, 2.9],
     [354, 191, 2.4],
     [228, 200, 3],
-  ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6], d: ['03-01', '11-30'] } })),
+  ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6], d: ['04-15', '10-15'] } })),
   // the night sky, under the clouds: the stars and the moon wheel slowly to and fro, the bright stars twinkling as they go and a glow
   // breathing round the moon; other stars flare now and then, and a star shoots across
   prop('starfield', 0, 0, { under: true, pan: SKY, when: STARRY, fade: 240 }),
@@ -592,7 +593,7 @@ const SHOWER = o =>
 const events = [
   // a game of volleyball in the meadow (clawd-sidekick's), by day
   {
-    every: [90, 240],
+    every: [150, 420],
     time: [40, 80],
     call: 2,
     when: { h: [8, 22] },
@@ -649,7 +650,7 @@ const events = [
   SHOWER({ every: [90, 300], when: { w: ['rain'] }, key: 'green' }),
   // a flying saucer at night, and a crowd pointing at it
   {
-    every: [600, 1500],
+    every: [900, 2400],
     time: [24, 36],
     call: 3,
     when: { h: [21, 5] },
@@ -658,7 +659,7 @@ const events = [
   },
   // a shower of shooting stars at night, wishes made
   {
-    every: [400, 900],
+    every: [600, 1500],
     time: [30, 45],
     call: 3,
     when: { h: [21, 5] },
@@ -707,11 +708,11 @@ const events = [
   // ---- rare ones: a dragon at dusk, a golden Clawd by day, the northern lights on a winter night, a comet, a festival of balloons ----
   {
     every: [900, 2400],
-    chance: 0.35,
+    chance: 0.15,
     time: [44, 50],
     call: 3,
     when: { h: [18, 21] },
-    drift: [{ s: 'dragon', y: S(70), speed: 60, dir: -1, fps: 6, bob: 2 }],
+    drift: [{ s: 'dragon', y: S(109), speed: 60, dir: -1, fps: 6, bob: 2 }],
     spot: spot(200, 205, { n: 3, gap: S(20), acts: ['wait', 'panic', 'love'], fps: 8, time: [600, 600] }),
   },
   {
@@ -720,22 +721,22 @@ const events = [
     time: [40, 46],
     call: 4,
     when: { h: [9, 17] },
-    drift: [{ s: 'golden', y: S(G.lane), speed: 56, dir: 1, fps: 8 }],
+    drift: [{ s: 'golden', y: S(G.lane), speed: 150, dir: 1, fps: 10 }],
     spot: spot(160, 191, { n: 4, gap: S(16), acts: ['cheer', 'love', 'clap', 'cheer'], fps: 8, time: [600, 600] }),
   },
   {
     every: [900, 2400],
-    chance: 0.5,
+    chance: 0.12,
     time: [180, 300],
     when: { h: [21, 4], d: ['11-01', '03-15'] },
     props: [prop('aurora', 70, 4, { under: true, fps: 1, fade: 30 })],
   },
   {
     every: [1800, 5400],
-    chance: 0.3,
+    chance: 0.15,
     time: [300, 320],
     when: { h: [21, 5] },
-    drift: [{ s: 'comet', y: S(26), speed: 7, dir: -1, fps: 3 }],
+    drift: [{ s: 'comet', y: S(35), speed: 7, dir: -1, fps: 3 }],
   },
   {
     every: [1800, 4800],
@@ -743,10 +744,10 @@ const events = [
     time: [110, 120],
     when: { h: [9, 17], w: ['sun'] },
     drift: [
-      { s: 'balloon', y: S(60), speed: 22, dir: 1, bob: 2 },
-      { s: 'balloon-b', y: S(80), speed: 26, dir: 1, bob: 2 },
-      { s: 'balloon-c', y: S(48), speed: 18, dir: 1, bob: 2 },
-      { s: 'balloon-b', y: S(95), speed: 30, dir: 1, bob: 1 },
+      { s: 'balloon', y: S(100), speed: 22, dir: 1, bob: 2 },
+      { s: 'balloon-b', y: S(108), speed: 26, dir: 1, bob: 2 },
+      { s: 'balloon-c', y: S(112), speed: 18, dir: 1, bob: 2 },
+      { s: 'balloon-b', y: S(104), speed: 30, dir: 1, bob: 1 },
     ],
   },
   // ---- the coloured keys of the remote: red, fireworks with everyone watching from the meadow; yellow, a dance party on the stage;
@@ -757,13 +758,17 @@ const events = [
     key: 'red',
     time: [40, 60],
     call: 6,
+    // rockets rise from just over the rooftops and burst high in the sky (the apps are out of the way while it lasts)
     props: [
-      prop('fw-a', 90, 70, { fps: 8, rest: 2.5, fade: 0 }),
-      prop('fw-b', 190, 60, { fps: 8, rest: 3, fade: 0 }),
-      prop('fw-c', 300, 74, { fps: 8, rest: 2.8, fade: 0 }),
-      prop('fw-b', 140, 90, { fps: 8, rest: 3.4, fade: 0 }),
-      prop('fw-a', 250, 92, { fps: 8, rest: 3.2, fade: 0 }),
-    ],
+      [40, 104, 'a', 2],
+      [85, 104, 'c', 2.4],
+      [120, 120, 'b', 2.2],
+      [160, 109, 'c', 1.9],
+      [240, 110, 'a', 2.5],
+      [300, 88, 'b', 2.1],
+      [345, 124, 'a', 2.3],
+      [372, 116, 'c', 2.6],
+    ].map(([x, y, k, rest]) => prop('rocket-' + k, x, y, { fps: 12, rest, fade: 0 })),
     spot: spot(MEADOW[0], MEADOW[1], {
       n: 6,
       gap: S(16),

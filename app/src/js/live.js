@@ -993,6 +993,8 @@ var LIVE = (function () {
   var guideNext = false;
   o.enter = function (guide) {
     o.on = true;
+    /* a theme's world stops behind it and is out of the page while Live TV plays, so it costs the TV nothing */
+    if (typeof WORLD !== 'undefined') WORLD.hidden();
     guideNext = !!guide;
     $('lv').classList.add('on');
     if (loaded && byNum[cur]) {
@@ -1040,6 +1042,7 @@ var LIVE = (function () {
     layer('lv-tune', false);
     layer('lv-toast', false);
     $('lv').classList.remove('on');
+    if (typeof WORLD !== 'undefined' && !document.hidden) WORLD.shown();
   };
   o.key = function (e) {
     var k = e.keyCode;

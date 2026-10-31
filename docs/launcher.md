@@ -32,8 +32,10 @@ same on every supported webOS version.
 The Magic Remote pointer works too: pointing and clicking, and holding the button on an app for its options.
 
 With a theme that has a world and asks for it (the Claude theme does, after three minutes), the home screen goes into **watch mode**
-when no key is pressed for a while: the clock, the buttons and the apps fade away and the world has the screen. Any key or a move of
-the pointer brings them back, and that key does nothing else; a coloured key starts its show and leaves the world the screen.
+when no key is pressed and the pointer does not move for a while: the clock, the buttons and the apps fade away and the world has the
+screen. Any key or a move of the pointer brings them back, and that key does nothing else. A coloured key gives its show the screen the
+same way: the clock, the buttons and the apps fade away while it lasts and come back when it is over, or at any key; in watch mode they
+stay away.
 
 ![App options](screenshots/options.jpg)
 

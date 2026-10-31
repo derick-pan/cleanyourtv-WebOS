@@ -164,11 +164,11 @@ Folder: [`the-grid/`](the-grid/)
 
 Clawd World: a pixel village where the little Clawds of Claude Code live, going on under the apps (a world, `world` in `theme.json`;
 see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting and the clock sit in the sky, the
-focused app's name is big above a row of six apps, and Down opens all the apps over the village, which stands still under them. The
-village keeps the hours of the TV's clock: by day a blue sky with the sun high, the mountains, the hills and the pond in daylight and
-white clouds; from six the sun goes down behind the hills, the sky turns red and purple and the stars and the moon come out, the moon
-in its real phase that night; from nine a deep night sky, the lamps and the windows lit; at five the dawn. Each sky fades into the next
-over a few minutes.
+focused app's name is big above a row of six apps, and Down opens all the apps over the village, which pauses under them. The village
+keeps the hours of the TV's clock: by day a blue sky with the sun high, the mountains, the hills and the pond in daylight and white
+clouds; from six the sun goes down behind the hills, the sky turns red and purple and the stars and the moon come out, the moon in its
+real phase that night; from nine a deep night sky, the lamps and the windows lit; at five the dawn. Each sky fades into the next over a
+few minutes.
 
 Every day has its own weather, picked from the date (not the weather outside), the same all day: mostly sunny, with butterflies in the
 warm months and a balloon drifting by; some days grey with clouds, or windy with gusts every few seconds; on a day of rain (spring to
@@ -196,18 +196,19 @@ Now and then something happens: a game of volleyball in the meadow, lunch on a p
 in the evening with fireworks and confetti, a juggling show, a flying saucer or a meteor shower at night (with a crowd pointing at it),
 a deer looking out of the bushes, or the server room overheating. Some things are rare: a dragon flying over at dusk, a golden Clawd
 running along the street, a comet crossing the night sky, the northern lights on a winter night, a balloon festival on a sunny day. The
-hours change things too: the night darkens the sky, the lamps glow, fireflies come out, a sparrow sits on the sill by day; and so does
-the year: blossom on the trees in spring, the trees red and gold in autumn, snow on the ground and the roofs and a snowman in winter;
-pumpkins, bats and witch hats at Halloween, a fir and Santa hats in December, lanterns and party hats at the new year. By the house a
-shed goes up over the week (begun on Monday, done on Sunday) and a sapling grows over the month.
+hours change things too: the night darkens the sky, the lamps glow, fireflies come out in summer, a sparrow sits on the sill by day;
+and so does the year: blossom on the trees in spring, the trees red and gold in autumn, snow on the ground and the roofs and a snowman
+in winter; pumpkins, bats and witch hats at Halloween, a fir and Santa hats in December, lanterns and party hats at the new year. By
+the house a shed goes up over the week (begun on Monday, done on Sunday) and a sapling grows over the month. Around them the fire
+crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and clouds, birds and a balloon
+drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the flowers of the garden and the
+meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams out, the lily pads drift and a
+few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly across the sky and back, the bright
+stars twinkle, others flare now and then, and a star shoots across.
 
-The coloured keys of the remote start a show on Home: red fireworks, green a shower, yellow a dance party, blue a snow flurry. After
-three minutes without a key the clock, the buttons and the apps fade away and the village has the screen (watch mode); any key brings
-them back. Around them the fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, and
-clouds, birds and a balloon drift past behind the roofs. Every half minute or so a gust of wind sweeps across from the left: the
-flowers of the garden and the meadow, the grass, the reeds and the bunting bend in a wave as it passes, the flag on the roof streams
-out, the lily pads drift and a few petals are carried off; rings spread on the pond. Overhead the stars and the moon wheel slowly
-across the sky and back, the bright stars twinkle, others flare now and then, and a star shoots across.
+The coloured keys of the remote start a show on Home: red, rockets bursting all over the sky; green, a shower; yellow, a dance party;
+blue, a snow flurry. The clock, the buttons and the apps fade away while it lasts, and come back when it is over or at any key. After
+three minutes without a key they fade away too and the village has the screen (watch mode); any key brings them back.
 
 Everything was drawn for this theme pixel by pixel by `tools/clawd-world/` (`node tools/clawd-world`), which writes `world.png` (the
 backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet: every Clawd in every cap) and the `"world"` of

@@ -720,15 +720,16 @@ function world(o) {
     fx: fx(wo.fx),
     when: when(wo.when),
   }));
-  // the weather of the day: each calendar day one of these (whose days fit), by weight, the same all day
+  // the weather of the day: each calendar day one of these (whose days fit), by weight, the same all day (a weight up to 1000, so a
+  // few days can all but have one: snow at Christmas)
   const weather = list(o.weather, 12)
-    .map(e => ({ name: typeof e.name === 'string' && NAME.test(e.name) ? e.name : '', w: num(e.w, 0, 100, 1), when: when(e.when) }))
+    .map(e => ({ name: typeof e.name === 'string' && NAME.test(e.name) ? e.name : '', w: num(e.w, 0, 1000, 1), when: when(e.when) }))
     .filter(e => e.name);
   return {
     file: typeof o.file === 'string' ? o.file : '',
     px: int(o.px, 1, 12, 4),
-    // minutes on Home without a key before only the world is shown (0: never)
-    watch: num(o.watch, 0, 120, 0),
+    // whole minutes on Home without a key before only the world is shown (0: never; at least 1, or Home could not be used)
+    watch: o.watch > 0 ? int(o.watch, 1, 120, 0) : 0,
     sprites,
     crew,
     spots,
