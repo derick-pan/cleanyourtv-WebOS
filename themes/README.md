@@ -165,23 +165,34 @@ Folder: [`the-grid/`](the-grid/)
 Clawd World: a pixel village at dusk where the little Clawds of Claude Code live, going on under the apps (a world, `world` in
 `theme.json`; see the [Themes page](https://lasharor.github.io/cleanyourtv-WebOS/themes/#a-world)). The greeting, the clock and the
 buttons sit in a night sky with a crescent moon, the focused app's name is big above a row of six apps, and the sun is going down
-behind the hills. Eight Clawds walk the village street from spot to spot and get on with things: hammering at the anvil of the Code
-Forge (`</>` over its door), swinging a pickaxe at the Token Mine or going into it past a cart heaped with glowing tokens, typing at a
-laptop and reading in their cutaway house, playing a game in front of the TV two at a time, napping upstairs (with z's), casting spells
-from the wizard's tower in a pointed hat, brewing potions in goggles at the lab door, fishing off the pier, conducting a choir of little
-ones on the stage, dancing in the meadow with hearts between them, roasting marshmallows by the campfire, watering the flowers, and
-burrowing into the sand to pop up again later (after Clawd Tank), or wandering off the edge of the world and back. They climb the
-ladders to the rooms upstairs and to the tower's balcony, hop when you move the focus and wave when you come back to Home. Around them
-the fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, fireflies blink, stars
-twinkle, clouds, birds and a balloon drift past behind the roofs, and now and then a star shoots across the sky. Down opens all the apps
-over the village, which stands still under them.
+behind the hills. Down opens all the apps over the village, which stands still under them.
 
-It is inspired by the Clawd projects people have made (Clawd Tank's aquarium, the house of clawd-sidekick, the meadow of claude-clawd,
-ClaudeVille's Code Forge, Token Mine and Research Lab, the states that Clawd Tank shows: reading, typing, building, the wizard and the
-conductor) but takes no code or art from them. Everything was drawn for this theme pixel by pixel by `tools/clawd-world.js`, which
-writes `world.png` (the backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet) and the `"world"` of `theme.json`
-from the same layout. The character is Clawd, the mascot in Claude Code's terminal (a block with two eyes, little arms and four legs;
-Anthropic's character), redrawn in pixels for this theme.
+Eight Clawds, each in a beanie of its own colour, walk the village street from spot to spot and get on with things. In the house they
+go in at the door and climb the ladder: reading in the library, pinning notes and stamping mail in the workshop, coding at the desk and
+at the terminal, debugging in the server room, playing the arcade, pong, jump rope or the block tower in the game room upstairs (the
+first one there waves the others over with a "!" until they come, and the table, the rope or the tower comes out when they are all
+there), gazing out of the lookout, and at night four of them sleep up there. Outside they hammer at the anvil of the Code Forge, swing
+a pickaxe at the Token Mine and go in past the cart to come back pushing it, cast spells from the wizard's tower, have a eureka at the
+lab, fish off the pier, conduct the choir on the stage, juggle, sweep, build, water the garden, have a coffee, roast marshmallows by the
+campfire, dance in the meadow with hearts between them, burrow into the sand to pop up again, or wander off the edge of the world and
+back. They say what they are up to in little speech bubbles (code, a bug, an idea, a heart), and now and then two of them meet in the
+street for a chat and clap. They hop when you move the focus and wave when you come back to Home. Five little Clawds play in the
+meadow, a crab scuttles on the sand, a cat strolls the street by day and an owl by night.
+
+Now and then something happens: a game of volleyball in the meadow, lunch on a picnic cloth at noon, tea at three, a party on the stage
+in the evening with fireworks and confetti, a juggling show, a shower that sends everyone indoors, a flying saucer or a meteor shower
+at night (with a crowd pointing at it), a deer looking out of the bushes, or the server room overheating. The hours change things too:
+the night darkens the sky, the lamps glow, fireflies come out, a sparrow sits on the sill by day; and so does the year: pumpkins and
+bats at Halloween, a fir in December, snow in winter, lanterns at the new year, leaves in autumn and petals in spring. Around them the
+fire crackles and throws embers, smoke rises from the chimneys, a fish jumps, a Clawd swims in the pond, stars twinkle, and clouds,
+birds and a balloon drift past behind the roofs.
+
+Everything was drawn for this theme pixel by pixel by `tools/clawd-world/` (`node tools/clawd-world`), which writes `world.png` (the
+backdrop, 384 x 216 art pixels at five times), `clawd.png` (the sprite sheet: every Clawd in every cap) and the `"world"` of
+`theme.json` from the same layout. It redraws parts of three MIT-licensed Clawd projects: the house, the Clawd's poses, the games, the
+pals and the visitors of clawd-sidekick, the jobs of Clawd Tank, and the meadow and the bubbles of claude-clawd (see
+[THIRD-PARTY.md](../THIRD-PARTY.md)). It is also inspired by ClaudeVille's Code Forge, Token Mine and Research Lab. The character is
+Clawd, the mascot in Claude Code's terminal (a block with two eyes, little arms and four legs; Anthropic's character).
 
 [![Claude](claude/preview.jpg)](claude/preview.jpg)
 

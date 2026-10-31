@@ -463,8 +463,9 @@ run(async () => {
     themeMod.resolve(themeMod.normalize({ name: 'kid' }, 'claude-kid', mt.v)).mascot.id === 'claude',
     'a theme that extends one with a mascot uses that file from its folder'
   );
-  // a world: values are clamped, names that are not sprites are dropped (a prop or a drift without one is left out), lists are cut to
-  // their limits; it needs a sprite sheet that is there, a theme that extends one keeps it, and only a theme with one has the key
+  // a world: values are clamped, names that are not sprites are dropped (a prop, a drift or a herd without one is left out), lists are
+  // cut to their limits; it needs a sprite sheet that is there, a theme that extends one keeps it, and only a theme with one has the key
+  const many = n => Array.apply(null, Array(n)).map(() => ({ s: 'stand', act: 'stand' }));
   const wd = themeMod.normalize(
     {
       world: {
@@ -473,18 +474,59 @@ run(async () => {
         sprites: {
           stand: [0, 0, 16, 10, 8],
           walk: [0, 10, 16, 11, 4, 8, 11],
+          cap: [0, 30, 16, 10, 4, 8, 10, 99],
           'Bad Name': [1, 2, 3, 4],
           short: [1, 2],
-          huge: [1e9, -5, 9999, 0, 99, 99, -3],
+          huge: [1e9, -5, 9999, 0, 99, 99, -3, 0],
         },
-        crew: { count: 50, speed: 1, stand: 'stand', climb: 'nope', lane: [905, 1570, -999] },
+        crew: {
+          count: 50,
+          speed: 1,
+          stand: 'stand',
+          climb: 'nope',
+          wait: 'cap',
+          looks: 99,
+          bubble: -5,
+          lane: [905, 1570, -999],
+          chat: { every: [1, 99999], say: ['nope', 'cap'], act: 'nope' },
+        },
         spots: [
           { x: 9999, y: 860, act: 'walk', time: [30, 2], via: [940, 860], fx: { s: 'stand', kind: 'boom', every: 0 } },
-          { act: 'nope', n: 9 },
+          { act: 'nope', n: 9, acts: ['cap', 'nope', 'walk'], group: 'Bad Group', say: { s: ['nope'] } },
+          {
+            act: 'cap',
+            path: [[1, 2, 'up'], [3], [5000, -5000, 0], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8]],
+            group: 'games',
+            show: [{ s: 'cap', x: 10, y: 20 }, { s: 'nope' }, { s: 'stand' }, { s: 'stand' }, { s: 'stand' }, { s: 'stand' }],
+            say: { s: ['nope', 'cap'], every: 9999 },
+            when: { h: [22, 6], d: ['13-01', '01-01'] },
+            w: 99,
+          },
           'junk',
+        ].concat(many(45)),
+        props: [{ s: 'nope' }, { s: 'stand', front: true, bob: 99, rest: -1, when: { d: ['10-15', '11-01'] } }].concat(many(90)),
+        drift: [{ s: 'walk', dir: -1, speed: 0, when: { h: [7, 99] } }, { y: 5 }],
+        herds: [
+          { count: 99, area: [10, 20, 30, 40], stand: 'cap', acts: ['nope', 'walk'], speed: 0, when: {} },
+          { stand: 'nope' },
+          {},
+          { stand: 'stand' },
+          { stand: 'stand' },
+          { stand: 'stand' },
         ],
-        props: [{ s: 'nope' }, { s: 'stand', front: true, bob: 99, rest: -1 }],
-        drift: [{ s: 'walk', dir: -1, speed: 0 }, { y: 5 }],
+        events: [
+          {
+            every: [1, 1e9],
+            time: [0, 9999],
+            call: 99,
+            spot: { x: 100, y: 200, n: 3, act: 'cap' },
+            props: [{ s: 'cap' }, { s: 'nope' }],
+            drift: [{ s: 'walk' }, { s: 'nope' }],
+            when: { h: [12, 14] },
+          },
+          {},
+        ],
+        shade: [{ color: '#06051a', alpha: 2, when: { h: [0, 5] } }, { color: 'nope', alpha: 0.5 }, { color: '#FFFFFF' }],
       },
     },
     'claude',
@@ -496,33 +538,93 @@ run(async () => {
     wr &&
       wr.id === 'claude' &&
       wr.px === 12 &&
-      Object.keys(wr.sprites).join() === 'stand,walk,huge' &&
-      wr.sprites.stand.join() === '0,0,16,10,8,8,10' &&
-      wr.sprites.huge.join() === '4096,0,512,1,32,99,0',
-    'world sprites are rectangles of the sheet, clamped, with their anchor in the middle of the bottom edge unless given'
+      Object.keys(wr.sprites).join() === 'stand,walk,cap,huge' &&
+      wr.sprites.stand.join() === '0,0,16,10,8,8,10,1' &&
+      wr.sprites.cap.join() === '0,30,16,10,4,8,10,16' &&
+      wr.sprites.huge.join() === '4096,0,512,1,32,99,0,1',
+    'world sprites are rectangles of the sheet, clamped, with their anchor in the middle of the bottom edge unless given, and their looks'
   );
   ok(
-    wr.crew.count === 12 &&
+    wr.crew.count === 16 &&
       wr.crew.speed === 10 &&
       wr.crew.walk === 'stand' &&
       wr.crew.climb === '' &&
+      wr.crew.wait === 'cap' &&
+      wr.crew.looks === 16 &&
+      wr.crew.bubble === 0 &&
       wr.crew.lane.join() === '905,-400,1570' &&
-      wr.spots.length === 2 &&
-      wr.spots[0].x === 2320 &&
-      wr.spots[0].time.join() === '2,30' &&
-      wr.spots[0].via.join() === '940,860' &&
-      wr.spots[0].fx.kind === 'rise' &&
-      wr.spots[0].fx.every === 0.2 &&
-      wr.spots[1].act === '' &&
-      wr.spots[1].n === 4 &&
-      wr.props.length === 1 &&
+      JSON.stringify(wr.crew.chat) === '{"every":[3,3600],"say":["cap"],"act":""}',
+    'the crew (walking with the standing picture when there is no walk), its looks, its street and its chats are checked and clamped'
+  );
+  const s0 = wr.spots[0],
+    s1 = wr.spots[1],
+    s2 = wr.spots[2];
+  ok(
+    wr.spots.length === 39 &&
+      s0.x === 2320 &&
+      s0.time.join() === '2,30' &&
+      JSON.stringify(s0.path) === '[[940,860,0],[940,860,1]]' &&
+      s0.fx.kind === 'rise' &&
+      s0.fx.every === 0.2 &&
+      s1.act === '' &&
+      s1.n === 6 &&
+      s1.acts.join() === 'cap,,walk' &&
+      s1.group === '' &&
+      s1.say === null &&
+      JSON.stringify(s2.path) === '[[1,2,1],[2320,-200,0],[4,4,0],[5,5,0],[6,6,0]]' &&
+      s2.group === 'games' &&
+      s2.show.length === 3 &&
+      s2.show[0].s === 'cap' &&
+      s2.show[0].x === 10 &&
+      JSON.stringify(s2.say) === '{"s":["cap"],"every":600}' &&
+      JSON.stringify(s2.when) === '{"h":[22,6],"d":null}' &&
+      s2.w === 10,
+    'spots (at most 40): a way in (path, or via as a ladder), what each place does, a group, props to show, bubbles and hours, clamped and cut'
+  );
+  ok(
+    wr.props.length === 79 &&
       wr.props[0].bob === 8 &&
       wr.props[0].rest === 0 &&
       wr.props[0].front === true &&
+      JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101]}' &&
       wr.drift.length === 1 &&
       wr.drift[0].speed === 1 &&
-      wr.drift[0].dir === -1,
-    'the crew (walking with the standing picture when there is no walk), spots, props and drift are checked and clamped, and what names no sprite is left out'
+      wr.drift[0].dir === -1 &&
+      JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null}',
+    'props (at most 80) and drift are checked and clamped, with the hours and days they show (when), and what names no sprite is left out'
+  );
+  const h0 = wr.herds[0],
+    e0 = wr.events[0],
+    e1 = wr.events[1];
+  ok(
+    wr.herds.length === 2 &&
+      h0.count === 12 &&
+      h0.area.join() === '10,20,30,40' &&
+      h0.walk === 'cap' &&
+      h0.acts.join() === 'walk' &&
+      h0.speed === 5 &&
+      h0.when === null,
+    'herds: at most 4, those without a sprite to stand with left out, clamped'
+  );
+  ok(
+    e0.every.join() === '10,7200' &&
+      e0.time.join() === '5,900' &&
+      e0.call === 16 &&
+      e0.spot.n === 3 &&
+      e0.spot.act === 'cap' &&
+      e0.props.length === 1 &&
+      e0.drift.length === 1 &&
+      JSON.stringify(e0.when) === '{"h":[12,14],"d":null}' &&
+      e1.spot === null &&
+      e1.every.join() === '120,300' &&
+      e1.call === 0,
+    'events: how often, how long, how many are called to their spot, their props and drift, clamped'
+  );
+  ok(
+    wr.shade.length === 2 &&
+      JSON.stringify(wr.shade[0]) === '{"color":"#06051a","alpha":0.9,"when":{"h":[0,5],"d":null}}' &&
+      wr.shade[1].color === '#ffffff',
+    'the tint of the night: a colour (one that is not is left out) and how strong, clamped'
   );
   ok(
     !('world' in plain) &&
