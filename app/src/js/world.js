@@ -5,6 +5,7 @@
    says (in at a door, up the stairs or a ladder, inside for a while), herds of little ones who wander about an area and play, events
    that come now and then (a match, a party, a visitor) and a tint for the night. Some things only happen at some hours or on some days
    (when). Characters say things in bubbles, meet in the street for a chat, hop when the focus moves and wave when Home comes back.
+   Now and then a gust of wind crosses the screen and what grows sways as it passes; the stars can wheel slowly (pan).
    Everything moves with transforms and opacity only and in whole art pixels (steps), so pixel art stays crisp and the weak GPU draws
    each piece as a small layer; the frames are CSS animations, so the script only acts when someone starts something new. effects.speed
    0 leaves everyone standing at a spot. It stops while Home is hidden and stands still under the open grid. ---------- */
@@ -115,6 +116,22 @@ var WORLD = (function () {
       css += '}';
     }
     for (n = 1; n <= 8; n++) css += '@keyframes wo-bob' + n + '{to{transform:translateY(' + -n * P + 'px)}}';
+    /* a slow drift to and fro for each distance a prop pans */
+    var pans = {},
+      each = function (l) {
+        l.forEach(function (p) {
+          if (p.pan) pans[p.pan[0]] = 1;
+        });
+      };
+    each(W.props);
+    W.spots.forEach(function (x) {
+      each(x.show);
+    });
+    W.events.forEach(function (e) {
+      each(e.props);
+      if (e.spot) each(e.spot.show);
+    });
+    for (k in pans) css += '@keyframes wo-pan' + k + '{to{transform:translateX(' + k + 'px)}}';
     for (k in W.sprites) used[W.sprites[k][4]] = 1;
     for (k in used)
       if (+k > 1) {
@@ -133,6 +150,16 @@ var WORLD = (function () {
       '@keyframes wo-fall{0%{transform:translateY(0);opacity:0}8%{opacity:1}80%{opacity:1}100%{transform:translateY(' +
       40 * P +
       'px);opacity:0}}' +
+      '@keyframes wo-blow{0%{transform:translate(0,0);opacity:0}10%,75%{opacity:1}100%{transform:translate(' +
+      48 * P +
+      'px,' +
+      -8 * P +
+      'px);opacity:0}}' +
+      '@keyframes wo-blowl{0%{transform:translate(0,0);opacity:0}10%,75%{opacity:1}100%{transform:translate(' +
+      -48 * P +
+      'px,' +
+      -8 * P +
+      'px);opacity:0}}' +
       '@keyframes wo-sway{50%{transform:translateX(' +
       P +
       'px)}}' +
@@ -148,12 +175,13 @@ var WORLD = (function () {
     );
   }
 
-  /* ---- particles (fx): a sprite that rises, floats away or pops where it is, playing its frames once over its life ---- */
+  /* ---- particles (fx): a sprite that rises, floats away, pops where it is, falls or is blown away (the way the wind goes: face),
+     playing its frames once over its life ---- */
   function emit(f, x, y, face) {
     if (!box || parts.length >= 36 || document.hidden) return;
     var s = W.sprites[f.s];
     if (!s) return;
-    var life = f.kind === 'float' ? 4 : f.kind === 'pop' ? 1.1 : f.kind === 'fall' ? 5 : 2.6,
+    var life = f.kind === 'float' ? 4 : f.kind === 'pop' ? 1.1 : f.kind === 'fall' ? 5 : f.kind === 'blow' ? 3.2 : 2.6,
       t = life / rate,
       px = x + (face < 0 ? -f.dx : f.dx),
       py = y + f.dy;
@@ -163,7 +191,7 @@ var WORLD = (function () {
     } else px += Math.round(rnd(-1, 1)) * P;
     var a = div('wo wo-f', box),
       m = div('wo-b', a),
-      sw = f.kind === 'rise' || f.kind === 'fall' ? div('wo-b', m) : m,
+      sw = f.kind === 'rise' || f.kind === 'fall' || f.kind === 'blow' ? div('wo-b', m) : m,
       o = piece(sw);
     a.style.left = Math.round(px) + 'px';
     a.style.top = Math.round(py) + 'px';
@@ -171,10 +199,11 @@ var WORLD = (function () {
     m.style.animation =
       'wo-' +
       f.kind +
+      (f.kind === 'blow' && face < 0 ? 'l' : '') +
       ' ' +
       t.toFixed(2) +
       's ' +
-      (f.kind === 'pop' ? 'linear' : 'steps(' + (f.kind === 'rise' ? 16 : f.kind === 'fall' ? 40 : 24) + ')') +
+      (f.kind === 'pop' ? 'linear' : 'steps(' + (f.kind === 'rise' ? 16 : f.kind === 'fall' ? 40 : f.kind === 'blow' ? 48 : 24) + ')') +
       ' forwards';
     if (sw !== m) sw.style.animation = 'wo-sway ' + (0.9 / rate).toFixed(2) + 's steps(1) ' + (-rnd(0, 1)).toFixed(2) + 's infinite';
     parts.push(a);
@@ -198,26 +227,49 @@ var WORLD = (function () {
   }
 
   /* ---- props: in place, playing their frames; they can bob, pulse (a glow), play only now and then (rest), give off particles, sit
-     under everything else (under) or in front of the crew (front), and show only at their hours (when) ---- */
+     under everything else (under: under the drift and the tint too) or in front of the crew (front), show only at their hours (when),
+     drift slowly to and fro (pan: in step with every other prop that pans as far as long) and sway when the wind passes (gust) ---- */
   function prop(p) {
     var a = div('wo', box),
       b = div('wo-b', a),
       o = piece(b);
     a.style.left = p.x + 'px';
     a.style.top = p.y + 'px';
-    a.style.zIndex = p.front ? 900 : p.under ? 4 : 10;
+    a.style.zIndex = p.front ? 900 : p.under ? 0 : 10;
     paint(o, p.s, p.rest ? 0 : p.fps, false, 1, 0, true);
+    var q = { p: p, a: a, b: b, o: o, on: true };
+    panning(q, false);
     var an = [];
     if (rate > 0 && p.bob) an.push(bob(p.bob));
     if (rate > 0 && p.pulse)
       an.push('wo-pulse ' + (p.pulse / 2 / rate).toFixed(2) + 's ease-in-out ' + (-rnd(0, p.pulse)).toFixed(2) + 's infinite alternate');
     if (an.length) b.style.animation = an.join(',');
-    return { p: p, a: a, b: b, o: o, on: true };
+    return q;
+  }
+  /* a prop that pans drifts one px at a time, where the clock says it is: every prop that pans as far as long keeps with the others
+     (the stars with their sky); still (a screenshot), it stays where it starts */
+  function panning(q, still) {
+    var p = q.p;
+    if (!p.pan) return;
+    var per = p.pan[1] / rate;
+    q.a.style.animation =
+      still || !(rate > 0)
+        ? 'none'
+        : 'wo-pan' +
+          p.pan[0] +
+          ' ' +
+          per.toFixed(3) +
+          's steps(' +
+          Math.abs(p.pan[0]) +
+          ') ' +
+          (-((Date.now() / 1000) % (2 * per))).toFixed(3) +
+          's infinite alternate';
   }
   /* a prop's timers: one that plays now and then is out of sight between plays; particles while it is shown */
   function startProp(q) {
     var p = q.p;
     if (!(rate > 0)) return;
+    if (p.gust && q.o.name !== p.s) paint(q.o, p.s, p.fps, false, 1, 0, true);
     if (p.rest) {
       q.a.style.opacity = '0';
       var play = function () {
@@ -242,6 +294,35 @@ var WORLD = (function () {
           return q.on && !!q.a.parentNode;
         }
       );
+  }
+
+  /* ---- wind: now and then a gust crosses the screen (from the left, or the right: wind.dir); every prop with a gust sprite plays it
+     once as the gust passes over it, mirrored when it blows from the right, then goes back to its own frames, and some of them give
+     off the wind's particles (a petal carried away) ---- */
+  function wind() {
+    var w = W.wind;
+    if (!w || !(rate > 0)) return;
+    later(
+      function () {
+        props.concat(live ? live.props : []).forEach(function (q) {
+          var p = q.p;
+          if (!p.gust || p.rest || !q.on) return;
+          later(
+            function () {
+              if (!q.on || !q.a.parentNode) return;
+              var t = paint(q.o, p.gust, w.fps, true, w.dir, 0);
+              later(function () {
+                if (q.on) paint(q.o, p.s, p.fps, false, 1, 0, true);
+              }, t + 0.05);
+              if (w.fx && Math.random() < 0.35) emit(w.fx, p.x, p.y, w.dir);
+            },
+            ((w.dir > 0 ? p.x : 1920 - p.x) + 400) / w.speed / rate
+          );
+        });
+        wind();
+      },
+      rnd(w.every[0], w.every[1]) / rate
+    );
   }
 
   /* ---- drift: crossing the screen, then a while out of sight, over and over ---- */
@@ -916,7 +997,7 @@ var WORLD = (function () {
     herds();
     go(false);
   }
-  /* (re)start the timers: the props', the crew at their spots, the herds, the chats, the events and the clock */
+  /* (re)start the timers: the props', the crew at their spots, the herds, the chats, the events, the wind and the clock */
   function go(still) {
     if (live) end(live);
     live = null;
@@ -924,11 +1005,15 @@ var WORLD = (function () {
     parts.forEach(drop);
     parts = [];
     hours();
-    props.forEach(startProp);
+    props.forEach(function (q) {
+      panning(q, still);
+      startProp(q);
+    });
     place(still);
     if (still) return;
     chatter();
     events();
+    wind();
     clock();
   }
   function clear() {

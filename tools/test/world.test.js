@@ -2,9 +2,11 @@
 // same every time, and a clock that the test moves on (the hour of the day with it).
 // First the Claude theme's world over an hour of a morning on Halloween: everyone starts at a spot of their own in their own cap, they
 // keep to the street, the doors and the ladders, a game's table is only there while all its players are at it, events come and go,
-// bubbles are said, the night's things and the tint come at night, the focus makes them hop, and nothing moves while Home is hidden.
+// bubbles are said, the night's things and the tint come at night, the stars wheel slowly under the clouds, gusts of wind sway what
+// grows, the focus makes them hop, and nothing moves while Home is hidden.
 // Then small worlds made here, one for each rule: a game waits for its players and breaks up together; one game at a time in a room;
-// an event calls the crew and stops when Home is hidden; inside spots and spots at some hours; a chat in the street; a herd.
+// an event calls the crew and stops when Home is hidden; inside spots and spots at some hours; the wind and props that pan; a chat in
+// the street; a herd.
 const fs = require('fs'),
   path = require('path'),
   vm = require('vm');
@@ -212,6 +214,7 @@ function made(o) {
     'say-hi': [100, 40, 8, 8, 1, 4, 8],
     mini: [100, 50, 8, 8, 1, 4, 8],
     'mini-walk': [100, 60, 8, 8, 2, 4, 8],
+    gusty: [100, 70, 16, 16, 8, 8, 16],
   };
   const crew = Object.assign(
       { count: 2, speed: 80, stand: 'stand', walk: 'walk', climb: 'climb', wave: 'wave', wait: 'wait', lane: [820, 0, 1920] },
@@ -290,6 +293,26 @@ run(async () => {
   const shade = b.children.filter(c => c.classList.contains('wo-sh'))[0];
   ok(!!shade && shade.style.opacity === '0', 'no tint by day');
 
+  // the night sky wheels slowly: the starfield, the moon's glow and the bright stars drift together, one px at a time, under the clouds
+  const pans = propsOf(b).filter(e => /^wo-pan/.test(e.style.animation || '')),
+    firstDrift = b.children.indexOf(all(b, 'wo-d')[0]);
+  ok(
+    pans.length === w.props.filter(p => p.pan).length &&
+      pans.some(e => name(e).name === 'starfield') &&
+      pans.every(e => e.style.animation === pans[0].style.animation) &&
+      /^wo-pan-240 480\.000s steps\(240\) -[\d.]+s infinite alternate$/.test(pans[0].style.animation),
+    'the stars, the moon and the bright stars drift together, one px at a time, to and fro (' + pans.length + ' props)'
+  );
+  ok(
+    pans.every(e => String(e.style.zIndex) === '0' && b.children.indexOf(e) < firstDrift),
+    'the sky is under everything else of the world: under the clouds that drift over it'
+  );
+  const gusty = propsOf(b).filter(e => {
+    const n = name(e).name;
+    return w.props.some(p => p.s === n && p.gust);
+  });
+  ok(gusty.length >= 20, 'what sways in the wind is there: the flowers, the grass, the reeds, the flag, the bunting, the lily pads');
+
   // ---- an hour of the morning, looked at every half second ----
   const lane = w.crew.lane,
     allSpots = w.spots.concat(w.events.filter(e => e.spot).map(e => e.spot)),
@@ -310,6 +333,8 @@ run(async () => {
     bubbles = 0,
     inside = 0,
     miniOut = 0;
+  let sways = 0,
+    swayed = new Set();
   const last = new Map(),
     said = new Map();
   El.onMove = (el, v) => {
@@ -355,6 +380,14 @@ run(async () => {
         if (!on && there.some(m => name(m).name !== w.crew.wait && name(m).name !== w.crew.wave)) waitWrong++;
       });
     }
+    // a gust: what sways shows its gust's frames for a moment, then its own again
+    for (const e of gusty) {
+      const n = name(e).name,
+        on = /-gust$/.test(n);
+      if (on && !swayed.has(e)) sways++;
+      if (on) swayed.add(e);
+      else swayed.delete(e);
+    }
     for (const m of minis) {
       const h = w.herds.filter(x => name(m).name.indexOf(x.stand) === 0)[0],
         p = xy(m.style.transform),
@@ -380,6 +413,10 @@ run(async () => {
   ok(maxParts > 0 && maxParts <= 36, 'spots and props give off particles, never more than 36 at a time (' + maxParts + ')');
   ok(maxTimers < 400, 'the timers do not pile up (' + maxTimers + ' at most)');
   ok(!miniOut, 'the little ones keep to their areas');
+  ok(
+    sways > gusty.length * 40 && gusty.every(e => !/-gust$/.test(name(e).name) || swayed.has(e)),
+    'gusts of wind come every half minute or so and everything that grows sways (' + sways + ' sways in an hour)'
+  );
   ok(
     crew.some(m => /^transform [\d.]+s steps\(\d+\)$/.test(m.style.transition)),
     'a walk is a transition in whole art pixels (steps), not a script moving them every frame'
@@ -669,6 +706,67 @@ run(async () => {
       if (same(xy(m.style.transform), [900, 800])) night++;
     });
     ok(night > 0, 'and it is at night');
+  }
+  // the wind: a gust from the left reaches a prop on the left before one on the right, each sways once and is still again, some give
+  // off what the wind carries; Home hidden: no gusts, and Home back: all still. Props that pan keep together, and stay put for a
+  // screenshot
+  {
+    const ww = made({
+      crew: { count: 1 },
+      spots: [{ x: 960, y: 800, act: 'work', time: [600, 600] }],
+      props: [
+        { s: 'table', x: 100, y: 900, gust: 'gusty' },
+        { s: 'table', x: 1500, y: 900, gust: 'gusty' },
+        { s: 'mini', x: 200, y: 100, under: true, pan: [-240, 480] },
+        { s: 'mini', x: 400, y: 100, under: true, pan: [-240, 480] },
+      ],
+      wind: { every: [10, 10], speed: 500, fps: 10, fx: { s: 'say-hi', kind: 'blow' } },
+    });
+    const nm = namer(ww),
+      g = page(23, HALLOWEEN);
+    g.WORLD.apply(ww, 1);
+    g.advance(1);
+    const gb = g.box(),
+      [A, B, S1, S2] = propsOf(gb),
+      at = () => [nm(A).name, nm(B).name].join();
+    const seen = [];
+    g.advance(9800);
+    seen.push(at());
+    g.advance(1300); // 11.1 s: the gust is at the left one (10 s + (100 + 400) / 500)
+    seen.push(at());
+    g.advance(900); // 12.0 s
+    seen.push(at());
+    g.advance(2000); // 14.0 s: at the right one (10 s + (1500 + 400) / 500)
+    seen.push(at());
+    g.advance(800); // 14.8 s
+    seen.push(at());
+    ok(
+      seen.join(' | ') === 'table,table | gusty,table | table,table | table,gusty | table,table',
+      'a gust from the left sways the prop on the left, then the one on the right, each once (' + seen.join(' | ') + ')'
+    );
+    let blown = 0;
+    g.advance(90000, 100, () => {
+      blown = Math.max(blown, all(gb, 'wo-f').filter(f => /^wo-blow /.test(f.children[0].style.animation || '')).length);
+    });
+    ok(blown > 0, 'some give off what the wind carries away, blown the way it goes');
+    // hidden as a gust passes the left one: no more gusts until Home is back, and then everything is still
+    g.advance(((g.now() - HALLOWEEN) % 10000 > 0 ? 10000 - ((g.now() - HALLOWEEN - 1) % 10000) : 0) + 1200);
+    const mid = at();
+    g.WORLD.hidden();
+    let swayed = 0;
+    g.advance(60000, 100, () => {
+      if (nm(B).name === 'gusty') swayed++;
+    });
+    g.WORLD.shown();
+    ok(mid === 'gusty,table' && !swayed && at() === 'table,table', 'Home hidden: no gusts; Home back: all still again');
+    ok(
+      [S1, S2].every(e => /^wo-pan-240 480\.000s steps\(240\) -[\d.]+s infinite alternate$/.test(e.style.animation)) &&
+        S1.style.animation === S2.style.animation &&
+        String(S1.style.zIndex) === '0',
+      'props that pan as far as long drift together, by the clock'
+    );
+    g.WORLD.still();
+    ok(S1.style.animation === 'none' && S2.style.animation === 'none', 'still (a screenshot): they stay where they start');
   }
   // a chat: two meet in the street, face each other and talk in turn (bubbles), then clap
   {

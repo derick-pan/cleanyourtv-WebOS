@@ -478,23 +478,24 @@ function slots(list) {
 //    crew: {count, speed, stand, walk, climb, wave, wait, looks, bubble, lane: [y, x0, x1], chat: {every: [min, max], say: [names], act}},
 //    spots: [{x, y, act, acts: [names], fps, face, time: [min, max], n, gap, path: [[x, y, climb]], via: [x, y], inside, back, carry,
 //             w, fx, say, show: [props], group, when}],
-//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when}], drift: [{s, y, speed, dir, fps, bob, when}],
+//    props: [{s, x, y, fps, pulse, bob, front, under, rest, fx, when, pan: [px, seconds], gust}], drift: [{s, y, speed, dir, fps, bob, when}],
 //    herds: [{count, area: [x0, y0, x1, y1], stand, walk, acts: [names], speed, fx, when}],
-//    events: [{every: [min, max], time: [min, max], call, spot, props, drift, when}], shade: [{color, alpha, when}]}
-// with fx {s, kind: rise|float|pop|fall, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD']}. A sprite
+//    events: [{every: [min, max], time: [min, max], call, spot, props, drift, when}], shade: [{color, alpha, when}],
+//    wind: {every: [min, max], speed, dir, fps, fx}}
+// with fx {s, kind: rise|float|pop|fall|blow, every, dx, dy}, say {s: [names], every} and when {h: [from, to], d: ['MM-DD', 'MM-DD']}. A sprite
 // is a strip of `frames` frames of w x h art pixels side by side in the sheet, (ax, ay) the point of a frame that stands on a place, in
 // it or below it (default: the middle of its bottom edge); `looks` strips of the same size may follow under it, one per look of the
 // crew (a cap of another colour). px is how many screen pixels an art pixel is. Places are in px on the 1920 x 1080 canvas. Numbers
 // are clamped, a name that is not a sprite is dropped (a prop, a drift or a herd without one is left out) and the lists are cut to
 // their limits, so a world can only arrange its own pictures.
 const SPRITE = /^[a-z][a-z0-9-]{0,23}$/,
-  MAX_SPRITES = 160,
+  MAX_SPRITES = 200,
   MAX_SPOTS = 40,
-  MAX_PROPS = 80,
+  MAX_PROPS = 128,
   MAX_DRIFT = 16,
   MAX_HERDS = 4,
   MAX_EVENTS = 16,
-  FX_KINDS = ['rise', 'float', 'pop', 'fall'];
+  FX_KINDS = ['rise', 'float', 'pop', 'fall', 'blow'];
 function world(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
   const int = (n, lo, hi, d) => (typeof n === 'number' && isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n))) : d);
@@ -589,6 +590,10 @@ function world(o) {
     rest: num(e.rest, 0, 600, 0),
     fx: fx(e.fx),
     when: when(e.when),
+    // a slow drift to and fro, [px, seconds one way], one px at a time (the stars wheeling); props with the same pan keep together
+    pan: Array.isArray(e.pan) && int(e.pan[0], -1920, 1920, 0) ? [int(e.pan[0], -1920, 1920, 0), num(e.pan[1], 10, 7200, 600)] : null,
+    // what it plays once when a gust of wind passes over it (wind)
+    gust: sp(e.gust),
   });
   // a spot: where a character goes and what it does there; `path` is the way in from the street (a door, stairs: [x, y, climb])
   const spot = e => {
@@ -674,6 +679,18 @@ function world(o) {
   const shade = list(o.shade, 4)
     .map(e => ({ color: hex(e.color) || '', alpha: num(e.alpha, 0, 0.9, 0.4), when: when(e.when) }))
     .filter(x => x.color);
+  // the wind: now and then a gust crosses the screen from the left (dir 1) or the right (-1) at speed px/s; the props with a gust sprite
+  // play it at fps as it passes, and fx comes off some of them
+  const wo = obj(o.wind);
+  const wind = wo
+    ? {
+        every: range(wo.every, 3, 3600, 20, 40),
+        speed: num(wo.speed, 50, 4000, 400),
+        dir: wo.dir === -1 ? -1 : 1,
+        fps: num(wo.fps, 1, 30, 8),
+        fx: fx(wo.fx),
+      }
+    : null;
   return {
     file: typeof o.file === 'string' ? o.file : '',
     px: int(o.px, 1, 12, 4),
@@ -685,6 +702,7 @@ function world(o) {
     herds,
     events,
     shade,
+    wind,
   };
 }
 
