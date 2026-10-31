@@ -676,7 +676,9 @@ function frame(doing, k, look) {
     g = canvas(),
     p = d.pose(k) || {};
   if (p.bob) p.lift = (p.lift || 0) + p.bob;
+  // a doing's own hat (the builder's, the wizard's), or a holiday's worn as a look (witch, santa, party)
   if (d.hat) p.hat = d.hat;
+  else if (HATS[look]) p.hat = look;
   const y = body(g, OX, k, p, look);
   if (d.props) d.props(g, OX, y, k, look);
   return g;

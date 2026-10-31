@@ -27,8 +27,13 @@ same on every supported webOS version.
 | Switch input | The **Inputs** button |
 | Put an input on Home | Hold OK on it in the Inputs list |
 | Close running apps | Back on the home screen |
+| A show in the theme's world | The red, green, yellow or blue key on the home screen, with a theme that has a [world](themes.md#a-world) (the Claude theme: fireworks, a shower, a dance party, a snow flurry) |
 
 The Magic Remote pointer works too: pointing and clicking, and holding the button on an app for its options.
+
+With a theme that has a world and asks for it (the Claude theme does, after three minutes), the home screen goes into **watch mode**
+when no key is pressed for a while: the clock, the buttons and the apps fade away and the world has the screen. Any key or a move of
+the pointer brings them back, and that key does nothing else; a coloured key starts its show and leaves the world the screen.
 
 ![App options](screenshots/options.jpg)
 

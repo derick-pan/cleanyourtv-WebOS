@@ -55,7 +55,7 @@ try {
   await send('Page.navigate', { url: 'http://127.0.0.1:8765/home.html' }); await sleep(3000);
   const shot = async name => { await sleep(700); const r = await send('Page.captureScreenshot', { format: 'png' }); const f = path.join(out, name + '.png'); fs.writeFileSync(f, Buffer.from(r.result.data, 'base64')); console.log(f); return f; };
   const key = async (code, name) => { await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', windowsVirtualKeyCode: code, key: name }); await send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: code, key: name }); await sleep(350); };
-  await send('Runtime.evaluate', { expression: "typeof MASCOT!=='undefined'&&MASCOT.still&&MASCOT.still();typeof WORLD!=='undefined'&&WORLD.still();0" }); // a theme's mascot stands still for the picture, and its world's crew stay at their spots
+  await send('Runtime.evaluate', { expression: "typeof MASCOT!=='undefined'&&MASCOT.still&&MASCOT.still();typeof WORLD!=='undefined'&&WORLD.still(new Date(2026,5,28).getTime());0" }); // a theme's mascot stands still for the picture, and its world's crew stay at their spots, on a summer evening (a Sunday at full moon), whatever the date
   const restFile = await shot('rest');
   await key(40, 'ArrowDown'); await shot('grid'); await key(38, 'ArrowUp');
   await send('Runtime.evaluate', { expression: "openMenu('Customise',[{label:'Edit the top buttons'},{label:'Add a button'},{label:'Hidden apps',sub:'2'}]);0" }); await shot('menu');

@@ -53,8 +53,44 @@ document.addEventListener('mousemove', function (ev) {
   if (p && !(p[0] === r && p[1] === c)) setFocus(p[0], p[1]);
 });
 
+/* watch mode (world.watch in a theme): after that many minutes without a key on Home, with no menu open, the grid closed and no Live
+   TV, the clock, the buttons and the apps fade away and the world has the screen; a key or a real pointer move brings them back, and
+   that key does nothing else. A coloured key that starts a show in the world starts it and leaves the world the screen */
+var watchT = 0,
+  watchXY = null;
+function watchLater() {
+  clearTimeout(watchT);
+  var m = WORLD.watch();
+  if (m > 0)
+    watchT = setTimeout(function () {
+      if (!document.hidden && !stack.length && !LIVE.on && r < GR) document.body.classList.add('watch');
+      else watchLater();
+    }, m * 60000);
+}
+function unwatch() {
+  watchLater();
+  watchXY = null;
+  if (!document.body.classList.contains('watch')) return false;
+  document.body.classList.remove('watch');
+  return true;
+}
+document.addEventListener('mousemove', function (ev) {
+  if (!document.body.classList.contains('watch')) return;
+  if (!watchXY) watchXY = [ev.clientX, ev.clientY];
+  else if (Math.abs(ev.clientX - watchXY[0]) + Math.abs(ev.clientY - watchXY[1]) >= 24) unwatch();
+});
+
 document.addEventListener('keydown', function (e) {
   var k = e.keyCode;
+  if (k >= 403 && k <= 406 && document.body.classList.contains('watch') && WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) {
+    e.preventDefault();
+    return;
+  }
+  if (unwatch()) {
+    lastKey = Date.now();
+    e.preventDefault();
+    return;
+  }
   /* a right-to-left layout: Left moves to what is on the left, which is the next tile in the row (Live TV keeps left-to-right) */
   if (rtl() && !LIVE.on && (k === 37 || k === 39)) k = 76 - k;
   lastKey = Date.now();
@@ -100,6 +136,11 @@ document.addEventListener('keydown', function (e) {
     e.preventDefault();
     return;
   } /* Back on the home screen: the running apps */
+  /* the coloured keys start the world's shows (world events with a key: red, green, yellow, blue) */
+  if (k >= 403 && k <= 406) {
+    if (WORLD.key(['red', 'green', 'yellow', 'blue'][k - 403])) e.preventDefault();
+    return;
+  }
   var len = rows[r].length;
   if (k >= 37 && k <= 40) {
     var tn = performance.now();
@@ -212,6 +253,8 @@ document.addEventListener('visibilitychange', function () {
     MASCOT.hidden();
     SCENE.hidden();
     WORLD.hidden();
+    clearTimeout(watchT);
+    document.body.classList.remove('watch');
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();
   } else if (guarded()) LIVE.resume();
@@ -224,6 +267,7 @@ document.addEventListener('visibilitychange', function () {
     MASCOT.shown();
     SCENE.shown();
     WORLD.shown();
+    watchLater();
   }
 });
 

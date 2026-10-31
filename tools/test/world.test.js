@@ -225,6 +225,9 @@ function made(o) {
     mini: [100, 50, 8, 8, 1, 4, 8],
     'mini-walk': [100, 60, 8, 8, 2, 4, 8],
     gusty: [100, 70, 16, 16, 8, 8, 16],
+    week: [100, 90, 16, 16, 7, 8, 16],
+    'name-a': [100, 110, 12, 9, 1, 3, 9],
+    'name-b': [100, 120, 12, 9, 1, 3, 9],
   };
   const crew = Object.assign(
       { count: 2, speed: 80, stand: 'stand', walk: 'walk', climb: 'climb', wave: 'wave', wait: 'wait', lane: [820, 0, 1920] },
@@ -243,7 +246,10 @@ run(async () => {
     !!w && w.crew.count === 8 && w.crew.looks === 6 && !!w.crew.lane && !!w.crew.chat && w.spots.length >= 25 && w.props.length >= 50,
     "the Claude theme's world resolves: a crew of 8 in 6 caps, a street, chats, its spots and props"
   );
-  ok(w.herds.length === 4 && w.events.length >= 8 && w.shade.length === 3, 'and its herds, events and the tint of the night');
+  ok(
+    w.herds.length >= 5 && w.events.length >= 20 && w.shade.length === 4 && w.weather.length >= 5 && w.wind.length === 2 && w.watch === 3,
+    'and its herds, events, the tints, the weathers of the days, the wind and watch mode'
+  );
   const name = namer(w);
   const pg = page(7, HALLOWEEN);
   pg.WORLD.apply(w, 1);
@@ -265,12 +271,23 @@ run(async () => {
     crew.length === 8 && minis.length === w.herds.reduce((n, h) => n + h.count, 0) && all(b, 'wo-d').length === w.drift.length,
     'every member of the crew, every little one of the herds and everything that drifts is there'
   );
+  // Halloween: everyone in the witch's hat (the first holiday look, after the six caps); on another day each in its own cap
   ok(
-    crew.every((m, i) => {
+    crew.every(m => {
+      const n = name(m);
+      return n.name && (w.sprites[n.name][7] > 6 ? n.look === 6 : n.look === 0);
+    }),
+    "on Halloween each Clawd wears the witch's hat in what it does"
+  );
+  const nov = page(7, new Date(2026, 10, 2, 10, 0, 0).getTime());
+  nov.WORLD.apply(w, 1);
+  nov.advance(1);
+  ok(
+    crewOf(nov.box()).every((m, i) => {
       const n = name(m);
       return n.name && (w.sprites[n.name][7] > 1 ? n.look === i % 6 : n.look === 0);
-    }),
-    'each Clawd shows its own look (cap) of what it does'
+    }) && nov.WORLD.weather() === 'sun',
+    'on another day (a sunny one) each Clawd shows its own look (cap)'
   );
   // everyone starts at a place of its own in a spot that is open at ten in the morning: not inside, not the dormitory (22 to 7)
   const open = w.spots.filter(s => !s.inside && !(s.when && s.when.h && 10 < s.when.h[0] && 10 >= s.when.h[1])),
@@ -294,14 +311,30 @@ run(async () => {
     vis('fir').every(v => !v) && vis('lantern').every(v => !v) && vis('nightwin').every(v => !v) && vis('firefly').every(v => !v),
     'the fir (December), the lanterns (new year), the night window and the fireflies are not'
   );
+  // the weather of the day: Halloween 2026 is a day of fog: the bank of fog lies on the hills in the morning, the butterflies keep in
+  // (a fair day's), the day is a little grey; on a sunny day the butterflies fly and there is no fog
+  ok(pg.WORLD.weather() === 'fog', 'each day has its weather, picked from the date: Halloween 2026 is foggy');
+  ok(vis('sparrow').every(Boolean) && vis('fog').every(Boolean) && vis('butterfly').every(v => !v), 'fog on the hills, no butterflies');
+  const fair = page(7, new Date(2026, 9, 29, 10, 0, 0).getTime());
+  fair.WORLD.apply(w, 1);
+  fair.advance(1);
+  const fairVis = n =>
+    propsOf(fair.box())
+      .filter(e => name(e).name === n)
+      .map(shown);
   ok(
-    vis('sparrow').every(Boolean) && vis('butterfly').length === 2 && vis('butterfly').every(Boolean),
-    'the sparrow and the butterflies are'
+    fair.WORLD.weather() === 'sun' &&
+      fairVis('butterfly').length === 2 &&
+      fairVis('butterfly').every(Boolean) &&
+      fairVis('fog').every(v => !v),
+    'on a sunny day in their season: butterflies, no fog'
   );
   const mini = n => minis.filter(m => name(m).name === n || name(m).name === n + '-walk');
   ok(mini('cat').every(shown) && mini('owl').every(m => !shown(m)), 'the cat is out by day, the owl is not');
   const shade = b.children.filter(c => c.classList.contains('wo-sh'))[0];
-  ok(!!shade && shade.style.opacity === '0', 'no tint by day');
+  ok(!!shade && shade.style.opacity === '0.16' && shade.style.backgroundColor === '#4a5266', 'a grey day is a little dimmer');
+  const novShade = nov.box().children.filter(c => c.classList.contains('wo-sh'))[0];
+  ok(novShade.style.opacity === '0', 'no tint on a sunny day');
   // the hours: by day the day's sky and ground lie over the backdrop (which is dusk) and the stars are not out
   const sky = n => propsOf(b).filter(e => name(e).name === n)[0];
   ok(
@@ -536,6 +569,16 @@ run(async () => {
       !all(pv.box(), 'wo-c').some(c => /^wo-f(in|out) /.test(c.style.animation || '')),
     'still: at dusk (half past seven) whatever the clock says, at once (no fades), the stars out'
   );
+  // still on a given day (the preview: a summer evening): what that day has, not today (no witch's hats on Halloween)
+  /* the look each wears (a sprite with fewer strips shows its first) */
+  const capsOf = t => crewOf(t.box()).map(m => namer(w)(m)),
+    wears = (n, lk) => n.look === (w.sprites[n.name][7] > lk ? lk : 0);
+  ok(capsOf(pv).every(n => wears(n, 6)), 'still: today (Halloween), the witch hats');
+  pv.WORLD.still(new Date(2026, 5, 28).getTime());
+  ok(
+    capsOf(pv).every((n, i) => wears(n, i % 6)) && shown(pvSky('starfield')),
+    'still on a day given: that day at half past seven (in summer, each in its own cap), whatever the date'
+  );
 
   // a TV that keeps up (a frame every 16.7 ms) sheds nothing; one that falls behind (every third frame 120 ms late) sheds in two steps
   const fast = page(4, HALLOWEEN, 16.7),
@@ -706,7 +749,7 @@ run(async () => {
           every: [10, 10],
           time: [20, 20],
           call: 3,
-          props: [{ s: 'banner', x: 960, y: 300 }],
+          props: [{ s: 'banner', x: 960, y: 300, fade: 2 }],
           spot: { x: 960, y: 900, n: 3, gap: 80, act: 'play', time: [600, 600] },
         },
       ],
@@ -719,19 +762,20 @@ run(async () => {
       ec = crewOf(eb),
       ep = places(ew.events[0].spot);
     const banner = () => propsOf(eb).filter(x => nm(x).name === 'banner');
+    const fading = x => all(x, 'wo-c')[0].style.animation || '';
     e.advance(10500);
-    ok(banner().length === 1 && banner()[0].classList.contains('wo-in'), 'an event comes: its banner fades in');
+    ok(banner().length === 1 && fading(banner()[0]) === 'wo-fin 2.0s linear', 'an event comes: its banner fades in over its fade');
     e.advance(12000);
     ok(
       ec.every(m => ep.some(p => same(xy(m.style.transform), p)) && nm(m).name === 'play'),
       'everyone it calls comes to its spot and does what it says'
     );
     e.advance(9000);
-    ok(!banner().length, 'when it is over its banner goes');
+    ok(banner().length === 1 && fading(banner()[0]) === 'wo-fout 2.0s linear forwards', 'when it is over its banner fades out');
     e.advance(2000);
     ok(
-      ec.every(m => !ep.some(p => same(xy(m.style.transform), p))),
-      'and they go back to their spots'
+      !banner().length && ec.every(m => !ep.some(p => same(xy(m.style.transform), p))),
+      'then it is gone, and they go back to their spots'
     );
     // the next one, and Home is hidden while it goes on
     e.advance(15000);
@@ -837,6 +881,143 @@ run(async () => {
     );
     g.WORLD.still();
     ok(S1.style.animation === 'none' && S2.style.animation === 'none', 'still (a screenshot): they stay where they start');
+  }
+  // a coloured key starts its event at once and what follows it comes after; one with no chance never comes by itself; a prop that
+  // plays something now and then goes back to its own frames; one that keeps the date shows the day of the week; a late prop under
+  // everything stays under the drift; goodbye: two of them wave
+  {
+    const kw = made({
+      crew: { count: 3, hello: ['say-hi'] },
+      spots: [
+        { x: 300, y: 800, act: 'work', time: [60, 60] },
+        { x: 900, y: 800, act: 'work', time: [60, 60] },
+        { x: 1500, y: 800, act: 'work', time: [60, 60] },
+      ],
+      props: [
+        { s: 'table', x: 200, y: 900, play: { s: 'gusty', every: 4, fps: 10 } },
+        { s: 'week', x: 600, y: 900, phase: 'week' },
+      ],
+      drift: [{ s: 'mini', y: 300, speed: 20 }],
+      events: [
+        { chance: 0, key: 'red', time: [5, 5], then: 1, props: [{ s: 'banner', x: 960, y: 300, fade: 0 }] },
+        { chance: 0, time: [5, 5], props: [{ s: 'table', x: 960, y: 200, under: true, fade: 0 }] },
+      ],
+    });
+    const nm = namer(kw),
+      k = page(31, HALLOWEEN);
+    k.WORLD.apply(kw, 1);
+    k.advance(1);
+    const kb = k.box(),
+      shown2 = n => propsOf(kb).filter(e => nm(e).name === n && e.parentNode === kb);
+    k.advance(60000);
+    ok(!shown2('banner').length, 'an event with no chance never comes by itself');
+    ok(k.WORLD.key('blue') === false && k.WORLD.key('red') === true && shown2('banner').length === 1, 'its coloured key starts it at once');
+    k.advance(6000); /* over at 5 s, its banner gone 0.9 s later */
+    const late = propsOf(kb).filter(e => nm(e).name === 'table' && e.style.left === '960px')[0],
+      firstDrift = kb.children.indexOf(all(kb, 'wo-d')[0]);
+    ok(!!late && !shown2('banner').length, 'and when it is over, the one that follows it comes');
+    ok(
+      String(late.style.zIndex) === '0' && kb.children.indexOf(late) < firstDrift,
+      'a prop under everything that comes later is still under the drift'
+    );
+    let played = 0,
+      back = 0;
+    const toy = propsOf(kb).filter(e => e.style.left === '200px')[0];
+    k.advance(30000, 100, () => {
+      const n = nm(toy).name;
+      if (n === 'gusty') played++;
+      else if (played && n === 'table') back++;
+    });
+    ok(played > 0 && back > 0, 'a prop plays something now and then and goes back to its own frames');
+    const wk = propsOf(kb).filter(e => e.style.left === '600px')[0],
+      sat = 5; /* 31 October 2026 is a Saturday: Monday is 0 */
+    ok(
+      all(wk, 'wo-s')[0].style.transform === 'translateX(' + -sat * 16 * 4 + 'px)',
+      'a prop that keeps the date shows the day of the week'
+    );
+    const kc = crewOf(kb);
+    k.WORLD.bye();
+    ok(kc.filter(m => nm(m).name === 'wave').length === 2, 'an app opens: two of them wave goodbye');
+  }
+  // the crew's names (said first when two meet) and what each likes: one that likes a kind of spot goes there more often
+  {
+    const nw = made({
+      crew: {
+        count: 2,
+        chat: { every: [5, 5], say: ['say-hi'], act: 'play' },
+        members: [{ name: 'name-a', likes: ['games'] }, { name: 'name-b' }],
+      },
+      spots: [
+        { x: 300, y: 700, act: 'work', time: [120, 120] },
+        { x: 1600, y: 700, act: 'work', time: [120, 120] },
+      ],
+    });
+    const nm = namer(nw),
+      c = page(41, HALLOWEEN);
+    c.WORLD.apply(nw, 1);
+    c.advance(1);
+    const cc = crewOf(c.box()),
+      said = [new Set(), new Set()];
+    c.advance(40000, 100, () => {
+      cc.forEach((m, i) => {
+        const q = all(m, 'wo-q')[0];
+        if (q && /^wo-say/.test(q.style.animation || '')) said[i].add(nm(q).name);
+      });
+    });
+    ok(said[0].has('name-b') && said[1].has('name-a'), "when two meet, each says the other's name first");
+    /* eight spots, one of the kind it likes, three times the weight; it never goes back to where it is or just was, so the liked one
+       comes about twice as often as each of the others (once in 4.7 visits, not 8) */
+    const lw = made({
+      crew: { count: 1, members: [{ likes: ['games'] }] },
+      spots: [300, 400, 500, 600, 700, 800, 900, 1000].map((x, i) =>
+        i ? { x: x, y: 800, act: 'work', time: [2, 2] } : { x: x, y: 800, act: 'play', tag: 'games', time: [2, 2] }
+      ),
+    });
+    const l = page(43, HALLOWEEN);
+    l.WORLD.apply(lw, 1);
+    l.advance(1);
+    const lm = crewOf(l.box())[0],
+      visits = {};
+    let at = '';
+    l.advance(3600 * 1000, 250, () => {
+      const p = xy(lm.style.transform),
+        here = p && lw.spots.filter(s => same(p, [s.x, s.y]))[0];
+      const key = here ? here.x : '';
+      if (key && key !== at) visits[key] = (visits[key] || 0) + 1;
+      at = key;
+    });
+    const others = lw.spots.slice(1).map(s => visits[s.x] || 0),
+      avg = others.reduce((a, b) => a + b, 0) / others.length;
+    ok(
+      visits[300] > 1.4 * avg && others.every(n => n > 0),
+      'one goes more often to the kind of spot it likes (' + JSON.stringify(visits) + ')'
+    );
+  }
+  // a windy day: the wind of windy days blows (every few seconds) instead of the usual
+  {
+    const ww2 = made({
+      crew: { count: 1 },
+      spots: [{ x: 960, y: 800, act: 'work', time: [600, 600] }],
+      props: [{ s: 'table', x: 100, y: 900, gust: 'gusty' }],
+      weather: [{ name: 'wind', w: 1 }],
+      wind: [
+        { every: [3, 3], speed: 1000, fps: 10, when: { w: ['wind'] } },
+        { every: [600, 600], speed: 1000, fps: 10 },
+      ],
+    });
+    const nm = namer(ww2),
+      g2 = page(47, HALLOWEEN);
+    g2.WORLD.apply(ww2, 1);
+    g2.advance(1);
+    const tp = propsOf(g2.box())[0];
+    let sways = 0,
+      was = '';
+    g2.advance(31000, 100, () => {
+      const n = nm(tp).name;
+      if (n === 'gusty' && was !== 'gusty') sways++;
+      was = n;
+    });
+    ok(g2.WORLD.weather() === 'wind' && sways >= 8, 'on a windy day the windy-day wind blows (' + sways + ' gusts in 30 s)');
   }
   // a chat: two meet in the street, face each other and talk in turn (bubbles), then clap
   {

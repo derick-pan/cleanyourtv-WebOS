@@ -11,6 +11,7 @@ const { Pic, png, spr } = require('./pic');
 const K = require('./clawd');
 const T = require('./things');
 const WD = require('./wind');
+const L = require('./life');
 const P = require('./place');
 const OUT = path.join(__dirname, '..', '..', 'themes', 'claude');
 
@@ -38,9 +39,12 @@ function add(name, frames, o) {
   });
 }
 // a Clawd sprite: every look, frames every `step` ticks, cut to the box all of them use; its anchor is the middle of the feet
-const LOOKS = K.CAPS.slice(0, 6);
+const LOOKS = K.CAPS.slice(0, 6),
+  // after the everyday looks, the hats of the holidays (crew.hats): Halloween's, Christmas's, New Year's
+  HATS = ['witch', 'santa', 'party'],
+  ALL = LOOKS.concat(HATS);
 function crew(name, step, looks) {
-  const all = (looks === false ? [null] : LOOKS).map(lk => K.strip(name, lk, step));
+  const all = (looks === false ? [null] : ALL).map(lk => K.strip(name, lk, step));
   const b = K.bbox([].concat(...all));
   add(
     name,
@@ -50,7 +54,7 @@ function crew(name, step, looks) {
 }
 // burrowing: the Clawd sinks into a mound of sand and is gone; popping out is the same backwards
 function dig(back) {
-  const all = LOOKS.map(lk => {
+  const all = ALL.map(lk => {
     const out = [0, 3, 5, 7, 9, 12].map((n, i) => {
       const f = K.frame(i ? 'stand' : 'stand', 0, lk),
         g = new Pic(K.CW, K.CH);
@@ -162,6 +166,31 @@ for (const k of ['day', 'night']) {
 }
 add('bird', T.BIRD);
 add('balloon', T.BALLOON);
+add('balloon-b', T.BALLOON, { pal: { B: '#4d8df6', L: '#8ab4f8', S: '#2f5fa8', G: '#24497f' } });
+add('balloon-c', T.BALLOON, { pal: { B: '#4cb363', L: '#8ad49a', S: '#2e8b57', G: '#1f6b43' } });
+'abc'.split('').forEach((k, i) => add('cloud-g' + k, T.GREYCLOUDS[i]));
+// ---- more life (life.js): the crew's names, the pond's ducks and frog, the moon's phases, what grows and is built, the rare ones ----
+const NAMES = ['BYTE', 'PIXEL', 'MOSS', 'NOVA', 'SPARK', 'SUNNY', 'MOCHI', 'TINK'];
+NAMES.forEach(n => add('name-' + n.toLowerCase(), L.nameBubble(n), { ax: 3, ay: 9 }));
+add('duck', L.DUCK, { pal: L.DK });
+add('duck-swim', L.DUCK_SWIM, { pal: L.DK });
+add('duck-dive', L.DUCK_DIVE, { pal: L.DK });
+add('frog', L.FROG, { pal: L.FR });
+add('frog-hop', L.FROG_HOP, { pal: L.FR });
+add('shed', L.SHED);
+add('sapling', L.SAPLING);
+add('snowman', L.SNOWMAN, { pal: L.snowPal });
+add('puddle', L.PUDDLE, { pal: L.puddlePal });
+add('dragon', L.DRAGON);
+add('golden', L.GOLDEN);
+add('comet', L.COMET);
+add('aurora', L.AURORA, { ax: 0, ay: 0 });
+L.MIST.forEach((m, i) => add('mist-' + 'abc'[i], [m]));
+// the year and the weather over the land (place.js): snow, the trees of autumn and spring, fog, a rainbow
+const SE = P.SEASONS;
+add('snow-ground', [SE.snow.ground.pic], { ax: 0, ay: 0 });
+add('snow-caps', [SE.snow.caps.pic], { ax: 0, ay: 0 });
+for (const k of ['autumn', 'spring', 'fog', 'overcast', 'rainbow']) add(k, [SE[k].pic], { ax: 0, ay: 0 });
 add('butterfly', T.BUTTERFLY);
 add('lamp-glow', T.GLOW(9, '#ffd27a'));
 add('forge-glow', T.GLOW(8, '#ff8a3a'));
@@ -169,7 +198,8 @@ add('flasks', T.FLASKS);
 add('emitter', T.DOT);
 // the night sky: the stars and the moon on their layer, the moon's glow, a star that flares
 add('starfield', [P.STARFIELD], { ax: 0, ay: 0 });
-add('moon-glow', WD.moonGlow(13));
+add('moon-glow', L.MOON_GLOW, { ax: 13, ay: 13 });
+add('moon', L.MOON, { ax: 12, ay: 12 });
 add('twinkle', WD.TWINKLE);
 // the wind: what sways as a gust goes over it (still, and the gust's frames: the same size and anchor), the flag on the house, the
 // pond's ripples and a petal carried away
@@ -218,8 +248,13 @@ function pack(maxW) {
 }
 const atlas = pack(1024);
 const sprites = {};
-for (const s of SHEET)
-  sprites[s.name] = [s.x, s.y, s.w, s.h, s.rows[0].length, s.ax, s.ay].concat(s.rows.length > 1 ? [s.rows.length] : []);
+// [x, y, w, h, frames, ax, ay, looks], without what is the default at its end (the anchor in the middle of the bottom edge, one look)
+for (const s of SHEET) {
+  const r = [s.x, s.y, s.w, s.h, s.rows[0].length, s.ax, s.ay, s.rows.length],
+    def = [, , , , , Math.floor(s.w / 2), s.h, 1];
+  while (r.length > 5 && r[r.length - 1] === def[r.length - 1]) r.pop();
+  sprites[s.name] = r;
+}
 
 // ---- the world: where the Clawds go and what they do there, in screen pixels ----
 const G = P.G,
@@ -245,23 +280,32 @@ const spot = (x, y, o) => Object.assign({ x: S(x), y: S(y) }, o);
 const SKY = [-S(P.PAN), 480];
 // the hours of the day: the day's sky from 7 to 6 in the evening, the night's from 9 to 5; dusk and dawn are the backdrop's own, and
 // the stars are out from 6 in the evening to 7 in the morning
+// winter, the green months, the fair days a butterfly flies
+const WINTER = { d: ['12-01', '02-29'] },
+  GREEN = { d: ['03-01', '11-30'] },
+  FLUTTER = { h: [7, 21], d: ['03-15', '10-31'], w: ['sun', 'cloud', 'wind'] };
 const DAYTIME = { h: [7, 18] },
   NIGHTTIME = { h: [21, 5] },
   STARRY = { h: [18, 7] };
+// a grey day (clouds, rain, snow: the sky veiled, grey clouds) and a fair one (white clouds by day)
+const GREY = ['cloud', 'rain', 'snow'],
+  FAIR = { h: [7, 18], w: ['sun', 'cloud', 'wind'] },
+  MISTY = { h: [6, 12], w: ['fog'] };
 const DAY = { h: [7, 21] },
   NIGHT = { h: [21, 6] },
   GF = G.street,
   UF = G.upper;
 const spots = [
   // the screenshot shows the first ones (still mode puts the crew there in this order)
-  spot(210, GF, { act: 'code', fps: 8, time: [10, 22], path: DOOR, say: say(['code', 'ok', 'bug', 'coffee'], 7) }),
-  spot(G.smith, GF, { act: 'hammer', face: 1, fps: 8, time: [8, 16] }),
+  spot(210, GF, { act: 'code', fps: 8, time: [10, 22], path: DOOR, tag: 'code', say: say(['code', 'ok', 'bug', 'coffee'], 7) }),
+  spot(G.smith, GF, { act: 'hammer', face: 1, fps: 8, time: [8, 16], tag: 'craft' }),
   spot(276, G.balcony, {
     act: 'wizard',
     face: -1,
     fps: 8,
     path: TOWER,
     time: [8, 16],
+    tag: 'magic',
     fx: { s: 'sparkle', kind: 'pop', every: 0.6, dx: S(14), dy: -S(15) },
   }),
   spot(182, UF, {
@@ -271,27 +315,29 @@ const spots = [
     fps: 8,
     path: UP,
     group: 'games',
+    tag: 'games',
     time: [14, 28],
     show: [prop('pong', 182, UF)],
   }),
-  spot(344, G.pier[2], { act: 'fish', face: 1, fps: 4, time: [14, 30], say: say(['dots', 'heart', 'bang'], 9) }),
+  spot(344, G.pier[2], { act: 'fish', face: 1, fps: 4, time: [14, 30], tag: 'outdoors', say: say(['dots', 'heart', 'bang'], 9) }),
   spot(162, 203, {
     n: 2,
     gap: S(18),
     act: 'groove',
     fps: 8,
     time: [8, 16],
+    tag: 'show',
     fx: { s: 'heart', kind: 'rise', every: 1.4, dx: 0, dy: -S(15) },
   }),
-  spot(161, GF, { n: 2, gap: S(19), act: 'read', fps: 4, path: DOOR, time: [10, 22], say: say(['idea', 'dots', 'star'], 9) }),
-  spot(80, G.stage[2], { act: 'conduct', face: 1, fps: 8, time: [10, 20] }),
+  spot(161, GF, { n: 2, gap: S(19), act: 'read', fps: 4, path: DOOR, time: [10, 22], tag: 'cozy', say: say(['idea', 'dots', 'star'], 9) }),
+  spot(80, G.stage[2], { act: 'conduct', face: 1, fps: 8, time: [10, 20], tag: 'show' }),
   // the house: the library, the workshop, the server room below; the game room and the lookout above
-  spot(160, GF, { act: 'tidy', fps: 4, path: DOOR, time: [5, 9], w: 0.5 }),
-  spot(189, GF, { act: 'pin', fps: 4, path: DOOR, time: [5, 10], w: 0.6 }),
-  spot(198, GF, { act: 'mail', fps: 4, face: 1, path: DOOR, time: [4, 8], w: 0.4 }),
-  spot(231, GF, { act: 'code', fps: 8, path: DOOR, time: [8, 18], say: say(['code', 'ok', 'bang'], 8) }),
-  spot(245, GF, { act: 'debug', fps: 4, face: 1, path: DOOR, time: [6, 12], say: say(['bug', 'ok', 'ask'], 6) }),
-  spot(164, UF, { act: 'arcade', fps: 4, face: 1, path: UP, group: 'games', time: [10, 20], say: say(['star', 'bang'], 8) }),
+  spot(160, GF, { act: 'tidy', fps: 4, path: DOOR, time: [5, 9], w: 0.5, tag: 'cozy' }),
+  spot(189, GF, { act: 'pin', fps: 4, path: DOOR, time: [5, 10], w: 0.6, tag: 'code' }),
+  spot(198, GF, { act: 'mail', fps: 4, face: 1, path: DOOR, time: [4, 8], w: 0.4, tag: 'cozy' }),
+  spot(231, GF, { act: 'code', fps: 8, path: DOOR, time: [8, 18], tag: 'code', say: say(['code', 'ok', 'bang'], 8) }),
+  spot(245, GF, { act: 'debug', fps: 4, face: 1, path: DOOR, time: [6, 12], tag: 'code', say: say(['bug', 'ok', 'ask'], 6) }),
+  spot(164, UF, { act: 'arcade', fps: 4, face: 1, path: UP, group: 'games', tag: 'games', time: [10, 20], say: say(['star', 'bang'], 8) }),
   spot(182, UF, {
     n: 3,
     gap: S(26),
@@ -299,6 +345,7 @@ const spots = [
     fps: 8,
     path: UP,
     group: 'games',
+    tag: 'games',
     time: [10, 20],
     show: [prop('rope', 182, UF)],
   }),
@@ -309,23 +356,55 @@ const spots = [
     fps: 8 / 3,
     path: UP,
     group: 'games',
+    tag: 'games',
     time: [12, 18],
     show: [prop('tower', 182, UF, { fps: 8 / 3 })],
   }),
-  spot(182, UF, { n: 4, gap: S(18), act: 'sleep', fps: 4, path: UP, group: 'games', time: [120, 300], w: 9, when: { h: [22, 7] } }),
-  spot(236, UF, { act: 'web', fps: 1, path: UP, time: [8, 16], say: say(['sun', 'idea', 'star'], 8) }),
+  spot(182, UF, {
+    n: 4,
+    gap: S(18),
+    act: 'sleep',
+    fps: 4,
+    path: UP,
+    group: 'games',
+    tag: 'cozy',
+    time: [120, 300],
+    w: 9,
+    when: { h: [22, 7] },
+  }),
+  spot(236, UF, {
+    n: 2,
+    gap: S(14),
+    act: 'sleep',
+    fps: 4,
+    path: UP,
+    group: 'lookout',
+    tag: 'cozy',
+    time: [120, 300],
+    w: 9,
+    when: { h: [22, 7] },
+  }),
+  spot(236, UF, { act: 'web', fps: 1, path: UP, group: 'lookout', tag: 'magic', time: [8, 16], say: say(['sun', 'idea', 'star'], 8) }),
   // the village: the forge, the mine, the tower, the pond, the stage, the meadow, the fire, the garden, the sand
-  spot(70, 175, { act: 'pick', face: -1, fps: 8, time: [6, 12], carry: 'carry' }),
-  spot(G.mine, GF, { inside: true, time: [8, 20], carry: 'carry' }),
-  spot(299, GF, { act: 'eureka', face: 1, fps: 4, time: [8, 16], fx: { s: 'bubble', kind: 'rise', every: 1.1, dx: S(9), dy: -S(12) } }),
-  spot(G.fire[0], G.fire[1] - 1, { n: 2, gap: S(30), act: 'roast', fps: 2, time: [12, 24] }),
-  spot(285, 204, { act: 'water', face: 1, fps: 8, time: [8, 14] }),
-  spot(124, 182, { act: 'juggle', fps: 8, time: [6, 12], w: 0.7, say: say(['star'], 6) }),
-  spot(100, 183, { act: 'sweep', face: 1, fps: 8, time: [6, 12], w: 0.6 }),
-  spot(48, 182, { act: 'build', face: 1, fps: 8, time: [6, 12], w: 0.6 }),
-  spot(140, 205, { act: 'dizzy', fps: 8, time: [3, 6], w: 0.3 }),
-  spot(118, 181, { act: 'coffee', fps: 4, time: [5, 10], w: 0.5, say: say(['coffee', 'sun'], 5) }),
-  spot(29, 201, { inside: true, act: 'dig', back: 'pop', fps: 8, time: [10, 30] }),
+  spot(70, 175, { act: 'pick', face: -1, fps: 8, time: [6, 12], carry: 'carry', tag: 'craft' }),
+  spot(G.mine, GF, { inside: true, time: [8, 20], carry: 'carry', tag: 'craft' }),
+  spot(299, GF, {
+    act: 'eureka',
+    face: 1,
+    fps: 4,
+    time: [8, 16],
+    tag: 'magic',
+    fx: { s: 'bubble', kind: 'rise', every: 1.1, dx: S(9), dy: -S(12) },
+  }),
+  spot(G.fire[0], G.fire[1] - 1, { n: 2, gap: S(30), act: 'roast', fps: 2, time: [12, 24], tag: 'outdoors' }),
+  spot(285, 204, { act: 'water', face: 1, fps: 8, time: [8, 14], tag: 'outdoors' }),
+  spot(124, 182, { act: 'juggle', fps: 8, time: [6, 12], w: 0.7, tag: 'show', say: say(['star'], 6) }),
+  spot(100, 183, { act: 'sweep', face: 1, fps: 8, time: [6, 12], w: 0.6, tag: 'craft' }),
+  // the builder at the shed that goes up over the week
+  spot(41, 200, { act: 'build', face: 1, fps: 8, time: [8, 16], w: 0.8, tag: 'craft' }),
+  spot(140, 205, { act: 'dizzy', fps: 8, time: [3, 6], w: 0.3, tag: 'show' }),
+  spot(118, 181, { act: 'coffee', fps: 4, time: [5, 10], w: 0.5, tag: 'cozy', say: say(['coffee', 'sun'], 5) }),
+  spot(29, 201, { inside: true, act: 'dig', back: 'pop', fps: 8, time: [10, 30], tag: 'outdoors' }),
   spot(-20, 181, { inside: true, time: [8, 24], w: 0.6 }),
 ];
 const props = [
@@ -334,7 +413,14 @@ const props = [
   prop('ground-day', 0, P.SKIES.ground, { under: true, when: DAYTIME, fade: 300 }),
   prop('sky-night', 0, 0, { under: true, when: NIGHTTIME, fade: 300 }),
   prop('ground-night', 0, P.SKIES.ground, { under: true, when: NIGHTTIME, fade: 300 }),
+  // the year over the land: snow in winter, the trees red in autumn and in blossom in spring (by day); a bank of fog some mornings
+  prop('snow-ground', SE.snow.ground.x, SE.snow.ground.y, { under: true, when: WINTER, fade: 600 }),
+  prop('autumn', SE.autumn.x, SE.autumn.y, { under: true, when: { h: [5, 21], d: ['09-22', '11-30'] }, fade: 300 }),
+  prop('spring', SE.spring.x, SE.spring.y, { under: true, when: { h: [5, 21], d: ['03-20', '05-31'] }, fade: 300 }),
+  prop('overcast', SE.overcast.x, SE.overcast.y, { under: true, when: { h: [6, 20], w: GREY }, fade: 300 }),
+  prop('fog', SE.fog.x, SE.fog.y, { under: true, when: MISTY, fade: 900 }),
   ...Object.keys(OCC).map(k => prop(k, OCC[k][0], OCC[k][1])),
+  prop('snow-caps', SE.snow.caps.x, SE.snow.caps.y, { when: WINTER, fade: 600 }),
   // the house: the screen's code, the terminal, the rack, the arcade, the globe, the window at night, a sparrow on the sill by day
   prop('monitor', 205, GF - 15, { fps: 4 }),
   prop('terminal', 226, GF - 14, { fps: 2 }),
@@ -361,8 +447,8 @@ const props = [
   ].map(g => prop('glint', g[0], g[1], { fps: g[2], when: { h: [7, 21] } })),
   prop('swim', 366, 205, { fps: 2, bob: 1 }),
   prop('fishjump', 377, 197, { fps: 8, rest: 9 }),
-  prop('butterfly', 184, 195, { fps: 6, bob: 2, when: DAY }),
-  prop('butterfly', 306, 193, { fps: 5, bob: 2, when: DAY }),
+  prop('butterfly', 184, 195, { fps: 6, bob: 2, when: FLUTTER }),
+  prop('butterfly', 306, 193, { fps: 5, bob: 2, when: FLUTTER }),
   ...[
     [118, 186, 2.6],
     [240, 182, 3.2],
@@ -371,11 +457,12 @@ const props = [
     [196, 186, 2.9],
     [354, 191, 2.4],
     [228, 200, 3],
-  ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6] } })),
+  ].map(f => prop('firefly', f[0], f[1], { pulse: f[2], bob: 1, when: { h: [19, 6], d: ['03-01', '11-30'] } })),
   // the night sky, under the clouds: the stars and the moon wheel slowly to and fro, the bright stars twinkling as they go and a glow
   // breathing round the moon; other stars flare now and then, and a star shoots across
   prop('starfield', 0, 0, { under: true, pan: SKY, when: STARRY, fade: 240 }),
-  prop('moon-glow', G.moon[0], G.moon[1] + 14, { under: true, pan: SKY, pulse: 6, when: STARRY, fade: 240 }),
+  prop('moon-glow', G.moon[0], G.moon[1], { under: true, pan: SKY, pulse: 6, phase: 'moon', when: STARRY, fade: 240 }),
+  prop('moon', G.moon[0], G.moon[1], { under: true, pan: SKY, phase: 'moon', when: STARRY, fade: 240 }),
   ...P.BIG.map(([x, y], i) =>
     prop('star2', x, y + 2, { under: true, pan: SKY, pulse: [3, 2.4, 3.8, 2.8, 3.3, 2.2, 3.5, 2.6][i], when: STARRY, fade: 240 })
   ),
@@ -385,16 +472,16 @@ const props = [
   // lily pads; and rings spreading on the pond now and then
   prop('flag', 199, 99, { fps: 4, gust: 'flag-gust' }),
   prop('bunting', G.stage[0], G.stage[2] - 22, { gust: 'bunting-gust' }),
-  prop('garden', 297, 204, { gust: 'garden-gust' }),
+  prop('garden', 297, 204, { gust: 'garden-gust', when: GREEN }),
   ...[
     [8, 213],
-    [52, 199],
+    [44, 214],
     [57, 214],
     [130, 214],
     [151, 193],
     [175, 215],
     [214, 193],
-    [240, 214],
+    [247, 214],
     [251, 201],
     [281, 214],
     [296, 214],
@@ -406,7 +493,7 @@ const props = [
     [196, 214],
     [231, 205],
     [268, 212],
-  ].map(([x, y], i) => prop('bloom-' + 'abc'[i % 3], x, y, { gust: 'bloom-' + 'abc'[i % 3] + '-gust' })),
+  ].map(([x, y], i) => prop('bloom-' + 'abc'[i % 3], x, y, { gust: 'bloom-' + 'abc'[i % 3] + '-gust', when: GREEN })),
   ...[
     [370, 196],
     [330, 206],
@@ -417,6 +504,13 @@ const props = [
     [358, 212, 9],
     [372, 189, 11],
   ].map(([x, y, r]) => prop('ripple', x, y, { fps: 5, rest: r })),
+  // a frog on a lily pad that hops now and then; a shed that goes up over the week, a tree that grows through the month; a snowman in
+  // winter; puddles in the street on a day of rain
+  prop('frog', 330, 206, { fps: 1.5, play: { s: 'frog-hop', every: 16, fps: 8 } }),
+  prop('shed', 54, 200, { phase: 'week' }),
+  prop('sapling', 240, 214, { phase: 'month' }),
+  prop('snowman', 132, 214, { fps: 0.5, when: { d: ['12-08', '02-20'] }, fade: 60 }),
+  ...[92, 222, 296].map((x, i) => prop('puddle', x, 186, { fps: 3 + i, when: { w: ['rain'] }, fade: 120 })),
   prop('emitter', 85.5, 111, { fx: { s: 'smoke', kind: 'float', every: 1.7, dx: 0, dy: 0 } }),
   prop('emitter', 233.5, 98, { fx: { s: 'smoke', kind: 'float', every: 2.3, dx: 0, dy: 0 } }),
   prop('emitter', 38, 163, { fx: { s: 'sparkle', kind: 'pop', every: 1.8, dx: 0, dy: 0 } }),
@@ -428,7 +522,7 @@ const props = [
   prop('lantern', 150, UF - 25, { fps: 1, bob: 1, when: { d: ['01-20', '02-20'] } }),
   prop('lantern', 248, UF - 25, { fps: 1, bob: 1, when: { d: ['01-20', '02-20'] } }),
   ...[30, 110, 190, 270, 350].map(x =>
-    prop('emitter', x, 112, { fx: { s: 'flake', kind: 'fall', every: 1.6, dx: 0, dy: 0 }, when: { d: ['12-01', '02-28'] } })
+    prop('emitter', x, 112, { fx: { s: 'flake', kind: 'fall', every: 1.6, dx: 0, dy: 0 }, when: { w: ['snow'] } })
   ),
   ...[60, 160, 260].map(x =>
     prop('emitter', x, 140, { fx: { s: 'leaf', kind: 'fall', every: 2.4, dx: 0, dy: 0 }, when: { d: ['09-22', '11-30'] } })
@@ -442,10 +536,18 @@ const drift = [
   { s: 'cloud-c', y: S(109), speed: 7, dir: 1, when: STARRY, fade: 120 },
   { s: 'cloud-a', y: S(103), speed: 9, dir: -1, when: STARRY, fade: 120 },
   { s: 'cloud-b', y: S(98), speed: 6, dir: 1, when: STARRY, fade: 120 },
-  { s: 'cloud-dc', y: S(106), speed: 8, dir: 1, when: DAYTIME, fade: 120 },
-  { s: 'cloud-da', y: S(100), speed: 10, dir: -1, when: DAYTIME, fade: 120 },
-  { s: 'cloud-db', y: S(95), speed: 6, dir: 1, when: DAYTIME, fade: 120 },
-  { s: 'balloon', y: S(110), speed: 11, dir: -1, bob: 2, when: DAY },
+  { s: 'cloud-dc', y: S(106), speed: 8, dir: 1, when: FAIR, fade: 120 },
+  { s: 'cloud-da', y: S(100), speed: 10, dir: -1, when: FAIR, fade: 120 },
+  { s: 'cloud-db', y: S(95), speed: 6, dir: 1, when: FAIR, fade: 120 },
+  { s: 'balloon', y: S(110), speed: 11, dir: -1, bob: 2, when: { h: [7, 21], w: ['sun', 'cloud', 'wind'] } },
+  // wisps of mist drifting over the mountains on a morning of fog, behind the roof and the tower
+  { s: 'mist-a', y: S(118), speed: 9, dir: 1, when: MISTY, fade: 900 },
+  { s: 'mist-b', y: S(111), speed: 7, dir: -1, when: MISTY, fade: 900 },
+  { s: 'mist-c', y: S(123), speed: 11, dir: -1, when: MISTY, fade: 900 },
+  // grey clouds on a grey day
+  { s: 'cloud-ga', y: S(97), speed: 5, dir: 1, when: { h: [6, 20], w: GREY }, fade: 300 },
+  { s: 'cloud-gb', y: S(104), speed: 7, dir: -1, when: { h: [6, 20], w: GREY }, fade: 300 },
+  { s: 'cloud-gc', y: S(92), speed: 4, dir: 1, when: { h: [6, 20], w: GREY }, fade: 300 },
   { s: 'bird', y: S(99), speed: 38, dir: -1, fps: 5, bob: 1, when: DAY },
   { s: 'bird', y: S(104), speed: 33, dir: 1, fps: 6, bob: 1, when: DAY },
   { s: 'bat', y: S(100), speed: 40, dir: 1, fps: 6, bob: 2, when: { h: [18, 6], d: ['10-15', '11-01'] } },
@@ -465,9 +567,28 @@ const herds = [
   { count: 1, area: [S(96), S(178), S(306), S(185)], stand: 'cat', walk: 'cat-walk', speed: 24, when: DAY },
   { count: 1, area: [S(14), S(196), S(44), S(204)], stand: 'crab', walk: 'crab-walk', speed: 14 },
   { count: 1, area: [S(96), S(178), S(306), S(185)], stand: 'owl', walk: 'owl-walk', speed: 18, when: NIGHT },
+  // two ducks paddling about the pond, diving now and then
+  { count: 2, area: [S(336), S(192), S(378), S(212)], stand: 'duck', walk: 'duck-swim', acts: ['duck-dive'], speed: 10 },
 ];
 // what happens now and then
 const MEADOW = [190, 205];
+// a shower: rain clouds, rain, and everyone runs inside (followed by the rainbow)
+const SHOWER = o =>
+  Object.assign(
+    {
+      every: [700, 1600],
+      time: [40, 70],
+      call: 8,
+      rain: true,
+      props: [
+        prop('raincloud', 110, 118, { bob: 1 }),
+        prop('raincloud', 260, 114, { bob: 1 }),
+        ...[40, 115, 190, 265, 340].map(x => prop('emitter', x, 150, { fx: { s: 'drop', kind: 'fall', every: 0.28, dx: 0, dy: 0 } })),
+      ],
+      spot: spot(G.door + 3, GF, { n: 8, gap: 0, inside: true, path: DOOR, time: [600, 600] }),
+    },
+    o
+  );
 const events = [
   // a game of volleyball in the meadow (clawd-sidekick's), by day
   {
@@ -523,20 +644,9 @@ const events = [
     when: { h: [9, 23] },
     spot: spot(92, G.stage[2], { n: 3, gap: S(17), acts: ['clap', 'juggle', 'clap'], fps: 8, time: [600, 600] }),
   },
-  // a shower: a rain cloud, rain, and everyone runs inside
-  {
-    every: [700, 1600],
-    time: [40, 70],
-    call: 8,
-    props: [
-      prop('raincloud', 110, 118, { bob: 1 }),
-      prop('raincloud', 260, 114, { bob: 1 }),
-      ...[40, 90, 140, 190, 240, 290, 340].map(x =>
-        prop('emitter', x, 150, { fx: { s: 'drop', kind: 'fall', every: 0.35, dx: 0, dy: 0 } })
-      ),
-    ],
-    spot: spot(G.door + 3, GF, { n: 8, gap: 0, inside: true, path: DOOR, time: [600, 600] }),
-  },
+  // a shower: rain clouds, rain, and everyone runs inside (often on a day of rain, and on any day by the green key); after it, by
+  // day, a rainbow
+  SHOWER({ every: [90, 300], when: { w: ['rain'] }, key: 'green' }),
   // a flying saucer at night, and a crowd pointing at it
   {
     every: [600, 1500],
@@ -565,10 +675,150 @@ const events = [
     props: [prop('emitter', 246, GF - 18, { fx: { s: 'smoke', kind: 'float', every: 0.6, dx: 0, dy: 0 } })],
     spot: spot(238, GF, { n: 2, gap: S(14), acts: ['panic', 'debug'], fps: 8, path: DOOR, time: [600, 600] }),
   },
+  // ---- the day's routine: stretches and coffee in the meadow at seven, the campfire at eight in the evening, songs and stories ----
+  {
+    every: [60, 600],
+    time: [300, 600],
+    call: 6,
+    when: { h: [7, 8] },
+    spot: spot(MEADOW[0], MEADOW[1], {
+      n: 6,
+      gap: S(16),
+      acts: ['stretch', 'stretch', 'sip', 'stretch', 'coffee', 'stretch'],
+      fps: 4,
+      time: [900, 900],
+      say: say(['sun', 'coffee', 'heart'], 8),
+    }),
+  },
+  {
+    every: [60, 600],
+    time: [600, 900],
+    call: 6,
+    when: { h: [20, 21] },
+    spot: spot(G.fire[0], G.fire[1] - 1, {
+      n: 6,
+      gap: S(12),
+      acts: ['roast', 'clap', 'roast', 'sip', 'roast', 'clap'],
+      fps: 4,
+      time: [900, 900],
+      say: say(['note', 'heart', 'star', 'idea'], 7),
+    }),
+  },
+  // ---- rare ones: a dragon at dusk, a golden Clawd by day, the northern lights on a winter night, a comet, a festival of balloons ----
+  {
+    every: [900, 2400],
+    chance: 0.35,
+    time: [44, 50],
+    call: 3,
+    when: { h: [18, 21] },
+    drift: [{ s: 'dragon', y: S(70), speed: 60, dir: -1, fps: 6, bob: 2 }],
+    spot: spot(200, 205, { n: 3, gap: S(20), acts: ['wait', 'panic', 'love'], fps: 8, time: [600, 600] }),
+  },
+  {
+    every: [1200, 3600],
+    chance: 0.25,
+    time: [40, 46],
+    call: 4,
+    when: { h: [9, 17] },
+    drift: [{ s: 'golden', y: S(G.lane), speed: 56, dir: 1, fps: 8 }],
+    spot: spot(160, 191, { n: 4, gap: S(16), acts: ['cheer', 'love', 'clap', 'cheer'], fps: 8, time: [600, 600] }),
+  },
+  {
+    every: [900, 2400],
+    chance: 0.5,
+    time: [180, 300],
+    when: { h: [21, 4], d: ['11-01', '03-15'] },
+    props: [prop('aurora', 70, 4, { under: true, fps: 1, fade: 30 })],
+  },
+  {
+    every: [1800, 5400],
+    chance: 0.3,
+    time: [300, 320],
+    when: { h: [21, 5] },
+    drift: [{ s: 'comet', y: S(26), speed: 7, dir: -1, fps: 3 }],
+  },
+  {
+    every: [1800, 4800],
+    chance: 0.3,
+    time: [110, 120],
+    when: { h: [9, 17], w: ['sun'] },
+    drift: [
+      { s: 'balloon', y: S(60), speed: 22, dir: 1, bob: 2 },
+      { s: 'balloon-b', y: S(80), speed: 26, dir: 1, bob: 2 },
+      { s: 'balloon-c', y: S(48), speed: 18, dir: 1, bob: 2 },
+      { s: 'balloon-b', y: S(95), speed: 30, dir: 1, bob: 1 },
+    ],
+  },
+  // ---- the coloured keys of the remote: red, fireworks with everyone watching from the meadow; yellow, a dance party on the stage;
+  // blue, a flurry of snow (green is the shower, above) ----
+  {
+    every: [600, 600],
+    chance: 0,
+    key: 'red',
+    time: [40, 60],
+    call: 6,
+    props: [
+      prop('fw-a', 90, 70, { fps: 8, rest: 2.5, fade: 0 }),
+      prop('fw-b', 190, 60, { fps: 8, rest: 3, fade: 0 }),
+      prop('fw-c', 300, 74, { fps: 8, rest: 2.8, fade: 0 }),
+      prop('fw-b', 140, 90, { fps: 8, rest: 3.4, fade: 0 }),
+      prop('fw-a', 250, 92, { fps: 8, rest: 3.2, fade: 0 }),
+    ],
+    spot: spot(MEADOW[0], MEADOW[1], {
+      n: 6,
+      gap: S(16),
+      acts: ['love', 'cheer', 'clap', 'love', 'cheer', 'clap'],
+      fps: 8,
+      time: [600, 600],
+      say: say(['star', 'heart', 'bang'], 4),
+    }),
+  },
+  {
+    every: [600, 600],
+    chance: 0,
+    key: 'yellow',
+    time: [40, 60],
+    call: 6,
+    props: [70, 100, 130].map(x => prop('emitter', x, 165, { fx: { s: 'confetti', kind: 'fall', every: 0.45, dx: 0, dy: 0 } })),
+    spot: spot(92, G.stage[2], {
+      n: 6,
+      gap: S(10),
+      acts: ['groove', 'cheer', 'groove', 'groove', 'cheer', 'groove'],
+      fps: 8,
+      time: [600, 600],
+      say: say(['note', 'heart'], 4),
+    }),
+  },
+  {
+    every: [600, 600],
+    chance: 0,
+    key: 'blue',
+    time: [40, 60],
+    call: 5,
+    props: [30, 90, 150, 210, 270, 330].map(x => prop('emitter', x, 112, { fx: { s: 'flake', kind: 'fall', every: 0.5, dx: 0, dy: 0 } })),
+    spot: spot(MEADOW[0], MEADOW[1], { n: 5, gap: S(18), acts: ['love', 'cheer', 'love', 'cheer', 'love'], fps: 8, time: [600, 600] }),
+  },
+  // after a shower (by day): a rainbow behind the village
+  {
+    every: [600, 600],
+    chance: 0,
+    time: [90, 150],
+    when: { h: [7, 18] },
+    props: [prop('rainbow', SE.rainbow.x, SE.rainbow.y, { under: true, fade: 10 })],
+  },
 ];
+// the showers say which one follows them: the rainbow, the last
+events.forEach(e => {
+  if (e.rain) {
+    delete e.rain;
+    e.then = events.length - 1;
+  }
+});
 const world = {
   file: 'clawd.png',
   px: P.PX,
+  // after three minutes on Home without a key, only the village
+  watch: 3,
   sprites,
   crew: {
     count: 8,
@@ -586,6 +836,25 @@ const world = {
       say: ['say-dots', 'say-heart', 'say-idea', 'say-ask', 'say-bang', 'say-note', 'say-star', 'say-coffee'],
       act: 'clap',
     },
+    // the holidays' hats (looks after the six caps): a witch's for Halloween week, Santa's in December, a party hat at New Year
+    hats: [
+      { look: LOOKS.length, when: { d: ['10-24', '10-31'] } },
+      { look: LOOKS.length + 1, when: { d: ['12-01', '12-26'] } },
+      { look: LOOKS.length + 2, when: { d: ['12-31', '01-01'] } },
+    ],
+    // the eight and what each likes best: Byte codes, Pixel games, Moss is outdoors, Nova at magic, Spark makes things, Sunny shows
+    // off, Mochi is cosy, Tink tinkers
+    members: [
+      { name: 'name-byte', likes: ['code'] },
+      { name: 'name-pixel', likes: ['games'] },
+      { name: 'name-moss', likes: ['outdoors'] },
+      { name: 'name-nova', likes: ['magic'] },
+      { name: 'name-spark', likes: ['craft'] },
+      { name: 'name-sunny', likes: ['show'] },
+      { name: 'name-mochi', likes: ['cozy'] },
+      { name: 'name-tink', likes: ['craft', 'games'] },
+    ],
+    hello: ['say-heart', 'say-star', 'say-sun'],
   },
   spots,
   props,
@@ -593,15 +862,31 @@ const world = {
   herds,
   events,
   shade: [
+    // a grey day: a little dimmer
+    { color: '#4a5266', alpha: 0.16, when: { h: [7, 18], w: ['cloud', 'rain', 'fog', 'snow'] } },
     { color: '#06051a', alpha: 0.5, when: { h: [0, 5] } },
     { color: '#0b0a26', alpha: 0.38, when: { h: [21, 24] } },
     { color: '#1a1030', alpha: 0.18, when: { h: [5, 7] } },
   ],
-  // a gust from the left every 14 to 36 seconds, across the screen in about five, petals carried off
-  wind: { every: [14, 36], speed: 460, dir: 1, fps: 10, fx: { s: 'blossom', kind: 'blow', every: 1, dx: 0, dy: -S(5) } },
+  // the weather of the day, the same all day: mostly fair; clouds, wind, rain or fog now and then, snow often in winter
+  weather: [
+    { name: 'sun', w: 64 },
+    { name: 'cloud', w: 12 },
+    { name: 'wind', w: 9 },
+    { name: 'rain', w: 9, when: { d: ['03-01', '11-30'] } },
+    { name: 'fog', w: 6 },
+    { name: 'snow', w: 30, when: { d: ['12-01', '02-29'] } },
+    // and a white Christmas, nearly always
+    { name: 'snow', w: 900, when: { d: ['12-24', '12-25'] } },
+  ],
+  // a gust from the left every 14 to 36 seconds (every few on a windy day), across the screen in about five, petals carried off
+  wind: [
+    { every: [4, 9], speed: 560, dir: 1, fps: 12, fx: { s: 'blossom', kind: 'blow', every: 1, dx: 0, dy: -S(5) }, when: { w: ['wind'] } },
+    { every: [14, 36], speed: 460, dir: 1, fps: 10, fx: { s: 'blossom', kind: 'blow', every: 1, dx: 0, dy: -S(5) } },
+  ],
 };
-// JSON as the other themes write it (one space), but a list of numbers and a little object on one line, as tight as JSON goes (the
-// world is big, and the service takes a theme.json of up to 32 KB)
+// JSON as the other themes write it (one space), but a list of numbers and a little object on one line, as tight as JSON goes; the
+// world itself one entry a line and nothing it does not need (it is big: the theme stays under 32 KB, what services before 64 KB take)
 function fmt(v, ind) {
   const pad = ' '.repeat(ind);
   if (Array.isArray(v)) {
@@ -622,6 +907,60 @@ function fmt(v, ind) {
     );
   }
   return JSON.stringify(v);
+}
+// the world without what is its default anyway (no shift of a particle, a drift to the right, the every of the wind's particles)
+function lean(w) {
+  const fx = f => {
+    if (!f) return;
+    if (f.dx === 0) delete f.dx;
+    if (f.dy === 0) delete f.dy;
+  };
+  const props = l => (l || []).forEach(p => fx(p.fx));
+  props(w.props);
+  w.spots.forEach(s => {
+    fx(s.fx);
+    props(s.show);
+  });
+  w.drift.forEach(d => d.dir === 1 && delete d.dir);
+  w.herds.forEach(h => fx(h.fx));
+  w.events.forEach(e => {
+    props(e.props);
+    (e.drift || []).forEach(d => d.dir === 1 && delete d.dir);
+    if (e.spot) {
+      fx(e.spot.fx);
+      props(e.spot.show);
+    }
+  });
+  w.wind.forEach(x => {
+    fx(x.fx);
+    delete x.fx.every;
+    if (x.dir === 1) delete x.dir;
+  });
+  // one that comes only after another or by its key is never due
+  w.events.forEach(e => e.chance === 0 && delete e.every);
+  return w;
+}
+function fmtWorld(w) {
+  return (
+    '{\n' +
+    Object.keys(w)
+      .map(k => {
+        const v = w[k];
+        if (k === 'sprites')
+          return (
+            '"sprites":{\n' +
+            Object.keys(v)
+              .map(n => JSON.stringify(n) + ':' + JSON.stringify(v[n]))
+              .join(',\n') +
+            '\n}'
+          );
+        if (Array.isArray(v) && v.length > 1 && v[0] && typeof v[0] === 'object')
+          return JSON.stringify(k) + ':[\n' + v.map(x => JSON.stringify(x)).join(',\n') + '\n]';
+        return JSON.stringify(k) + ':' + JSON.stringify(v);
+      })
+      .join(',\n') +
+    '\n}'
+  );
 }
 function contact(dir) {
   const k = 3;
@@ -652,8 +991,8 @@ if (require.main === module) {
   const tf = path.join(OUT, 'theme.json'),
     t = JSON.parse(fs.readFileSync(tf, 'utf8'));
   t.effects = Object.assign(t.effects || {}, { wallpaper: 'world.png' });
-  t.world = world;
-  const json = fmt(t, 0) + '\n';
+  t.world = 0;
+  const json = fmt(t, 0).replace(/"world": 0/, '"world": ' + fmtWorld(lean(world))) + '\n';
   fs.writeFileSync(tf, json);
   const i = process.argv.indexOf('--sheet');
   if (i > 0) contact(process.argv[i + 1]);

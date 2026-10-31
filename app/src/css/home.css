@@ -294,6 +294,20 @@ body {
 .wo-q {
   opacity: 0;
 }
+/* watch mode (world.watch): the clock, the buttons and the apps fade away and the world has the screen; a key brings them back at once */
+@keyframes watch-out {
+  to {
+    opacity: 0;
+  }
+}
+body.watch #top,
+body.watch #shelf,
+body.watch #cards,
+body.watch #view,
+body.watch .glow,
+body.watch #toast {
+  animation: watch-out 2.5s linear forwards;
+}
 /* the tint of the night over the backdrop, under everything else of the world; it comes and goes slowly */
 .wo-sh {
   width: 1920px;

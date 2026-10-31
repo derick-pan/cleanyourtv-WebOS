@@ -33,7 +33,7 @@ the traffic, can read the token while it is open; **New token** replaces it.
 
 The manager downloads the theme list, screenshots, theme files and wallpapers from `raw.githubusercontent.com` (the `main` branch of this
 repository) over HTTPS, when you open **Theme** or choose a theme. They are data only: the service checks every value against its list,
-limits the sizes (theme 32 KB, wallpaper 1.5 MB, screenshot 600 KB), checks that images are images and refuses anything else. There is
+limits the sizes (theme 64 KB, wallpaper 1.5 MB, screenshot 600 KB), checks that images are images and refuses anything else. There is
 no script or CSS in a theme. Anything merged into `main` becomes available to every TV, which is the same trust you place in the
 releases of this repository; there is no signature.
 
