@@ -506,10 +506,10 @@ run(async () => {
         ].concat(many(45)),
         props: [
           { s: 'nope' },
-          { s: 'stand', front: true, bob: 99, rest: -1, when: { d: ['10-15', '11-01'] }, pan: [-5000, 1], gust: 'cap' },
+          { s: 'stand', front: true, bob: 99, rest: -1, when: { d: ['10-15', '11-01'] }, pan: [-5000, 1], gust: 'cap', fade: 99999 },
           { s: 'stand', pan: [0, 600], gust: 'nope' },
         ].concat(many(140)),
-        drift: [{ s: 'walk', dir: -1, speed: 0, when: { h: [7, 99] } }, { y: 5 }],
+        drift: [{ s: 'walk', dir: -1, speed: 0, when: { h: [7, 99] }, fade: -5 }, { y: 5 }],
         herds: [
           { count: 99, area: [10, 20, 30, 40], stand: 'cap', acts: ['nope', 'walk'], speed: 0, when: {} },
           { stand: 'nope' },
@@ -593,6 +593,9 @@ run(async () => {
       wr.props[0].gust === 'cap' &&
       wr.props[1].pan === null &&
       wr.props[1].gust === '' &&
+      wr.props[0].fade === 1800 &&
+      wr.props[1].fade === 20 &&
+      wr.drift[0].fade === 0 &&
       wr.props[0].rest === 0 &&
       wr.props[0].front === true &&
       JSON.stringify(wr.props[0].when) === '{"h":null,"d":[1015,1101]}' &&
@@ -600,7 +603,7 @@ run(async () => {
       wr.drift[0].speed === 1 &&
       wr.drift[0].dir === -1 &&
       JSON.stringify(wr.drift[0].when) === '{"h":[7,24],"d":null}',
-    'props (at most 128) and drift are checked and clamped, with their hours and days (when), pan and gust, and what names no sprite is left out'
+    'props (at most 128) and drift are checked and clamped, with their hours (when, fade), pan and gust, and what names no sprite is left out'
   );
   const h0 = wr.herds[0],
     e0 = wr.events[0],

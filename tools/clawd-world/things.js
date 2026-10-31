@@ -597,45 +597,66 @@ const SHOOT = [0, 1, 2, 3, 4, 5, 6].map(k => {
   return r;
 });
 // clouds lit from below by the sun that has just gone
-const cloud = (w, h, bumps) => {
+// clouds lit from below by the sun that has just gone, or white by day, lit from above
+const cloud = (w, h, bumps, day) => {
   const p = new Pic(w, h);
-  const cols = ['#5a3d63', '#7e4c6c', '#a65d72', '#d97d74', '#f4a582'];
+  const cols = day ? ['#b8c8dd', '#cbd8e8', '#dde7f2', '#eef3f9', '#ffffff'] : ['#5a3d63', '#7e4c6c', '#a65d72', '#d97d74', '#f4a582'];
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       let inside = false;
       for (const b of bumps) if (Math.pow((x - b[0]) / b[2], 2) + Math.pow((y - b[1]) / b[3], 2) <= 1) inside = true;
       if (!inside) continue;
-      // lighter towards the bottom, where the light comes from
-      const t = y / (h - 1);
+      // lighter towards where the light comes from
+      const t = day ? 1 - y / (h - 1) : y / (h - 1);
       const k = Math.min(4, Math.floor(t * 4.6 + (dith(x, y, (t * 4.6) % 1) ? 1 : 0) * 0));
       p.set(x, y, cols[Math.min(4, Math.max(0, k))]);
     }
-  // the bottom edge bright
+  // the edge facing the light bright
   for (let x = 0; x < w; x++)
-    for (let y = h - 1; y >= 0; y--)
+    for (let k = 0; k < h; k++) {
+      const y = day ? k : h - 1 - k;
       if (p.get(x, y)[3]) {
         p.set(x, y, cols[4]);
         break;
       }
+    }
   return [p];
 };
-const CLOUDA = cloud(46, 12, [
-  [10, 8, 9, 4],
-  [22, 6, 10, 6],
-  [33, 7, 9, 5],
-  [40, 9, 6, 3],
-]);
-const CLOUDB = cloud(30, 9, [
-  [8, 6, 7, 3],
-  [16, 4, 8, 5],
-  [24, 6, 6, 3],
-]);
-const CLOUDC = cloud(58, 14, [
-  [10, 10, 9, 4],
-  [22, 7, 11, 7],
-  [36, 6, 12, 8],
-  [48, 9, 9, 5],
-]);
+const BUMPS = {
+  a: [
+    46,
+    12,
+    [
+      [10, 8, 9, 4],
+      [22, 6, 10, 6],
+      [33, 7, 9, 5],
+      [40, 9, 6, 3],
+    ],
+  ],
+  b: [
+    30,
+    9,
+    [
+      [8, 6, 7, 3],
+      [16, 4, 8, 5],
+      [24, 6, 6, 3],
+    ],
+  ],
+  c: [
+    58,
+    14,
+    [
+      [10, 10, 9, 4],
+      [22, 7, 11, 7],
+      [36, 6, 12, 8],
+      [48, 9, 9, 5],
+    ],
+  ],
+};
+const CLOUDA = cloud(...BUMPS.a),
+  CLOUDB = cloud(...BUMPS.b),
+  CLOUDC = cloud(...BUMPS.c);
+const DAYCLOUDS = ['a', 'b', 'c'].map(k => cloud(...BUMPS[k], true));
 // prettier-ignore
 const BIRD = [['k.....k', '.k...k.', '..kkk..', '.......'], ['.......', '..kkk..', '.k...k.', 'k.....k']].map(f => f);
 // prettier-ignore
@@ -741,6 +762,7 @@ module.exports = {
   CLOUDA,
   CLOUDB,
   CLOUDC,
+  DAYCLOUDS,
   BIRD,
   BALLOON,
   BUTTERFLY,

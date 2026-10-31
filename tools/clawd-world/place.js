@@ -52,14 +52,16 @@ const SKY = [
   [120, '#eb8d57'],
   [126, '#f4a964'],
 ];
-function skyAt(x, y) {
-  // nearer the sun the sky is a little further down the gradient (warmer)
-  const d = Math.hypot(x - G.sun[0], (y - G.sun[1]) * 1.6),
-    yy = y + Math.max(0, 1 - d / 120) * 16;
+// a sky's colour: bands down the gradient `stops`, and nearer the sun ([x, y, how far, how much]) a little further down it (warmer at
+// dusk, paler by day)
+function skyAt(x, y, stops, sun) {
+  stops = stops || SKY;
+  sun = sun === undefined ? [G.sun[0], G.sun[1], 120, 16] : sun;
+  const yy = sun ? y + Math.max(0, 1 - Math.hypot(x - sun[0], (y - sun[1]) * 1.6) / sun[2]) * sun[3] : y;
   let k = 0;
-  while (k < SKY.length - 2 && yy >= SKY[k + 1][0]) k++;
-  const [y0, c0] = SKY[k],
-    [y1, c1] = SKY[k + 1];
+  while (k < stops.length - 2 && yy >= stops[k + 1][0]) k++;
+  const [y0, c0] = stops[k],
+    [y1, c1] = stops[k + 1];
   // flat bands, dithered only in the last few rows before the next colour
   const z = Math.min(5, (y1 - y0) / 2),
     t = Math.min(1, Math.max(0, (yy - (y1 - z)) / z));
@@ -146,71 +148,46 @@ function ridge(pts, rough) {
   }
   return out;
 }
-// mountains: the slopes that face the sun (on the right) catch a rim of light
-function mountains(r, base, rim, rim2, haze) {
-  for (let x = 0; x < W; x++) {
-    for (let y = r[x]; y < G.street; y++) {
-      let c = base;
-      if (haze && y > r[x] + 6) c = dith(x, y, Math.min(1, (y - r[x] - 6) / 18) * 0.5) ? haze : base;
-      land.set(x, y, c);
-    }
-    const lit = x + 1 < W && r[x + 1] > r[x];
-    if (lit) {
-      land.set(x, r[x], rim);
-      land.set(x, r[x] + 1, rim2);
-    } else land.set(x, r[x], rim2);
-  }
-}
+// ---- the scenery behind the village: two ridges of mountains, rolling hills with little trees, the grassy bank behind the street.
+// Their shapes are worked out once; they are drawn in the light of dusk on the land, and again by day and by night for the sky of
+// those hours (SKIES) ----
 reseed(3);
-mountains(
-  ridge(
-    [
-      [0, 108],
-      [26, 100],
-      [52, 109],
-      [86, 97],
-      [118, 108],
-      [150, 102],
-      [190, 112],
-      [224, 98],
-      [258, 108],
-      [286, 103],
-      [318, 116],
-      [362, 106],
-      [384, 110],
-    ],
-    2
-  ),
-  '#4a2c51',
-  '#a0566a',
-  '#6c3a5d',
-  '#583257'
+const FAR = ridge(
+  [
+    [0, 108],
+    [26, 100],
+    [52, 109],
+    [86, 97],
+    [118, 108],
+    [150, 102],
+    [190, 112],
+    [224, 98],
+    [258, 108],
+    [286, 103],
+    [318, 116],
+    [362, 106],
+    [384, 110],
+  ],
+  2
 );
-mountains(
-  ridge(
-    [
-      [0, 120],
-      [40, 113],
-      [80, 121],
-      [120, 116],
-      [160, 124],
-      [200, 117],
-      [240, 125],
-      [270, 119],
-      [300, 126],
-      [330, 121],
-      [384, 124],
-    ],
-    1
-  ),
-  '#33294a',
-  '#7a4a64',
-  '#4a3556',
-  '#3b2d4e'
+const NEAR = ridge(
+  [
+    [0, 120],
+    [40, 113],
+    [80, 121],
+    [120, 116],
+    [160, 124],
+    [200, 117],
+    [240, 125],
+    [270, 119],
+    [300, 126],
+    [330, 121],
+    [384, 124],
+  ],
+  1
 );
-// rolling hills in front, dusky green, a row of little trees on them
 reseed(5);
-const hillTop = ridge(
+const HILL = ridge(
   [
     [0, 132],
     [30, 127],
@@ -226,20 +203,10 @@ const hillTop = ridge(
   ],
   0
 );
-for (let x = 0; x < W; x++) {
-  for (let y = hillTop[x]; y < G.street; y++) land.set(x, y, y < hillTop[x] + 2 ? '#3d4a46' : dith(x, y, 0.15) ? '#2a3436' : '#2e3a3a');
-}
-for (let x = 2; x < W; x += ri(5, 9)) {
-  const h = ri(4, 8),
-    t = hillTop[x];
-  for (let j = 0; j < h; j++) {
-    const w = Math.floor(((j + 1) * 3) / h);
-    land.hline(x - w, x + w, t - h + j + 1, j < 1 ? '#3e4a44' : '#25302f');
-  }
-}
-// the bank behind the street: grass in the evening, darker low down
+const TREES = [];
+for (let x = 2; x < W; x += ri(5, 9)) TREES.push([x, ri(4, 8)]);
 reseed(9);
-const bank = ridge(
+const BANK = ridge(
   [
     [0, 150],
     [60, 146],
@@ -251,11 +218,54 @@ const bank = ridge(
   ],
   1
 );
-for (let x = 0; x < W; x++)
-  for (let y = bank[x]; y < G.street; y++) {
-    const t = (y - bank[x]) / (G.street - bank[x]);
-    land.set(x, y, y === bank[x] ? '#5d7449' : dith(x, y, t * 0.8) ? '#344a2e' : '#3f5636');
+// the colours of the scenery at an hour: each ridge [base, its lit rim, the rim's foot, haze low down], the hills [top, shade, base],
+// the trees [top, body], the bank [top, shade, base]
+const DUSK = {
+  far: ['#4a2c51', '#a0566a', '#6c3a5d', '#583257'],
+  near: ['#33294a', '#7a4a64', '#4a3556', '#3b2d4e'],
+  hill: ['#3d4a46', '#2a3436', '#2e3a3a'],
+  tree: ['#3e4a44', '#25302f'],
+  bank: ['#5d7449', '#344a2e', '#3f5636'],
+};
+// mountains: the slopes that face the sun (on the right) catch a rim of light
+function mountains(p, r, [base, rim, rim2, haze]) {
+  for (let x = 0; x < W; x++) {
+    for (let y = r[x]; y < G.street; y++) {
+      let c = base;
+      if (haze && y > r[x] + 6) c = dith(x, y, Math.min(1, (y - r[x] - 6) / 18) * 0.5) ? haze : base;
+      p.set(x, y, c);
+    }
+    const lit = x + 1 < W && r[x + 1] > r[x];
+    if (lit) {
+      p.set(x, r[x], rim);
+      p.set(x, r[x] + 1, rim2);
+    } else p.set(x, r[x], rim2);
   }
+}
+function scenery(p, c) {
+  mountains(p, FAR, c.far);
+  mountains(p, NEAR, c.near);
+  // rolling hills in front, a row of little trees on them
+  for (let x = 0; x < W; x++)
+    for (let y = HILL[x]; y < G.street; y++) p.set(x, y, y < HILL[x] + 2 ? c.hill[0] : dith(x, y, 0.15) ? c.hill[1] : c.hill[2]);
+  for (const [x, h] of TREES) {
+    const t = HILL[x];
+    for (let j = 0; j < h; j++) {
+      const w = Math.floor(((j + 1) * 3) / h);
+      p.hline(x - w, x + w, t - h + j + 1, j < 1 ? c.tree[0] : c.tree[1]);
+    }
+  }
+  // the bank behind the street: grass, darker low down
+  for (let x = 0; x < W; x++)
+    for (let y = BANK[x]; y < G.street; y++) {
+      const t = (y - BANK[x]) / (G.street - BANK[x]);
+      p.set(x, y, y === BANK[x] ? c.bank[0] : dith(x, y, t * 0.8) ? c.bank[1] : c.bank[2]);
+    }
+}
+scenery(land, DUSK);
+// what the scenery left (where a building stands later, the land is something else)
+const SCENERY = new Pic(W, H);
+SCENERY.d.set(land.d);
 // the street: packed earth with pebbles, a shadow along the back
 for (let y = G.street; y < G.front; y++)
   for (let x = 0; x < W; x++) {
@@ -264,21 +274,25 @@ for (let y = G.street; y < G.front; y++)
     if (y === G.front - 1) c = '#7c5c44';
     land.set(x, y, c);
   }
-// the meadow in front: grass that darkens towards the bottom, tufts
-for (let y = G.front; y < H; y++)
-  for (let x = 0; x < W; x++) {
-    const t = (y - G.front) / (H - G.front);
-    let c = dith(x, y, t * 0.9) ? '#3b5530' : '#476638';
-    if (y === G.front) c = '#5f8044';
-    land.set(x, y, c);
+// the meadow in front: grass that darkens towards the bottom, tufts; in the colours of an hour [shade, base, the front edge, tufts]
+const TUFTS = [];
+for (let i = 0; i < 160; i++) TUFTS.push([ri(0, W - 1), ri(G.front + 2, H - 2)]);
+function meadow(p, c) {
+  for (let y = G.front; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const t = (y - G.front) / (H - G.front);
+      p.set(x, y, y === G.front ? c[2] : dith(x, y, t * 0.9) ? c[0] : c[1]);
+    }
+  for (const [x, y] of TUFTS) {
+    p.set(x, y, c[3]);
+    p.set(x - 1, y + 1, c[3]);
+    p.set(x + 1, y + 1, c[3]);
   }
-for (let i = 0; i < 160; i++) {
-  const x = ri(0, W - 1),
-    y = ri(G.front + 2, H - 2);
-  land.set(x, y, '#628a47');
-  land.set(x - 1, y + 1, '#628a47');
-  land.set(x + 1, y + 1, '#628a47');
 }
+meadow(land, ['#3b5530', '#476638', '#5f8044', '#628a47']);
+// what the meadow left (where the stage, a bed or the pond lies later, the land is something else)
+const MEADOW = new Pic(W, H);
+MEADOW.d.set(land.d);
 // ---- the buildings ----
 const bricks = (x0, y0, x1, y1, base, mortar, h) => {
   for (let y = y0; y <= y1; y++)
@@ -855,6 +869,19 @@ for (const sx of [FX - 21, FX + 11]) {
 
 // the pond: the sun on the water, a sandy shore, and a pier out over it
 const P0 = 316;
+// its water in the colours of an hour (for the skies of the day and the night): [deep, deeper, the far edge, flecks]
+function pondWater(p, c) {
+  for (let y = 177; y < H; y++)
+    for (let x = P0; x < W; x++) {
+      const edge = P0 + 10 - Math.round((y - 176) * 0.55) + Math.round(Math.sin(y * 0.7) * 1.2);
+      if (x < edge) continue;
+      const t = (y - 176) / (H - 176);
+      let col = dith(x, y, t) ? c[1] : c[0];
+      if (y === 177) col = c[2];
+      else if ((x * 13 + y * 7) % 29 === 0) col = c[3];
+      p.set(x, y, col);
+    }
+}
 for (let y = 176; y < H; y++)
   for (let x = P0; x < W; x++) {
     const edge = P0 + 10 - Math.round((y - 176) * 0.55) + Math.round(Math.sin(y * 0.7) * 1.2);
@@ -884,6 +911,9 @@ for (let y = 179; y < H; y += ri(1, 2)) {
     land.set(x, y, mid && t < 0.6 ? '#ffd9a0' : mid ? '#f8b878' : '#e8905e');
   }
 }
+// what the water left (where the pier stands later, the land is something else)
+const WATER = new Pic(W, H);
+WATER.d.set(land.d);
 // (the lily pads on it are props that drift in the wind: wind.js)
 // the pier
 const [PR0, PR1, PRY] = G.pier;
@@ -927,10 +957,100 @@ for (let i = 0; i < 120; i++) {
   }
 }
 
-// a part of the land as a sprite (where the land is empty it stays transparent)
+// ---- the hours: the backdrop is dusk (and dawn); by day and by night a sky of their own lies over it, with the scenery in their
+// light, and the pond's water. Each is only where the backdrop shows the sky, the scenery or the water as they were drawn, so the
+// buildings in front stay as they are. The stars and the moon (STARFIELD) come out over the night's sky and the dusk's ----
+const DAY = {
+  sky: [
+    [0, '#2b5596'],
+    [22, '#3263a9'],
+    [42, '#3a72b8'],
+    [60, '#4884c5'],
+    [76, '#5a97d1'],
+    [90, '#72abdc'],
+    [102, '#8fc0e6'],
+    [114, '#b0d5f0'],
+    [124, '#cde5f6'],
+  ],
+  sun: [326, 36],
+  scenery: {
+    far: ['#6d85ab', '#b9cbe4', '#8ea4c6', '#7d95ba'],
+    near: ['#577092', '#a2b6d1', '#6f88a9', '#627b9b'],
+    hill: ['#78a35e', '#4f7c45', '#5c8b4f'],
+    tree: ['#6a9a55', '#3f6d3b'],
+    bank: ['#8ab868', '#5a8546', '#6a9752'],
+  },
+  water: ['#4a8ed1', '#3e7ec3', '#a7d4f3', '#78ade0'],
+  meadow: ['#4f7f3d', '#5c8c45', '#7aa95a', '#76a952'],
+};
+const NIGHT = {
+  sky: [
+    [0, '#090a1e'],
+    [28, '#0c0f27'],
+    [50, '#111431'],
+    [70, '#16183b'],
+    [88, '#1c1d45'],
+    [102, '#24224f'],
+    [114, '#2d2857'],
+    [124, '#352e5f'],
+  ],
+  sun: null,
+  scenery: {
+    far: ['#241e40', '#4b4078', '#302856', '#29234b'],
+    near: ['#1b1733', '#3c3464', '#262046', '#201c3c'],
+    hill: ['#202a34', '#151d25', '#1a222b'],
+    tree: ['#22302f', '#121a1c'],
+    bank: ['#2c3d2f', '#19241c', '#203024'],
+  },
+  water: ['#18234a', '#141d3f', '#2a3b66', '#34497c'],
+  meadow: ['#1a2a1b', '#213322', '#2c4229', '#2c4529'],
+};
+const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+// an hour's sky (down to the street) and ground (the meadow and the pond's water, from the row under the pond's far edge), as sprites
+function skyOf(h) {
+  const sun = h.sun;
+  const air = new Pic(W, G.street);
+  for (let y = 0; y < G.street; y++) for (let x = 0; x < W; x++) air.set(x, y, skyAt(x, y, h.sky, sun ? [sun[0], sun[1], 70, 18] : null));
+  if (sun) {
+    // the sun high up, in a soft glow
+    for (let r = 20; r > 9; r -= 3) air.disc(sun[0], sun[1], r, [255, 248, 214, 34]);
+    air.disc(sun[0], sun[1], 8, '#fff1c2');
+    air.disc(sun[0], sun[1], 6, '#fffbe6');
+  }
+  const scen = new Pic(W, H);
+  scenery(scen, h.scenery);
+  const top = new Pic(W, G.street);
+  for (let y = 0; y < G.street; y++)
+    for (let x = 0; x < W; x++) {
+      const l = land.get(x, y);
+      if (!l[3]) top.set(x, y, air.get(x, y));
+      else if (same(l, SCENERY.get(x, y))) top.set(x, y, scen.get(x, y));
+    }
+  const wat = new Pic(W, H),
+    mea = new Pic(W, H);
+  pondWater(wat, h.water);
+  meadow(mea, h.meadow);
+  const ground = new Pic(W, H - 177);
+  for (let y = 177; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const l = land.get(x, y),
+        w = wat.get(x, y);
+      if (w[3] && same(l, WATER.get(x, y))) ground.set(x, y - 177, w);
+      else if (y >= G.front && same(l, MEADOW.get(x, y))) ground.set(x, y - 177, mea.get(x, y));
+    }
+  return { sky: top, ground };
+}
+const SKIES = { day: skyOf(DAY), night: skyOf(NIGHT), ground: 177 };
+
+// a part of the land as a sprite: the buildings in it (where the land is empty or only the scenery, it stays transparent, so the
+// clouds pass in front of the mountains and behind the roof, and the sky of each hour shows round it)
 function cut(x, y, w, h) {
   const p = new Pic(w, h);
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) p.set(i, j, land.get(x + i, y + j));
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const l = land.get(x + i, y + j);
+      if (!same(l, SCENERY.get(x + i, y + j))) p.set(i, j, l);
+    }
   return [p];
 }
 function backdrop() {
@@ -939,4 +1059,4 @@ function backdrop() {
   bg.draw(land, 0, 0);
   return bg;
 }
-module.exports = { G, W, H, PX, sky, land, cut, backdrop, STARFIELD, PAN, BIG, TWINKLES };
+module.exports = { G, W, H, PX, sky, land, cut, backdrop, STARFIELD, PAN, BIG, TWINKLES, SKIES };

@@ -40,7 +40,7 @@ folder of the GitHub repository (the `main` branch):
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
 | Cupertino | A living-room lock screen in the manner of Apple's TV: a huge thin glass clock in the sky over a night lake, the date above it, one round button, and a smoked-glass dock of square icons along the bottom. Down shows all apps. |
 | The Grid | The world of the Grid, going on behind Home: light cycles racing the floor and turning, their walls of light fading when they derezz, Recognizers drifting across the sky, the portal beam pulsing up from the city and light raining down. Glass tiles edged in light stand on the floor. Down opens the apps. |
-| Claude | Clawd World: a pixel village at dusk under the dock, where eight little Clawds (Claude Code's mascot) in caps of their own go from spot to spot: in at the door and up the ladder of their house to read, code, debug and play pong, jump rope or the block tower in the game room upstairs; out to hammer at the Code Forge, mine tokens, cast spells from the wizard's tower, fish, conduct a choir, dance, roast marshmallows and burrow away. They chat in speech bubbles, little ones play in the meadow, and now and then something happens: volleyball, a picnic, a party with fireworks, a shower, a flying saucer. Gusts of wind sway the flowers, the grass and the reeds, the stars twinkle and wheel slowly overhead, and night, Halloween and the seasons change things. A greeting and the clock in the sky, the app's name big over a row of six apps; Down opens all apps over the village. It is a world (see below). |
+| Claude | Clawd World: a pixel village at dusk under the dock, where eight little Clawds (Claude Code's mascot) in caps of their own go from spot to spot: in at the door and up the ladder of their house to read, code, debug and play pong, jump rope or the block tower in the game room upstairs; out to hammer at the Code Forge, mine tokens, cast spells from the wizard's tower, fish, conduct a choir, dance, roast marshmallows and burrow away. They chat in speech bubbles, little ones play in the meadow, and now and then something happens: volleyball, a picnic, a party with fireworks, a shower, a flying saucer. Day turns to dusk and night: a blue sky with the sun high by day, the sunset at dusk and dawn, a deep sky full of stars at night. Gusts of wind sway the flowers, the grass and the reeds, the stars twinkle and wheel slowly overhead, and Halloween and the seasons change things. A greeting and the clock in the sky, the app's name big over a row of six apps; Down opens all apps over the village. It is a world (see below). |
 | Terminal | Just a terminal: green phosphor text on black in a monospace typeface, the time as the output of `date`, the apps listed one per line under `ls`, the focused line in inverse video, a prompt with a blinking cursor, and scanlines behind it all. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
@@ -104,6 +104,7 @@ checkout of the repository (or these files) and the rules below.
    `rest.png` (home), `grid.png` (the focus moved down into the apps) and `menu.png` (a menu). It needs Node.js 22 or newer and Chrome. Open
    the images, fix what looks wrong (overlapping parts, unreadable text, clipped tiles) and render again.
 3. When it looks right, `node tools/theme-preview.mjs <id> --write` also writes `themes/<id>/preview.jpg` (needs `ffmpeg`), the screenshot the TV shows.
+   A theme's world is shown still for it, at half past seven in the evening whatever the time.
 4. `node tools/theme-index.js` updates `themes/index.json`; `node tools/test.js theme` checks every theme folder, the screenshot and the index.
 5. Commit and open a pull request; say where the wallpaper comes from.
 
@@ -323,8 +324,10 @@ characters who walk from **spot** to spot and do what each spot says there (hamm
 to a room upstairs, or out of sight for a while (into a mine, under the sand). They say things in speech bubbles, meet in the street for
 a chat, and play games together: a game waits for its players and brings out its table, rope or ball when they are all there. Herds of
 little ones wander about a meadow. Now and then an **event** comes (a match, a picnic, a party with fireworks, a shower that sends
-everyone indoors, a visitor), and some things only happen at some hours or on some days (`when`): the night, lunch, Halloween. Gusts of
-wind cross the scene and what grows sways as they pass, and a sky of stars can wheel slowly overhead (`pan`). Spots and props can give
+everyone indoors, a visitor), and some things only happen at some hours or on some days (`when`): the night, lunch, Halloween. What
+comes and goes with the hours fades in and out (`fade`), so a theme can lay a sky of the day and another of the night over its
+backdrop and the day turns into night. Gusts of wind cross the scene and what grows sways as they pass, and a sky of stars can wheel
+slowly overhead (`pan`). Spots and props can give
 off particles that rise, float away, pop, fall or blow away (hearts, notes, smoke, sparks, rain, snow, petals). The theme gives the
 pictures and says where things are; the launcher does the rest (`app/src/js/world.js`).
 
@@ -333,8 +336,15 @@ times without smoothing so pixel art stays crisp. Usually the static part of the
 drawn at the same scale, and the world puts the moving parts on it. It moves with transforms and opacity only and in whole art pixels,
 and the frames are CSS animations, so the TV's GPU draws each piece as a small layer and the script only acts when a character starts
 something new. The crew hop when the focus moves and one or two of them wave when Home comes back. The world sits under the dock, the
-grid and the menus, stands still under the open grid and while Home is hidden (an event going on ends), and with `effects.speed` 0
-each character just stands at a spot.
+grid and the menus, stands still under the open grid, and with `effects.speed` 0 each character just stands at a spot. While Home is
+hidden (an app is open) the world is taken out of the page, so it costs the TV nothing, not even memory on its GPU, and an event going
+on ends.
+
+A TV that cannot keep up loses nothing it needs: a few seconds after Home shows, the world times the TV's frames, and only when many
+come late does it shed what is least seen, a step at a time, timing them again after each. First it keeps fewer particles at a time
+(18 instead of 36), lets no petals blow and flares half as often; then fewer still (8), the sky holds still, glows stop pulsing and
+nothing flares. A TV that keeps up sheds nothing. The step is written to the service's log (`perf world level 1 ...`, see
+`tools/perf-tv.sh`).
 
 ```json
 "world": {
@@ -352,7 +362,8 @@ each character just stands at a spot.
       "path": [[670, 880, 0], [720, 860, 0], [1265, 860, 0], [1265, 735, 1]], "show": [{ "s": "pong", "x": 910, "y": 735 }] }
   ],
   "props": [
-    { "s": "starfield", "x": 0, "y": 0, "under": true, "pan": [-240, 480] },
+    { "s": "sky-day", "x": 0, "y": 0, "under": true, "when": { "h": [7, 18] }, "fade": 300 },
+    { "s": "starfield", "x": 0, "y": 0, "under": true, "pan": [-240, 480], "when": { "h": [18, 7] }, "fade": 240 },
     { "s": "fire", "x": 1310, "y": 950, "fps": 8, "front": true },
     { "s": "reeds", "x": 1860, "y": 890, "fps": 1.5, "gust": "reeds-gust" },
     { "s": "pumpkin", "x": 655, "y": 860, "when": { "d": ["10-15", "11-01"] } }
@@ -373,8 +384,8 @@ each character just stands at a spot.
 | `sprites` | name: `[x, y, w, h, frames, ax, ay, looks]` | A strip of `frames` frames, each `w` x `h`, side by side in the sheet from `x`, `y` (art pixels). `ax`, `ay` is the point of a frame that stands on a place (its feet); it defaults to the middle of the bottom edge and may be below the frame (someone sitting behind a desk). `looks` (1 to 16) strips of the same size may follow under it, one for each look of the crew (a cap of another colour). Names are lower-case letters, digits and `-`. Draw characters facing right. |
 | `crew` | below | The characters. |
 | `spots` | a list | The places where something happens, below. |
-| `props` | a list: `s`, `x`, `y`, `fps`, `pulse`, `bob`, `front`, `under`, `rest`, `fx`, `when`, `pan`, `gust` | A sprite that stays at `x`, `y` (its anchor) and plays its frames at `fps`. `pulse` (seconds) lets it glow and fade, `bob` moves it up and down that many art pixels, `rest` (seconds) shows it only now and then (a fish jumping), `front` puts it in front of the crew (a fire they pass behind), `under` under everything else of the world (the drift and the tint too: a sky), `fx` gives off particles, `when` shows it only at some hours or on some days. `pan` `[px, seconds]` drifts it slowly that far and back, one px at a time, each way in that time (the stars wheeling); every prop with the same `pan` keeps with the others, by the clock. `gust` is a sprite it plays once when a gust of wind passes over it (`wind`), then it goes back to its own frames. |
-| `drift` | a list: `s`, `y`, `speed`, `dir`, `fps`, `bob`, `when` | A sprite that crosses the screen at `y` (its anchor), `speed` px/s, left to right (`dir` 1) or the other way (-1, mirrored), then stays out of sight for a while and comes again. |
+| `props` | a list: `s`, `x`, `y`, `fps`, `pulse`, `bob`, `front`, `under`, `rest`, `fx`, `when`, `fade`, `pan`, `gust` | A sprite that stays at `x`, `y` (its anchor) and plays its frames at `fps`. `pulse` (seconds) lets it glow and fade, `bob` moves it up and down that many art pixels, `rest` (seconds) shows it only now and then (a fish jumping), `front` puts it in front of the crew (a fire they pass behind), `under` under everything else of the world (the drift and the tint too: a sky), `fx` gives off particles, `when` shows it only at some hours or on some days, fading in and out over `fade` seconds (default 20). `pan` `[px, seconds]` drifts it slowly that far and back, one px at a time, each way in that time (the stars wheeling); every prop with the same `pan` keeps with the others, by the clock. `gust` is a sprite it plays once when a gust of wind passes over it (`wind`), then it goes back to its own frames. |
+| `drift` | a list: `s`, `y`, `speed`, `dir`, `fps`, `bob`, `when`, `fade` | A sprite that crosses the screen at `y` (its anchor), `speed` px/s, left to right (`dir` 1) or the other way (-1, mirrored), then stays out of sight for a while and comes again. |
 | `herds` | a list: `count`, `area`, `stand`, `walk`, `acts`, `speed`, `fx`, `when` | Up to 4 groups of little ones (1 to 12 each) that wander about `area` `[x0, y0, x1, y1]`, stand, hop, do one of `acts` now and then, and play in pairs with `fx` between them. A herd without a `stand` sprite is left out. |
 | `events` | a list, below | What comes now and then. |
 | `shade` | a list: `color`, `alpha`, `when` | A tint over the backdrop (the night): the first whose `when` fits, `alpha` 0 to 0.9 strong. It comes and goes slowly. |
@@ -416,7 +427,8 @@ An event: one at a time, each `every` `[min, max]` seconds (10 to 7200) after it
 `time` is longer than the event's keeps them there until it is over. Then everything fades and they go back about their business.
 
 `when` is `{"h": [from, to], "d": ["MM-DD", "MM-DD"]}`, either or both: from the hour `from` up to `to` (24 is midnight; `[22, 7]` is
-the night, across midnight) and from the first day to the last (`["12-20", "01-06"]` goes across New Year). It is checked every minute.
+the night, across midnight) and from the first day to the last (`["12-20", "01-06"]` goes across New Year). It is checked every minute;
+a prop or a drift fades in or out over its `fade` seconds and is out of the page once it is gone, a little one of a herd over 8.
 
 At most 200 sprites, 40 spots, 128 props, 16 drifts, 4 herds and 16 events; numbers are clamped to their range, and a name that is not a
 sprite is left out (and so is a prop, a drift or a herd without one). A theme that extends another keeps its world unless it has its
